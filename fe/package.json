@@ -10,12 +10,12 @@
     "preview": "vite preview",
     "generate": "tsr generate"
   },
-
   "dependencies": {
     "@tanstack/react-router": "^1.169.2",
     "@tanstack/router-devtools": "^1.166.13",
     "@tanstack/router-plugin": "^1.167.34",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
