@@ -8,8 +8,6 @@ import {
   BarChart3,
   ShieldCheck,
   ArrowRight,
-  ChevronRight,
-  Star,
   CheckCircle2
 } from 'lucide-react'
 import heroImage from '@/assets/hero-ai.png'
