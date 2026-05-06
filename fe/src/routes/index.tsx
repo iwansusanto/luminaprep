@@ -58,9 +58,9 @@ function LandingPage() {
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-github"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.28 1.15-.28 2.35 0 3.5-.73 1.02-1.08 2.25-1 3.5 0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></svg>
               GitHub
             </a>
-            <button className="bg-blue-600 text-white px-5 py-2 rounded-full hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-95">
+            <Link to="/login" className="bg-blue-600 text-white px-5 py-2 rounded-full hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-95">
               Get Started
-            </button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -94,10 +94,10 @@ function LandingPage() {
                   LuminaPrep redefines education through intelligent personalization. Experience a platform that learns how you learn.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center gap-6 justify-center lg:justify-start">
-                  <button className="group bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-blue-500 transition-all shadow-2xl shadow-blue-600/40 flex items-center gap-2 active:scale-95">
+                  <Link to="/login" className="group bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-blue-500 transition-all shadow-2xl shadow-blue-600/40 flex items-center gap-2 active:scale-95">
                     Start Learning Now
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
+                  </Link>
                   <div className="flex items-center gap-4">
                     <div className="flex -space-x-3">
                       {[1, 2, 3, 4].map((i) => (
@@ -241,9 +241,9 @@ function LandingPage() {
                 Join the next generation of learners mastering complex subjects through personalized intelligence. No commitment required.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                <button className="w-full sm:w-auto bg-blue-600 text-white px-10 py-5 rounded-2xl font-bold text-xl hover:bg-blue-700 transition-all shadow-2xl active:scale-95">
+                <Link to="/login" className="w-full sm:w-auto bg-blue-600 text-white px-10 py-5 rounded-2xl font-bold text-xl hover:bg-blue-700 transition-all shadow-2xl active:scale-95 inline-flex justify-center">
                   Get Started Free
-                </button>
+                </Link>
                 <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
                   <CheckCircle2 className="text-green-500 w-5 h-5" />
                   No credit card required
