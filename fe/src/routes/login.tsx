@@ -73,9 +73,9 @@ function LoginPage() {
               {/* Terms */}
               <p className="text-xs text-slate-500 pt-4">
                 By continuing, you agree to LuminaPrep's{' '}
-                <a href="#" className="text-slate-400 hover:text-white underline decoration-slate-600 underline-offset-2">Terms of Service</a>
+                <Link to="/term-of-service" className="text-slate-400 hover:text-white underline decoration-slate-600 underline-offset-2">Terms of Service</Link>
                 {' '}and{' '}
-                <a href="#" className="text-slate-400 hover:text-white underline decoration-slate-600 underline-offset-2">Privacy Policy</a>.
+                <Link to="/privacy-policy" className="text-slate-400 hover:text-white underline decoration-slate-600 underline-offset-2">Privacy Policy</Link>.
               </p>
             </div>
           </div>

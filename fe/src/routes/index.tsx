@@ -262,8 +262,8 @@ function LandingPage() {
                 <span className="text-xl font-bold text-white">LuminaPrep</span>
               </div>
               <div className="flex gap-10 text-sm font-medium text-slate-400">
-                <a href="#" className="hover:text-white transition-colors">Privacy</a>
-                <a href="#" className="hover:text-white transition-colors">Terms</a>
+                <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy</Link>
+                <Link to="/term-of-service" className="hover:text-white transition-colors">Terms</Link>
                 <a href="#" className="hover:text-white transition-colors">Help</a>
               </div>
               <p className="text-sm text-slate-500">
