@@ -29,3 +29,33 @@ services:
   #   restart: unless-stopped
   #   # If the api doesn't have a Dockerfile yet, you can comment out the build block
   #   # and use an image, or just comment out the whole api service until it's ready.
+  
+  db:
+    image: mysql:8.4
+    container_name: luminaprep-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: weGFDaWcfNa/a9c3qftpkbzxiiyJ9UM+
+      MYSQL_DATABASE: db_lp
+      MYSQL_USER: user_lp
+      MYSQL_PASSWORD: Z1KkO7XJXVX9ZZCC1DaiRCsJYuxMlRkR
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: luminaprep-phpmyadmin
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: weGFDaWcfNa/a9c3qftpkbzxiiyJ9UM+
+    depends_on:
+      - db
+
+volumes:
+  db_data:
