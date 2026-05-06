@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
 import {
   BrainCircuit,
@@ -44,12 +44,12 @@ function LandingPage() {
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 border-b border-white/[0.05] bg-[#020617]/60 backdrop-blur-2xl">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
             <img src="/logo.jpg" alt="LuminaPrep Logo" className="w-8 h-8 rounded-lg shadow-lg shadow-blue-600/20 object-cover" />
             <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
               LuminaPrep
             </span>
-          </div>
+          </Link>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium">
             <a href="#features" className="text-slate-300 hover:text-white transition-colors">Features</a>
             <a href="#how-it-works" className="text-slate-300 hover:text-white transition-colors">How it Works</a>
