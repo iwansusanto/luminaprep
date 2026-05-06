@@ -13,6 +13,8 @@ services:
     # depends_on:
     #   - api
     restart: unless-stopped
+    networks:
+      - luminaprep-net
 
   # api:
   #   # Placeholder for the backend service
@@ -27,6 +29,8 @@ services:
   #   environment:
   #     - NODE_ENV=production
   #   restart: unless-stopped
+  #   networks:
+  #     - luminaprep-net
   #   # If the api doesn't have a Dockerfile yet, you can comment out the build block
   #   # and use an image, or just comment out the whole api service until it's ready.
   
@@ -40,22 +44,27 @@ services:
       MYSQL_USER: user_lp
       MYSQL_PASSWORD: Z1KkO7XJXVX9ZZCC1DaiRCsJYuxMlRkR
     ports:
-      - "3306:3306"
+      - "3363:3306"
     volumes:
-      - db_data:/var/lib/mysql
+      - ./dbdata:/var/lib/mysql
+    networks:
+      - luminaprep-net
 
   phpmyadmin:
     image: phpmyadmin:latest
     container_name: luminaprep-phpmyadmin
     restart: always
     ports:
-      - "8080:80"
+      - "8099:80"
     environment:
       PMA_HOST: db
       PMA_USER: root
       PMA_PASSWORD: weGFDaWcfNa/a9c3qftpkbzxiiyJ9UM+
     depends_on:
       - db
+    networks:
+      - luminaprep-net
 
-volumes:
-  db_data:
+networks:
+  luminaprep-net:
+    driver: bridge
