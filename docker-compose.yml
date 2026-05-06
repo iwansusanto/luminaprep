@@ -12,8 +12,8 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - API_URL=http://api:8000 # Points to the api service
-    depends_on:
-      - api
+    # depends_on:
+    #   - api
     restart: unless-stopped
 
   # api:
