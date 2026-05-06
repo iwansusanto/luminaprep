@@ -16,18 +16,18 @@ services:
       - api
     restart: unless-stopped
 
-  api:
-    # Placeholder for the backend service
-    # Assuming the API runs on port 8000 and the folder is ./api
-    build:
-      context: ./api
-      # Uncomment and adjust if there's an actual Dockerfile in api folder
-      # dockerfile: Dockerfile 
-    container_name: luminaprep-api
-    ports:
-      - "8000:8000"
-    environment:
-      - NODE_ENV=production
-    restart: unless-stopped
-    # If the api doesn't have a Dockerfile yet, you can comment out the build block
-    # and use an image, or just comment out the whole api service until it's ready.
+  # api:
+  #   # Placeholder for the backend service
+  #   # Assuming the API runs on port 8000 and the folder is ./api
+  #   build:
+  #     context: ./api
+  #     # Uncomment and adjust if there's an actual Dockerfile in api folder
+  #     # dockerfile: Dockerfile 
+  #   container_name: luminaprep-api
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - NODE_ENV=production
+  #   restart: unless-stopped
+  #   # If the api doesn't have a Dockerfile yet, you can comment out the build block
+  #   # and use an image, or just comment out the whole api service until it's ready.
