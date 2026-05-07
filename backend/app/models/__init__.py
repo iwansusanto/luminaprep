@@ -1,7 +1,9 @@
-from .user import User, UserCreate, UserRead, UserLogin
-from .project import Project, ProjectCreate, ProjectRead, ProjectUpdate
+from .user import User
+from .project import Project
+from .material import Material
 
 __all__ = [
-    "User", "UserCreate", "UserRead", "UserLogin",
-    "Project", "ProjectCreate", "ProjectRead", "ProjectUpdate"
+    "User",
+    "Project", 
+    "Material"
 ]

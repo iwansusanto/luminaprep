@@ -2,8 +2,10 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from app.core.config import settings
-from app.db.database import engine, Base
+from app.database import engine, Base
 from app.models import User, Project
+from scalar_fastapi import get_scalar_api_reference
+from app.api.v1.api import api_router
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -13,8 +15,8 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description="AI-powered learning platform backend API",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None,
+    redoc_url=None,
 )
 
 # Configure CORS
@@ -46,9 +48,17 @@ async def health_check():
     }
 
 
-# Import routers (will be created later)
-# from app.api.v1.api import api_router
-# app.include_router(api_router, prefix="/api/v1")
+# Import API router
+from app.api.v1.api import api_router
+app.include_router(api_router, prefix="/api/v1")
+
+# Scalar API Documentation
+scalar_docs = get_scalar_api_reference(
+    openapi_url=app.openapi_url,
+    title=app.title + " - API Documentation"
+)
+
+app.add_route("/scalar", scalar_docs, include_in_schema=False)
 
 
 if __name__ == "__main__":
