@@ -129,31 +129,46 @@ function DashboardIndexPage() {
               theme={{
                 algorithm: theme.darkAlgorithm,
                 token: {
-                  colorPrimary: '#4f46e5',
-                  borderRadius: 16,
-                  colorBgContainer: 'rgba(255, 255, 255, 0.05)',
-                  colorBorder: 'rgba(255, 255, 255, 0.1)',
+                  colorPrimary: '#6366f1', // Vibrant Electric Indigo
+                  borderRadius: 18,
+                  colorBgContainer: 'rgba(15, 23, 42, 0.6)', // Deep Slate Glass
+                  colorBorder: 'rgba(255, 255, 255, 0.08)',
                 },
+                components: {
+                  Segmented: {
+                    itemSelectedBg: '#6366f1',
+                    itemSelectedColor: '#ffffff',
+                    trackBg: 'rgba(255, 255, 255, 0.03)',
+                    itemColor: '#94a3b8',
+                    itemHoverColor: '#ffffff',
+                  },
+                  Select: {
+                    controlHeight: 56,
+                    optionSelectedBg: 'rgba(99, 102, 241, 0.15)',
+                    optionSelectedColor: '#818cf8',
+                    colorBgElevated: '#0f172a',
+                  }
+                }
               }}
             >
               <div className="space-y-8">
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block px-1">Number of Questions</label>
+                  <label className="text-[10px] font-bold text-indigo-300/60 uppercase tracking-[0.2em] block px-1">Number of Questions</label>
                   <Segmented
                     block
                     size="large"
                     options={[10, 20, 50, 100]}
                     defaultValue={20}
-                    className="bg-white/5 p-1.5 rounded-[1.25rem] border border-white/5"
+                    className="p-1.5 rounded-[1.25rem] border border-white/5 backdrop-blur-md"
                   />
                 </div>
 
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block px-1">Target Complexity</label>
+                  <label className="text-[10px] font-bold text-indigo-300/60 uppercase tracking-[0.2em] block px-1">Target Complexity</label>
                   <Select
                     defaultValue="intermediate"
                     className="w-full h-14"
-                    popupClassName="rounded-2xl border border-white/10"
+                    popupClassName="rounded-2xl border border-white/10 shadow-2xl"
                     options={[
                       { value: 'foundational', label: 'Foundational' },
                       { value: 'intermediate', label: 'Intermediate' },
