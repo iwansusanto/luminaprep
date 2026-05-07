@@ -3,6 +3,8 @@ services:
     build:
       context: ./fe
       dockerfile: Dockerfile
+      args:
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
     container_name: luminaprep-fe
     ports:
       - "3000:3000"

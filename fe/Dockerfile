@@ -13,6 +13,8 @@ RUN npm ci
 COPY . .
 
 # Build the application
+ARG VITE_GOOGLE_CLIENT_ID
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN npm run build
 
 # Production stage
