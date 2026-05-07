@@ -9,8 +9,8 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (userData: User) => void;
-  logout: () => void;
+  login: (userData: User) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -20,26 +20,48 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Check local storage for user data on initial load
-    const storedUser = localStorage.getItem('luminaprep_user');
-    if (storedUser) {
+    // Check server session for HTTP cookie
+    const checkSession = async () => {
       try {
-        setUser(JSON.parse(storedUser));
+        const response = await fetch('/auth/session');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.authenticated && data.user) {
+            setUser(data.user);
+          }
+        }
       } catch (e) {
-        console.error('Failed to parse user data from local storage', e);
+        console.error('Failed to verify session', e);
+      } finally {
+        setIsLoaded(true);
       }
-    }
-    setIsLoaded(true);
+    };
+    
+    checkSession();
   }, []);
 
-  const login = (userData: User) => {
-    setUser(userData);
-    localStorage.setItem('luminaprep_user', JSON.stringify(userData));
+  const login = async (userData: User) => {
+    try {
+      await fetch('/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+      setUser(userData);
+    } catch (e) {
+      console.error('Failed to set login session', e);
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('luminaprep_user');
+  const logout = async () => {
+    try {
+      await fetch('/auth/logout', { method: 'POST' });
+      setUser(null);
+    } catch (e) {
+      console.error('Failed to clear session', e);
+    }
   };
 
   if (!isLoaded) {

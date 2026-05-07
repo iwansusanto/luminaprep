@@ -25,7 +25,7 @@ function LoginPage() {
           headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
         })
         const userInfo = await res.json()
-        auth.login({
+        await auth.login({
           email: userInfo.email,
           name: userInfo.name,
           picture: userInfo.picture,

@@ -16,8 +16,8 @@ function DashboardPage() {
   const auth = useAuth()
   const navigate = useNavigate()
 
-  const handleLogout = () => {
-    auth.logout()
+  const handleLogout = async () => {
+    await auth.logout()
     navigate({ to: '/' })
   }
 
