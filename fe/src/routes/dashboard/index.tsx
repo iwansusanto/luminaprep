@@ -9,156 +9,262 @@ import {
   Type,
   MoreVertical,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  ArrowUpRight,
+  Clock,
+  LayoutGrid
 } from 'lucide-react'
+import { motion, type Variants } from 'framer-motion'
 
 export const Route = createFileRoute('/dashboard/')({
   component: DashboardIndexPage,
 })
 
+const container: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+}
+
+const item: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut"
+    }
+  }
+}
+
 function DashboardIndexPage() {
   const auth = useAuth()
 
   const stats = [
-    { label: 'Materials', value: '0', sub: 'Total uploaded', icon: FileText, color: 'bg-indigo-100 text-indigo-600' },
-    { label: 'Quizzes Created', value: '0', sub: 'Total quizzes', icon: CheckCircle2, color: 'bg-emerald-100 text-emerald-600' },
-    { label: 'Average Score', value: '0%', sub: 'Across all quizzes', icon: Trophy, color: 'bg-amber-100 text-amber-600' },
+    { label: 'Materials', value: '12', sub: 'Total items', icon: FileText, color: 'bg-indigo-50 text-indigo-600', trend: '+2 this week' },
+    { label: 'Quizzes', value: '24', sub: 'Completed', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600', trend: '92% avg score' },
+    { label: 'Learning Streak', value: '7', sub: 'Days active', icon: Trophy, color: 'bg-amber-50 text-amber-600', trend: 'Personal best' },
   ]
 
   const recentMaterials = [
-    { name: 'Molecular Biology Notes.pdf', date: 'Uploaded 2 days ago', pages: '24 pages', category: 'Biology', iconColor: 'text-rose-500', bgColor: 'bg-rose-50' },
-    { name: 'Cell Structure.docx', date: 'Uploaded 3 days ago', pages: '18 pages', category: 'Biology', iconColor: 'text-blue-500', bgColor: 'bg-blue-50' },
-    { name: 'Photosynthesis.pptx', date: 'Uploaded 5 days ago', pages: '32 slides', category: 'Biology', iconColor: 'text-orange-500', bgColor: 'bg-orange-50' },
+    { name: 'Advanced Organic Chemistry.pdf', date: '2h ago', pages: '42 pages', category: 'Chemistry', iconColor: 'text-indigo-500', bgColor: 'bg-indigo-50' },
+    { name: 'Linear Algebra Concepts.docx', date: 'Yesterday', pages: '12 pages', category: 'Math', iconColor: 'text-blue-500', bgColor: 'bg-blue-50' },
+    { name: 'World History: Part II.pptx', date: '2 days ago', pages: '64 slides', category: 'History', iconColor: 'text-orange-500', bgColor: 'bg-orange-50' },
   ]
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat) => (
-          <div key={stat.label} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group">
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center transition-transform group-hover:scale-110`}>
-                <stat.icon className="w-6 h-6" />
+    <motion.div
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="space-y-10 pb-20"
+    >
+      {/* Welcome & Stats Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
+        <motion.div variants={item} className="lg:col-span-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 text-[10px] font-black uppercase tracking-widest mb-4">
+            <Sparkles className="w-3 h-3" />
+            Learning Synchronized
+          </div>
+          <h2 className="text-4xl font-black text-slate-800 tracking-tight leading-none mb-4">
+            Keep growing, <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">
+              {auth?.user?.name?.split(' ')[0] || 'Explorer'}.
+            </span>
+          </h2>
+          <p className="text-slate-500 text-sm font-medium max-w-sm leading-relaxed">
+            Your personalized study path is ready. You've completed 65% of your weekly goal.
+          </p>
+        </motion.div>
+
+        <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-3 gap-4">
+          {stats.map((stat) => (
+            <motion.div
+              key={stat.label}
+              variants={item}
+              className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all group relative overflow-hidden"
+            >
+              <div className="flex flex-col gap-4">
+                <div className={`w-12 h-12 ${stat.color} rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-6`}>
+                  <stat.icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-slate-800">{stat.value}</span>
+                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md">{stat.trend}</span>
+                  </div>
+                </div>
               </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Grid: Upload & Generator */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <motion.div variants={item} className="lg:col-span-2 bg-white rounded-[2.5rem] border border-slate-200/60 p-10 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
+            <UploadCloud className="w-64 h-64 text-indigo-600" />
+          </div>
+
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-10">
               <div>
-                <p className="text-sm font-medium text-slate-500">{stat.label}</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-slate-800">{stat.value}</span>
-                  <span className="text-xs text-slate-400">{stat.sub}</span>
+                <h3 className="text-xl font-black text-slate-800">Add Study Material</h3>
+                <p className="text-sm text-slate-500 font-medium">Upload or paste content to start learning.</p>
+              </div>
+              <div className="flex gap-2">
+                <button className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-colors border border-slate-200/50">
+                  <LayoutGrid className="w-5 h-5 text-slate-600" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+              <div className="md:col-span-3 border-2 border-dashed border-slate-200 rounded-[2rem] p-10 flex flex-col items-center justify-center gap-6 hover:border-indigo-400 hover:bg-indigo-50/20 transition-all cursor-pointer group/upload">
+                <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-[2rem] flex items-center justify-center group-hover/upload:scale-110 group-hover/upload:rotate-3 transition-all duration-500 shadow-indigo-100 shadow-xl">
+                  <UploadCloud className="w-10 h-10" />
+                </div>
+                <div className="text-center">
+                  <p className="font-black text-slate-800 text-lg">Drop files here</p>
+                  <p className="text-xs text-slate-400 mt-1 font-bold uppercase tracking-widest">or click to browse local storage</p>
+                </div>
+                <div className="flex gap-2">
+                  {['PDF', 'DOCX', 'PPT'].map(ext => (
+                    <span key={ext} className="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-1 rounded-md">{ext}</span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="md:col-span-2 flex flex-col gap-4">
+                <div className="p-1 bg-slate-100/50 rounded-2xl border border-slate-200/40">
+                  <button className="flex items-center gap-4 w-full p-4 bg-white hover:bg-slate-50 rounded-xl transition-all shadow-sm border border-slate-200/50 group/btn">
+                    <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center group-hover/btn:scale-110 transition-transform">
+                      <LinkIcon className="w-5 h-5" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-black text-slate-800">Add Link</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">Websites / Articles</p>
+                    </div>
+                  </button>
+                </div>
+                <div className="p-1 bg-slate-100/50 rounded-2xl border border-slate-200/40">
+                  <button className="flex items-center gap-4 w-full p-4 bg-white hover:bg-slate-50 rounded-xl transition-all shadow-sm border border-slate-200/50 group/btn">
+                    <div className="w-10 h-10 bg-purple-50 text-purple-500 rounded-xl flex items-center justify-center group-hover/btn:scale-110 transition-transform">
+                      <Type className="w-5 h-5" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-black text-slate-800">Paste Text</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">Manual Input</p>
+                    </div>
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-        ))}
-      </div>
+        </motion.div>
 
-      {/* Action Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Upload Area */}
-        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-800 mb-6">1. Upload or Add Material</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all cursor-pointer group">
-              <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                <UploadCloud className="w-8 h-8" />
+        <motion.div variants={item} className="bg-slate-900 rounded-[2.5rem] p-10 shadow-2xl shadow-indigo-900/20 flex flex-col relative overflow-hidden group">
+          <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
+
+          <h3 className="text-xl font-black text-white mb-2">Quiz Architect</h3>
+          <p className="text-sm text-slate-400 font-medium mb-10 leading-relaxed">Design your assessment with precision using AI.</p>
+
+          <div className="space-y-8 flex-1">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block px-1">Questions</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[10, 20, 50].map(val => (
+                  <button key={val} className={`py-3 rounded-2xl text-xs font-black transition-all ${val === 10 ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>
+                    {val}
+                  </button>
+                ))}
               </div>
-              <div className="text-center">
-                <p className="font-semibold text-slate-700">Drag & drop your file here</p>
-                <p className="text-sm text-slate-500">or click to browse</p>
-              </div>
-              <p className="text-xs text-slate-400 mt-2">Supports PDF, DOCX, PPTX, TXT, MD, URL</p>
             </div>
 
-            <div className="flex flex-col gap-4">
-              <p className="text-sm font-semibold text-slate-600">Or add by link or text</p>
-              <button className="flex items-center justify-center gap-3 w-full py-4 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all text-slate-700 font-medium">
-                <LinkIcon className="w-5 h-5 text-slate-400" />
-                Add from Link
-              </button>
-              <button className="flex items-center justify-center gap-3 w-full py-4 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all text-slate-700 font-medium">
-                <Type className="w-5 h-5 text-slate-400" />
-                Paste Text
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Generate Quiz Card */}
-        <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm flex flex-col">
-          <h2 className="text-lg font-bold text-slate-800 mb-6">2. Generate Quiz</h2>
-          <p className="text-sm text-slate-500 mb-8">Choose your quiz preferences and let AI do the magic!</p>
-
-          <div className="space-y-6 flex-1">
-            <div>
-              <label className="text-sm font-semibold text-slate-600 block mb-2">Number of Questions</label>
-              <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-indigo-500 transition-all">
-                <option>10 Questions</option>
-                <option>20 Questions</option>
-                <option>30 Questions</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-slate-600 block mb-2">Difficulty Level</label>
-              <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:border-indigo-500 transition-all">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block px-1">Complexity</label>
+              <select className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-indigo-500 focus:bg-white/10 transition-all appearance-none cursor-pointer">
                 <option>Intermediate</option>
-                <option>Beginner</option>
-                <option>Advanced</option>
+                <option>Foundational</option>
+                <option>Mastery</option>
               </select>
             </div>
           </div>
 
-          <button className="w-full mt-8 py-4 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95">
-            <Sparkles className="w-5 h-5" />
-            Generate Quiz
+          <button className="w-full mt-10 py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 active:scale-95 group/gen">
+            <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+            Generate Assessment
           </button>
-        </div>
+        </motion.div>
       </div>
 
-      {/* Lists Grid */}
+      {/* Lists Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Materials */}
-        <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-lg font-bold text-slate-800">4. Recent Materials</h2>
-            <button className="text-indigo-600 text-sm font-semibold hover:underline">View all</button>
+        <motion.div variants={item} className="bg-white rounded-[2.5rem] border border-slate-200/60 p-10 shadow-sm">
+          <div className="flex items-center justify-between mb-10">
+            <div>
+              <h3 className="text-xl font-black text-slate-800">Recent Materials</h3>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Processed by AI</p>
+            </div>
+            <button className="px-4 py-2 bg-slate-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-50 transition-colors border border-slate-200/50">
+              View Collection
+            </button>
           </div>
-          <div className="space-y-4">
+
+          <div className="space-y-3">
             {recentMaterials.map((item, i) => (
-              <div key={i} className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl transition-all group cursor-pointer">
+              <div key={i} className="flex items-center justify-between p-4 hover:bg-slate-50/80 border border-transparent hover:border-slate-200/50 rounded-[1.5rem] transition-all group cursor-pointer">
                 <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 ${item.bgColor} ${item.iconColor} rounded-xl flex items-center justify-center`}>
+                  <div className={`w-14 h-14 ${item.bgColor} ${item.iconColor} rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500`}>
                     <FileText className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-800">{item.name}</p>
-                    <p className="text-xs text-slate-400">{item.date} • {item.pages}</p>
+                    <p className="text-sm font-black text-slate-800 leading-none mb-1.5">{item.name}</p>
+                    <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {item.date}</span>
+                      <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                      <span>{item.pages}</span>
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="px-3 py-1 bg-slate-100 text-slate-500 text-xs font-semibold rounded-full">{item.category}</span>
-                  <button className="p-2 text-slate-400 hover:text-slate-600 rounded-full">
+                  <span className="px-3 py-1.5 bg-slate-100 text-slate-500 text-[9px] font-black uppercase tracking-widest rounded-lg">{item.category}</span>
+                  <button className="p-2 text-slate-400 hover:text-slate-600 rounded-full transition-colors">
                     <MoreVertical className="w-5 h-5" />
                   </button>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Quick Start Quiz */}
-        <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-3xl p-8 shadow-xl text-white flex flex-col items-center justify-center text-center">
-          <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-6">
-            <Trophy className="w-10 h-10" />
+        <motion.div variants={item} className="bg-gradient-to-br from-indigo-600 to-violet-800 rounded-[2.5rem] p-12 shadow-2xl shadow-indigo-600/20 text-white flex flex-col items-center justify-center text-center relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none" />
+          <div className="absolute -top-24 -left-24 w-64 h-64 bg-white/10 rounded-full blur-[80px] group-hover:scale-125 transition-transform duration-1000" />
+
+          <div className="w-24 h-24 bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl relative z-10">
+            <Trophy className="w-12 h-12 text-white" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Ready for a challenge?</h2>
-          <p className="text-indigo-100 mb-8 max-w-xs">Take a quick quiz based on your recent materials and test your knowledge!</p>
-          <button className="bg-white text-indigo-600 px-8 py-4 rounded-xl font-bold flex items-center gap-2 hover:bg-indigo-50 transition-all group">
-            Start Quiz Now
-            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
+
+          <div className="relative z-10">
+            <h3 className="text-3xl font-black mb-4 leading-tight">Mastery Challenge</h3>
+            <p className="text-indigo-100 text-sm font-medium mb-10 max-w-xs mx-auto leading-relaxed opacity-80">
+              Ready to push your limits? Start a composite quiz based on your entire material library.
+            </p>
+            <button className="bg-white text-indigo-600 px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-indigo-50 transition-all shadow-2xl active:scale-95 group/btn">
+              Start Final Quiz
+              <ArrowUpRight className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+            </button>
+          </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   )
 }
