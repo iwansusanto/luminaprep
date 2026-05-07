@@ -27,11 +27,15 @@ app.use(
 // --- Auth Session Endpoints (BFF) ---
 app.post('/auth/login', (req, res) => {
   const userData = req.body;
-  // Set HttpOnly cookie. In production, use secure: true
+  
+  // Only use secure cookies if the connection is HTTPS
+  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  
+  // Set HttpOnly cookie
   res.cookie('luminaprep_session', JSON.stringify(userData), {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isSecure,
+    sameSite: 'lax', // Use 'lax' to ensure it works across simple local setups
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
   res.json({ success: true });

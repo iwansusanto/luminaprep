@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Check server session for HTTP cookie
     const checkSession = async () => {
       try {
-        const response = await fetch('/auth/session');
+        const response = await fetch('/auth/session', { credentials: 'include' });
         if (response.ok) {
           const data = await response.json();
           if (data.authenticated && data.user) {
@@ -48,6 +48,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(userData),
+        credentials: 'include',
       });
       setUser(userData);
     } catch (e) {
@@ -57,7 +58,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = async () => {
     try {
-      await fetch('/auth/logout', { method: 'POST' });
+      await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
       setUser(null);
     } catch (e) {
       console.error('Failed to clear session', e);
