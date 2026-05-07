@@ -124,8 +124,8 @@ function QuizzesPage() {
         if (quiz.status === 'Completed' || quiz.status === 'Ready') {
           return (
             <div className="flex items-center justify-end gap-2">
-              <Link
-                to={quiz.status === 'Completed' ? "/dashboard/quizzes/retake/$uuid" : "/dashboard/quizzes/continue/$uuid"}
+              <Link 
+                to={quiz.status === 'Completed' ? "/dashboard/quizzes/retake/$uuid" : "/dashboard/quizzes/start/$uuid"}
                 params={{ uuid: quiz.uuid }}
                 className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md shadow-indigo-100 active:scale-95"
               >

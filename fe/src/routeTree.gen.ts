@@ -18,6 +18,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardQuizzesRouteImport } from './routes/dashboard/quizzes'
 import { Route as DashboardMaterialsRouteImport } from './routes/dashboard/materials'
 import { Route as DashboardQuizzesIndexRouteImport } from './routes/dashboard/quizzes/index'
+import { Route as DashboardQuizzesStartUuidRouteImport } from './routes/dashboard/quizzes/start.$uuid'
 import { Route as DashboardQuizzesRetakeUuidRouteImport } from './routes/dashboard/quizzes/retake.$uuid'
 import { Route as DashboardQuizzesContinueUuidRouteImport } from './routes/dashboard/quizzes/continue.$uuid'
 
@@ -66,6 +67,12 @@ const DashboardQuizzesIndexRoute = DashboardQuizzesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardQuizzesRoute,
 } as any)
+const DashboardQuizzesStartUuidRoute =
+  DashboardQuizzesStartUuidRouteImport.update({
+    id: '/start/$uuid',
+    path: '/start/$uuid',
+    getParentRoute: () => DashboardQuizzesRoute,
+  } as any)
 const DashboardQuizzesRetakeUuidRoute =
   DashboardQuizzesRetakeUuidRouteImport.update({
     id: '/retake/$uuid',
@@ -91,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/quizzes/': typeof DashboardQuizzesIndexRoute
   '/dashboard/quizzes/continue/$uuid': typeof DashboardQuizzesContinueUuidRoute
   '/dashboard/quizzes/retake/$uuid': typeof DashboardQuizzesRetakeUuidRoute
+  '/dashboard/quizzes/start/$uuid': typeof DashboardQuizzesStartUuidRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -102,6 +110,7 @@ export interface FileRoutesByTo {
   '/dashboard/quizzes': typeof DashboardQuizzesIndexRoute
   '/dashboard/quizzes/continue/$uuid': typeof DashboardQuizzesContinueUuidRoute
   '/dashboard/quizzes/retake/$uuid': typeof DashboardQuizzesRetakeUuidRoute
+  '/dashboard/quizzes/start/$uuid': typeof DashboardQuizzesStartUuidRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -116,6 +125,7 @@ export interface FileRoutesById {
   '/dashboard/quizzes/': typeof DashboardQuizzesIndexRoute
   '/dashboard/quizzes/continue/$uuid': typeof DashboardQuizzesContinueUuidRoute
   '/dashboard/quizzes/retake/$uuid': typeof DashboardQuizzesRetakeUuidRoute
+  '/dashboard/quizzes/start/$uuid': typeof DashboardQuizzesStartUuidRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/dashboard/quizzes/'
     | '/dashboard/quizzes/continue/$uuid'
     | '/dashboard/quizzes/retake/$uuid'
+    | '/dashboard/quizzes/start/$uuid'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/dashboard/quizzes'
     | '/dashboard/quizzes/continue/$uuid'
     | '/dashboard/quizzes/retake/$uuid'
+    | '/dashboard/quizzes/start/$uuid'
   id:
     | '__root__'
     | '/'
@@ -155,6 +167,7 @@ export interface FileRouteTypes {
     | '/dashboard/quizzes/'
     | '/dashboard/quizzes/continue/$uuid'
     | '/dashboard/quizzes/retake/$uuid'
+    | '/dashboard/quizzes/start/$uuid'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -230,6 +243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardQuizzesIndexRouteImport
       parentRoute: typeof DashboardQuizzesRoute
     }
+    '/dashboard/quizzes/start/$uuid': {
+      id: '/dashboard/quizzes/start/$uuid'
+      path: '/start/$uuid'
+      fullPath: '/dashboard/quizzes/start/$uuid'
+      preLoaderRoute: typeof DashboardQuizzesStartUuidRouteImport
+      parentRoute: typeof DashboardQuizzesRoute
+    }
     '/dashboard/quizzes/retake/$uuid': {
       id: '/dashboard/quizzes/retake/$uuid'
       path: '/retake/$uuid'
@@ -251,12 +271,14 @@ interface DashboardQuizzesRouteChildren {
   DashboardQuizzesIndexRoute: typeof DashboardQuizzesIndexRoute
   DashboardQuizzesContinueUuidRoute: typeof DashboardQuizzesContinueUuidRoute
   DashboardQuizzesRetakeUuidRoute: typeof DashboardQuizzesRetakeUuidRoute
+  DashboardQuizzesStartUuidRoute: typeof DashboardQuizzesStartUuidRoute
 }
 
 const DashboardQuizzesRouteChildren: DashboardQuizzesRouteChildren = {
   DashboardQuizzesIndexRoute: DashboardQuizzesIndexRoute,
   DashboardQuizzesContinueUuidRoute: DashboardQuizzesContinueUuidRoute,
   DashboardQuizzesRetakeUuidRoute: DashboardQuizzesRetakeUuidRoute,
+  DashboardQuizzesStartUuidRoute: DashboardQuizzesStartUuidRoute,
 }
 
 const DashboardQuizzesRouteWithChildren =
