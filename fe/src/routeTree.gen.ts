@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardMaterialsRouteImport } from './routes/dashboard/materials'
 
 const TermOfServiceRoute = TermOfServiceRouteImport.update({
   id: '/term-of-service',
@@ -46,6 +47,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardMaterialsRoute = DashboardMaterialsRouteImport.update({
+  id: '/materials',
+  path: '/materials',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/term-of-service': typeof TermOfServiceRoute
+  '/dashboard/materials': typeof DashboardMaterialsRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/term-of-service': typeof TermOfServiceRoute
+  '/dashboard/materials': typeof DashboardMaterialsRoute
   '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/term-of-service': typeof TermOfServiceRoute
+  '/dashboard/materials': typeof DashboardMaterialsRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
@@ -79,9 +88,16 @@ export interface FileRouteTypes {
     | '/login'
     | '/privacy-policy'
     | '/term-of-service'
+    | '/dashboard/materials'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/privacy-policy' | '/term-of-service' | '/dashboard'
+  to:
+    | '/'
+    | '/login'
+    | '/privacy-policy'
+    | '/term-of-service'
+    | '/dashboard/materials'
+    | '/dashboard'
   id:
     | '__root__'
     | '/'
@@ -89,6 +105,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/privacy-policy'
     | '/term-of-service'
+    | '/dashboard/materials'
     | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
@@ -144,14 +161,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/materials': {
+      id: '/dashboard/materials'
+      path: '/materials'
+      fullPath: '/dashboard/materials'
+      preLoaderRoute: typeof DashboardMaterialsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
 interface DashboardRouteChildren {
+  DashboardMaterialsRoute: typeof DashboardMaterialsRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardMaterialsRoute: DashboardMaterialsRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 

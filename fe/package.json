@@ -14,10 +14,13 @@
     "serve": "node server.js"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.2.2",
     "@react-oauth/google": "^0.13.5",
     "@tanstack/react-router": "^1.169.2",
+    "@tanstack/react-table": "^8.21.3",
     "@tanstack/router-devtools": "^1.166.13",
     "@tanstack/router-plugin": "^1.167.34",
+    "antd": "^6.3.7",
     "clsx": "^2.1.1",
     "cookie-parser": "^1.4.7",
     "express": "^5.2.1",

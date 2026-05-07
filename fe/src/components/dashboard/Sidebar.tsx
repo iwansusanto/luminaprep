@@ -39,8 +39,7 @@ const Sidebar = () => {
           />
         </div>
         <div className="flex flex-col">
-          <span className="text-lg font-black text-slate-800 tracking-tight leading-none">Lumina</span>
-          <span className="text-xs font-bold text-indigo-500 uppercase tracking-widest mt-0.5">Prep</span>
+          <span className="text-lg font-black text-slate-800 tracking-tight leading-none">LuminaPrep</span>
         </div>
       </div>
 
