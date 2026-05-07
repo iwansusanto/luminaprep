@@ -1,4 +1,6 @@
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from '@tanstack/react-router';
+import { ComingSoonModal } from './ComingSoonModal';
 import {
   LayoutDashboard,
   BookOpen,
@@ -14,6 +16,7 @@ const Sidebar = () => {
   const auth = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   const handleLogout = async () => {
     await auth?.logout();
@@ -83,7 +86,10 @@ const Sidebar = () => {
             </div>
             <p className="text-xs font-bold text-white mb-1">Go Pro</p>
             <p className="text-[10px] text-slate-400 mb-3 leading-relaxed">Unlock unlimited AI quizzes and deep analytics.</p>
-            <button className="w-full py-2 bg-white text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-indigo-50 transition-colors">
+            <button
+              onClick={() => setIsUpgradeModalOpen(true)}
+              className="w-full py-2 bg-white text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-indigo-50 transition-colors"
+            >
               Upgrade
             </button>
           </div>
@@ -100,6 +106,10 @@ const Sidebar = () => {
           <span>Sign Out</span>
         </button>
       </div>
+      <ComingSoonModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+      />
     </aside>
   );
 };

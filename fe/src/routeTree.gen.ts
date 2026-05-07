@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardQuizzesRouteImport } from './routes/dashboard/quizzes'
 import { Route as DashboardMaterialsRouteImport } from './routes/dashboard/materials'
 
 const TermOfServiceRoute = TermOfServiceRouteImport.update({
@@ -47,6 +48,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardQuizzesRoute = DashboardQuizzesRouteImport.update({
+  id: '/quizzes',
+  path: '/quizzes',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardMaterialsRoute = DashboardMaterialsRouteImport.update({
   id: '/materials',
   path: '/materials',
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/term-of-service': typeof TermOfServiceRoute
   '/dashboard/materials': typeof DashboardMaterialsRoute
+  '/dashboard/quizzes': typeof DashboardQuizzesRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/term-of-service': typeof TermOfServiceRoute
   '/dashboard/materials': typeof DashboardMaterialsRoute
+  '/dashboard/quizzes': typeof DashboardQuizzesRoute
   '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/term-of-service': typeof TermOfServiceRoute
   '/dashboard/materials': typeof DashboardMaterialsRoute
+  '/dashboard/quizzes': typeof DashboardQuizzesRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/privacy-policy'
     | '/term-of-service'
     | '/dashboard/materials'
+    | '/dashboard/quizzes'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/privacy-policy'
     | '/term-of-service'
     | '/dashboard/materials'
+    | '/dashboard/quizzes'
     | '/dashboard'
   id:
     | '__root__'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/privacy-policy'
     | '/term-of-service'
     | '/dashboard/materials'
+    | '/dashboard/quizzes'
     | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
@@ -161,6 +173,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/quizzes': {
+      id: '/dashboard/quizzes'
+      path: '/quizzes'
+      fullPath: '/dashboard/quizzes'
+      preLoaderRoute: typeof DashboardQuizzesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/materials': {
       id: '/dashboard/materials'
       path: '/materials'
@@ -173,11 +192,13 @@ declare module '@tanstack/react-router' {
 
 interface DashboardRouteChildren {
   DashboardMaterialsRoute: typeof DashboardMaterialsRoute
+  DashboardQuizzesRoute: typeof DashboardQuizzesRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardMaterialsRoute: DashboardMaterialsRoute,
+  DashboardQuizzesRoute: DashboardQuizzesRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 
