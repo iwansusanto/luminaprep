@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useLocation } from '@tanstack/react-router';
 import { ComingSoonModal } from './ComingSoonModal';
 import {
