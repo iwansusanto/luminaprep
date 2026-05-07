@@ -8,7 +8,6 @@ import {
   Link as LinkIcon,
   Type,
   MoreVertical,
-  ChevronRight,
   Sparkles,
   ArrowUpRight,
   Clock,
