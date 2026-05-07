@@ -12,8 +12,8 @@ from alembic import context
 sys.path.append(str(Path(__file__).parent.parent))
 
 from app.core.config import settings
-from app.database import Base
-from app.models import User, Project, Material, Quiz, Question, UserAttempt, AgentMetrics  # Import all models
+from app.db.database import Base
+from app.models import User, Project  # Import all models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
