@@ -20,9 +20,9 @@ function DashboardIndexPage() {
   const auth = useAuth()
 
   const stats = [
-    { label: 'Materials', value: '8', sub: 'Total uploaded', icon: FileText, color: 'bg-indigo-100 text-indigo-600' },
-    { label: 'Quizzes Created', value: '15', sub: 'Total quizzes', icon: CheckCircle2, color: 'bg-emerald-100 text-emerald-600' },
-    { label: 'Average Score', value: '78%', sub: 'Across all quizzes', icon: Trophy, color: 'bg-amber-100 text-amber-600' },
+    { label: 'Materials', value: '0', sub: 'Total uploaded', icon: FileText, color: 'bg-indigo-100 text-indigo-600' },
+    { label: 'Quizzes Created', value: '0', sub: 'Total quizzes', icon: CheckCircle2, color: 'bg-emerald-100 text-emerald-600' },
+    { label: 'Average Score', value: '0%', sub: 'Across all quizzes', icon: Trophy, color: 'bg-amber-100 text-amber-600' },
   ]
 
   const recentMaterials = [

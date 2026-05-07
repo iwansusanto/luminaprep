@@ -28,9 +28,11 @@ const Sidebar = () => {
     <aside className="w-64 h-screen bg-[#F8FAFC] border-r border-slate-200 flex flex-col fixed left-0 top-0 z-40">
       {/* Brand */}
       <div className="p-6 flex items-center gap-3">
-        <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-indigo-200 shadow-lg">
-          <BrainCircuit className="text-white w-6 h-6" />
-        </div>
+        <img
+          src="/logo.jpg"
+          alt="LuminaPrep Logo"
+          className="w-10 h-10 rounded-xl shadow-indigo-200 shadow-lg object-cover"
+        />
         <span className="text-xl font-bold text-slate-800 tracking-tight">LuminaPrep</span>
       </div>
 
