@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useAuth } from '../../context/AuthContext'
 import {
   FileText,
@@ -225,10 +225,14 @@ function DashboardIndexPage() {
             <p className="text-indigo-100 text-sm font-medium mb-10 max-w-xs mx-auto leading-relaxed opacity-80">
               Ready to push your limits? Start a composite quiz based on your entire material library.
             </p>
-            <button className="bg-white text-indigo-600 px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-indigo-50 transition-all shadow-2xl active:scale-95 group/btn">
+            <Link
+              to="/dashboard/quizzes/start/$uuid"
+              params={{ uuid: 'final-challenge-mastery-uuid' }}
+              className="bg-white text-indigo-600 px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-indigo-50 transition-all shadow-2xl active:scale-95 group/btn"
+            >
               Start Final Quiz
               <ArrowUpRight className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-            </button>
+            </Link>
           </div>
         </motion.div>
       </div>

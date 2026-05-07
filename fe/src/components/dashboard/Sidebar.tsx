@@ -32,25 +32,28 @@ const Sidebar = () => {
   return (
     <aside className="w-64 h-[calc(100vh-2rem)] m-4 bg-white/80 backdrop-blur-xl border border-slate-200/60 flex flex-col fixed left-0 top-0 z-40 rounded-[2rem] shadow-2xl shadow-indigo-500/5">
       {/* Brand */}
-      <div className="p-8 flex items-center gap-4">
+      <Link to="/dashboard" className="p-8 flex items-center gap-4 group/logo cursor-pointer">
         <div className="relative group">
           <div className="absolute -inset-2 bg-indigo-500/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <img
             src="/logo.jpg"
             alt="LuminaPrep Logo"
-            className="w-10 h-10 rounded-2xl shadow-xl object-cover relative z-10 border border-white/50"
+            className="w-10 h-10 rounded-2xl shadow-xl object-cover relative z-10 border border-white/50 group-hover/logo:scale-105 transition-transform duration-500"
           />
         </div>
         <div className="flex flex-col">
-          <span className="text-lg font-black text-slate-800 tracking-tight leading-none">LuminaPrep</span>
+          <span className="text-lg font-black text-slate-800 tracking-tight leading-none group-hover/logo:text-indigo-600 transition-colors">LuminaPrep</span>
         </div>
-      </div>
+      </Link>
 
       {/* Navigation */}
       <nav className="flex-1 px-4 space-y-2 mt-4">
         <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-4 mb-4">Main Menu</div>
         {navItems.map((item) => {
-          const isActive = location.pathname === item.to;
+          const isActive = item.to === '/dashboard'
+            ? location.pathname === '/dashboard'
+            : location.pathname.startsWith(item.to);
+
           return (
             <Link
               key={item.name}
