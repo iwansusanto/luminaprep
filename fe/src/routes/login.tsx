@@ -1,13 +1,45 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate, redirect } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
+import { useGoogleLogin } from '@react-oauth/google'
+import { useAuth } from '../context/AuthContext'
 import bgImage from '@/assets/bg-abstract.png'
 
 export const Route = createFileRoute('/login')({
+  beforeLoad: ({ context }) => {
+    if (context.auth.isAuthenticated) {
+      throw redirect({ to: '/dashboard' })
+    }
+  },
   component: LoginPage,
 })
 
 function LoginPage() {
+  const auth = useAuth()
+  const navigate = useNavigate()
+
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        })
+        const userInfo = await res.json()
+        auth.login({
+          email: userInfo.email,
+          name: userInfo.name,
+          picture: userInfo.picture,
+        })
+        navigate({ to: '/dashboard' })
+      } catch (err) {
+        console.error('Failed to fetch user info', err)
+      }
+    },
+    onError: () => {
+      console.error('Google Login Failed')
+    }
+  })
+
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 flex flex-col relative font-sans overflow-hidden">
       {/* Background Image Layer */}
@@ -57,8 +89,8 @@ function LoginPage() {
               {/* Login Button */}
               <div className="w-full pt-4">
                 <button 
+                  onClick={() => handleGoogleLogin()}
                   className="w-full relative group flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-900 px-6 py-3.5 rounded-2xl font-medium transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] active:scale-[0.98]"
-                  onClick={() => console.log('Initiate Google OAuth flow')}
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
