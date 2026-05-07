@@ -14,6 +14,23 @@ The LuminaPrep frontend is a modern, high-performance React application built wi
 - **Framer Motion** (Animations)
 - **PM2** (Production Process Management)
 
+### Environment Variables
+
+Before running or building the frontend, you must configure the necessary environment variables, particularly for Google OAuth authentication.
+
+1. **For Local Development (Without Docker):**
+   Create a `.env` file inside the `fe` directory and add your Google Client ID:
+   ```env
+   VITE_GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
+   ```
+
+2. **For Docker Deployment:**
+   Create a `.env` file in the **root** directory (`luminarep`) with the same variable:
+   ```env
+   VITE_GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
+   ```
+   *Docker Compose is configured to automatically pick up the root `.env` file and pass this variable into the frontend build process.*
+
 ### How to Run: Without Docker (Local Development)
 
 If you want to run the frontend locally on your machine for development:
