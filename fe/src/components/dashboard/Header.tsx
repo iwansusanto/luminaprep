@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { Bell, Search, Plus, ChevronDown, Settings, Calendar } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
+import { Modal } from 'antd';
+import { MaterialUploader } from './MaterialUploader';
 
 const Header = () => {
   const auth = useAuth();
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
@@ -45,10 +49,29 @@ const Header = () => {
           </button>
         </div>
 
-        <button className="flex items-center gap-2 bg-slate-900 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-slate-900/10 active:scale-95 group">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 bg-slate-900 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-slate-900/10 active:scale-95 group"
+        >
           <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
           <span>New Material</span>
         </button>
+
+        <Modal
+          open={isModalOpen}
+          onCancel={() => setIsModalOpen(false)}
+          footer={null}
+          centered
+          width={800}
+          style={{ borderRadius: '2.5rem', overflow: 'hidden' }}
+          styles={{
+            mask: { backdropFilter: 'blur(8px)', backgroundColor: 'rgba(15, 23, 42, 0.4)' },
+            body: { padding: 0 }
+          }}
+          closeIcon={null}
+        >
+          <MaterialUploader className="bg-white p-10 relative overflow-hidden" />
+        </Modal>
 
         <div className="w-[1px] h-8 bg-slate-200 ml-2" />
 

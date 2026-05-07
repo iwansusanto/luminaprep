@@ -4,16 +4,15 @@ import {
   FileText,
   CheckCircle2,
   Trophy,
-  UploadCloud,
-  Link as LinkIcon,
-  Type,
   MoreVertical,
   Sparkles,
   ArrowUpRight,
   Clock,
-  LayoutGrid
+  Zap
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
+import { Segmented, Select, ConfigProvider, theme } from 'antd'
+import { MaterialUploader } from '../../components/dashboard/MaterialUploader'
 
 export const Route = createFileRoute('/dashboard/')({
   component: DashboardIndexPage,
@@ -107,100 +106,69 @@ function DashboardIndexPage() {
 
       {/* Main Grid: Upload & Generator */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <motion.div variants={item} className="lg:col-span-2 bg-white rounded-[2.5rem] border border-slate-200/60 p-10 shadow-sm relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
-            <UploadCloud className="w-64 h-64 text-indigo-600" />
-          </div>
+        <MaterialUploader variants={item} />
+
+        <motion.div variants={item} className="bg-slate-900 rounded-[2.5rem] p-10 shadow-2xl shadow-indigo-900/40 flex flex-col relative overflow-hidden group border border-white/5">
+          <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-indigo-500/20 rounded-full blur-[100px] pointer-events-none group-hover:scale-110 transition-transform duration-1000" />
+          <div className="absolute -top-20 -left-20 w-48 h-48 bg-purple-500/10 rounded-full blur-[80px] pointer-events-none" />
 
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <Zap className="w-6 h-6 text-white fill-current" />
+              </div>
               <div>
-                <h3 className="text-xl font-black text-slate-800">Add Study Material</h3>
-                <p className="text-sm text-slate-500 font-medium">Upload or paste content to start learning.</p>
-              </div>
-              <div className="flex gap-2">
-                <button className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-colors border border-slate-200/50">
-                  <LayoutGrid className="w-5 h-5 text-slate-600" />
-                </button>
+                <h3 className="text-xl font-black text-white leading-none mb-1">Quiz Architect</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">AI Generation Engine</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
-              <div className="md:col-span-3 border-2 border-dashed border-slate-200 rounded-[2rem] p-10 flex flex-col items-center justify-center gap-6 hover:border-indigo-400 hover:bg-indigo-50/20 transition-all cursor-pointer group/upload">
-                <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-[2rem] flex items-center justify-center group-hover/upload:scale-110 group-hover/upload:rotate-3 transition-all duration-500 shadow-indigo-100 shadow-xl">
-                  <UploadCloud className="w-10 h-10" />
-                </div>
-                <div className="text-center">
-                  <p className="font-black text-slate-800 text-lg">Drop files here</p>
-                  <p className="text-xs text-slate-400 mt-1 font-bold uppercase tracking-widest">or click to browse local storage</p>
-                </div>
-                <div className="flex gap-2">
-                  {['PDF', 'DOCX', 'PPT'].map(ext => (
-                    <span key={ext} className="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-1 rounded-md">{ext}</span>
-                  ))}
-                </div>
-              </div>
+            <p className="text-sm text-slate-400 font-medium mb-10 leading-relaxed max-w-[240px]">Design your assessment with precision using our latest model.</p>
 
-              <div className="md:col-span-2 flex flex-col gap-4">
-                <div className="p-1 bg-slate-100/50 rounded-2xl border border-slate-200/40">
-                  <button className="flex items-center gap-4 w-full p-4 bg-white hover:bg-slate-50 rounded-xl transition-all shadow-sm border border-slate-200/50 group/btn">
-                    <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center group-hover/btn:scale-110 transition-transform">
-                      <LinkIcon className="w-5 h-5" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-black text-slate-800">Add Link</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase">Websites / Articles</p>
-                    </div>
-                  </button>
+            <ConfigProvider
+              theme={{
+                algorithm: theme.darkAlgorithm,
+                token: {
+                  colorPrimary: '#4f46e5',
+                  borderRadius: 16,
+                  colorBgContainer: 'rgba(255, 255, 255, 0.05)',
+                  colorBorder: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            >
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block px-1">Number of Questions</label>
+                  <Segmented
+                    block
+                    size="large"
+                    options={[10, 20, 50, 100]}
+                    defaultValue={20}
+                    className="bg-white/5 p-1.5 rounded-[1.25rem] border border-white/5"
+                  />
                 </div>
-                <div className="p-1 bg-slate-100/50 rounded-2xl border border-slate-200/40">
-                  <button className="flex items-center gap-4 w-full p-4 bg-white hover:bg-slate-50 rounded-xl transition-all shadow-sm border border-slate-200/50 group/btn">
-                    <div className="w-10 h-10 bg-purple-50 text-purple-500 rounded-xl flex items-center justify-center group-hover/btn:scale-110 transition-transform">
-                      <Type className="w-5 h-5" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-black text-slate-800">Paste Text</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase">Manual Input</p>
-                    </div>
-                  </button>
+
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block px-1">Target Complexity</label>
+                  <Select
+                    defaultValue="intermediate"
+                    className="w-full h-14"
+                    popupClassName="rounded-2xl border border-white/10"
+                    options={[
+                      { value: 'foundational', label: 'Foundational' },
+                      { value: 'intermediate', label: 'Intermediate' },
+                      { value: 'mastery', label: 'Mastery' },
+                    ]}
+                  />
                 </div>
               </div>
-            </div>
+            </ConfigProvider>
+
+            <button className="w-full mt-10 py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/30 active:scale-95 group/gen">
+              <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+              Generate Assessment
+            </button>
           </div>
-        </motion.div>
-
-        <motion.div variants={item} className="bg-slate-900 rounded-[2.5rem] p-10 shadow-2xl shadow-indigo-900/20 flex flex-col relative overflow-hidden group">
-          <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
-
-          <h3 className="text-xl font-black text-white mb-2">Quiz Architect</h3>
-          <p className="text-sm text-slate-400 font-medium mb-10 leading-relaxed">Design your assessment with precision using AI.</p>
-
-          <div className="space-y-8 flex-1">
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block px-1">Questions</label>
-              <div className="grid grid-cols-3 gap-2">
-                {[10, 20, 50].map(val => (
-                  <button key={val} className={`py-3 rounded-2xl text-xs font-black transition-all ${val === 10 ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>
-                    {val}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block px-1">Complexity</label>
-              <select className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-indigo-500 focus:bg-white/10 transition-all appearance-none cursor-pointer">
-                <option>Intermediate</option>
-                <option>Foundational</option>
-                <option>Mastery</option>
-              </select>
-            </div>
-          </div>
-
-          <button className="w-full mt-10 py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 active:scale-95 group/gen">
-            <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-            Generate Assessment
-          </button>
         </motion.div>
       </div>
 
