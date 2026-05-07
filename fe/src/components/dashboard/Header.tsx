@@ -1,4 +1,3 @@
-import React from 'react';
 import { Bell, Search, Plus, ChevronDown, Settings, Calendar } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
@@ -20,13 +19,13 @@ const Header = () => {
             Dashboard
           </h1>
         </div>
-        
+
         <div className="h-8 w-[1px] bg-slate-200 hidden lg:block" />
 
         <div className="relative group hidden md:block">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Search materials, quizzes..."
             className="pl-12 pr-6 py-2.5 bg-slate-100/50 border-transparent focus:bg-white focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/20 rounded-2xl text-sm w-72 transition-all outline-none font-medium"
           />
@@ -54,7 +53,7 @@ const Header = () => {
         <div className="w-[1px] h-8 bg-slate-200 ml-2" />
 
         {/* User Profile */}
-        <motion.div 
+        <motion.div
           whileHover={{ x: 2 }}
           className="flex items-center gap-3 pl-2 group cursor-pointer"
         >
@@ -63,9 +62,9 @@ const Header = () => {
             <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter mt-1">Student Plan</p>
           </div>
           <div className="relative">
-            <img 
-              src={auth?.user?.picture || 'https://ui-avatars.com/api/?name=' + (auth?.user?.name || 'User')} 
-              alt="Profile" 
+            <img
+              src={auth?.user?.picture || 'https://ui-avatars.com/api/?name=' + (auth?.user?.name || 'User')}
+              alt="Profile"
               className="w-10 h-10 rounded-2xl border-2 border-white shadow-md group-hover:shadow-indigo-200 transition-all object-cover"
               referrerPolicy="no-referrer"
             />

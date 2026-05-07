@@ -1,13 +1,11 @@
-import React from 'react';
 import { Link, useNavigate, useLocation } from '@tanstack/react-router';
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  BrainCircuit, 
+import {
+  LayoutDashboard,
+  BookOpen,
+  BrainCircuit,
   LogOut,
   ChevronRight,
   Sparkles,
-  Command
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
@@ -34,10 +32,10 @@ const Sidebar = () => {
       <div className="p-8 flex items-center gap-4">
         <div className="relative group">
           <div className="absolute -inset-2 bg-indigo-500/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <img 
-            src="/logo.jpg" 
-            alt="LuminaPrep Logo" 
-            className="w-10 h-10 rounded-2xl shadow-xl object-cover relative z-10 border border-white/50" 
+          <img
+            src="/logo.jpg"
+            alt="LuminaPrep Logo"
+            className="w-10 h-10 rounded-2xl shadow-xl object-cover relative z-10 border border-white/50"
           />
         </div>
         <div className="flex flex-col">
@@ -55,11 +53,10 @@ const Sidebar = () => {
             <Link
               key={item.name}
               to={item.to}
-              className={`flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden ${
-                isActive 
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
+              className={`flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden ${isActive
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
                 : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3 relative z-10">
                 <item.icon className={`w-5 h-5 transition-transform duration-500 ${isActive ? 'scale-110' : 'group-hover:scale-110 group-hover:rotate-6'}`} />
@@ -67,7 +64,7 @@ const Sidebar = () => {
               </div>
               {!isActive && <ChevronRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />}
               {isActive && (
-                <motion.div 
+                <motion.div
                   layoutId="activeNav"
                   className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-violet-600 -z-10"
                 />
