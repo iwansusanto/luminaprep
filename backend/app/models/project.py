@@ -5,8 +5,10 @@ import uuid
 
 
 class ProjectBase(SQLModel):
-    name: str = Field(max_length=255)
+    title: str = Field(max_length=255)
     description: Optional[str] = Field(default=None)
+    vector_collection_name: Optional[str] = Field(default=None, max_length=255)
+    status: str = Field(default="active", max_length=50)
 
 
 class Project(ProjectBase, table=True):
@@ -18,6 +20,8 @@ class Project(ProjectBase, table=True):
     # Relationships
     user: Optional["User"] = Relationship(back_populates="projects")
     materials: List["Material"] = Relationship(back_populates="project")
+    quizzes: List["Quiz"] = Relationship(back_populates="project")
+    agent_metrics: List["AgentMetric"] = Relationship(back_populates="project")
 
 
 class ProjectCreate(ProjectBase):
@@ -32,5 +36,7 @@ class ProjectRead(ProjectBase):
 
 
 class ProjectUpdate(SQLModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
+    title: Optional[str] = Field(default=None, max_length=255)
+    description: Optional[str] = Field(default=None)
+    vector_collection_name: Optional[str] = Field(default=None, max_length=255)
+    status: Optional[str] = Field(default=None, max_length=50)

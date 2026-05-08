@@ -6,7 +6,8 @@ import uuid
 
 class UserBase(SQLModel):
     email: str = Field(index=True, unique=True, max_length=255)
-    password_hash: str = Field(max_length=255)
+    hashed_password: str = Field(max_length=255)
+    full_name: Optional[str] = Field(default=None, max_length=255)
 
 
 class User(UserBase, table=True):
@@ -16,16 +17,20 @@ class User(UserBase, table=True):
     
     # Relationships
     projects: List["Project"] = Relationship(back_populates="user")
+    materials: List["Material"] = Relationship(back_populates="user")
+    user_attempts: List["UserAttempt"] = Relationship(back_populates="user")
 
 
 class UserCreate(SQLModel):
     email: str = Field(max_length=255)
     password: str = Field(min_length=8)
+    full_name: Optional[str] = Field(default=None, max_length=255)
 
 
 class UserRead(SQLModel):
     id: str
     email: str
+    full_name: Optional[str]
     created_at: datetime
     updated_at: datetime
 
