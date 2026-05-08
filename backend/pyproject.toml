@@ -17,6 +17,10 @@ dependencies = [
     "python-multipart>=0.0.6",
     "pydantic-settings>=2.0.0",
     "python-dotenv>=1.0.0",
+    "openai>=2.35.1",
+    "chromadb>=1.5.9",
+    "chonkie>=1.6.5",
+    "scalar-fastapi>=1.8.2",
 ]
 requires-python = ">=3.11"
 readme = "README.md"
