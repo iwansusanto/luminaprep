@@ -25,6 +25,7 @@ dependencies = [
     "httpx>=0.25.0",
     "authlib>=1.2.0",
     "scalar-fastapi>=1.0.0",
+    "pypdf>=6.10.2",
 ]
 requires-python = ">=3.11"
 readme = "README.md"
