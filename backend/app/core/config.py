@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     upload_dir: str = "uploads"
     max_file_size: int = 10 * 1024 * 1024  # 10MB
 
+    # OpenAI
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+
     model_config = {"env_file": ".env", "case_sensitive": False}
 
 
