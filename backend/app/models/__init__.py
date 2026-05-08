@@ -8,10 +8,10 @@ from .agent_metric import AgentMetric
 
 __all__ = [
     "User",
-    "Project", 
+    "Project",
     "Material",
     "Quiz",
     "Question",
     "UserAttempt",
-    "AgentMetric"
+    "AgentMetric",
 ]

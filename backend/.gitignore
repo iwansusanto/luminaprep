@@ -253,3 +253,6 @@ logs/
 *.temp
 temp/
 tmp/
+
+# farisbay tasks note
+backend/task-faris.md
