@@ -1,5 +1,4 @@
 from chonkie import SemanticChunker
-from typing import List
 
 
 class DocumentChunker:
