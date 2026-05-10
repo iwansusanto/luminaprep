@@ -5,16 +5,19 @@
 ## Hari 1: Penyiapan Lingkungan AI & Vector DB (5 Mei)
 
 ### Tujuan
+
 Setup lingkungan Python dengan dependencies AI/LLM dan inisialisasi ChromaDB.
 
 ### Tugas Detail
 
 #### 1. Install Dependencies
+
 ```bash
 uv add openai chromadb chonkie pypdf python-dotenv
 ```
 
 **Dependencies yang dibutuhkan:**
+
 - `openai>=2.35.1` - LLM dan Embeddings
 - `chromadb>=1.5.9` - Vector database
 - `chonkie>=1.6.5` - Text chunking
@@ -22,48 +25,76 @@ uv add openai chromadb chonkie pypdf python-dotenv
 - `python-dotenv>=1.0.0` - Environment variables
 
 #### 2. Struktur Folder
+
 ```
 app/
 ├── vector_db/
 │   ├── __init__.py
 │   ├── client.py          # ChromaDB client initialization
+│   ├── embedding.py       # Custom embedding function
 │   └── collections.py     # Collection definitions
 ├── agents/
 │   ├── __init__.py
-│   └── base.py            # Base agent class
+│   ├── base.py            # Base agent class
+│   ├── chunking.py        # Text chunking
+│   └── parsers.py         # Document parsers
 ```
 
 #### 3. Inisialisasi ChromaDB Client
-**File: `app/vector_db/client.py`**
-```python
-from chromadb import Client
-from chromadb.config import Settings
 
-def get_chroma_client():
-    """Get ChromaDB client instance."""
-    return Client(Settings(
-        persist_directory="./chroma_db",
-        anonymized_telemetry=False
-    ))
+**File: `app/vector_db/client.py`**
+
+```python
+import chromadb
+
+chromadb_client = chromadb.PersistentClient(path="chroma_db")
 ```
 
-#### 4. Definisi Collections
-**File: `app/vector_db/collections.py`**
-```python
-from chromadb.api.types import Collection
+#### 4. Custom Embedding Function
 
-def get_materials_collection(client: Client) -> Collection:
-    """Get or create materials collection."""
-    return client.get_or_create_collection(
-        name="materials",
-        metadata={"hnsw:space": "cosine"}
+**File: `app/vector_db/embedding.py`**
+
+```python
+from app.utils.oa_client import oa_client
+from chromadb import EmbeddingFunction, Embeddings
+import numpy as np
+
+
+class CustomEmbeddingFunction(EmbeddingFunction):
+    def __init__(self, model: str = "perplexity/pplx-embed-v1-4b"):
+        self.client = oa_client
+        self.model = model
+
+    def __call__(self, input: list[str]) -> Embeddings:
+        response = self.client.embeddings.create(
+            model=self.model,
+            input=input,
+        )
+        return [np.array(item.embedding, dtype=np.float32) for item in response.data]
+```
+
+#### 5. Definisi Collections
+
+**File: `app/vector_db/collections.py`**
+
+```python
+from app.vector_db.client import chromadb_client
+from app.vector_db.embedding import CustomEmbeddingFunction
+
+
+def get_pdf_collection():
+    return chromadb_client.get_or_create_collection(
+        name="pdf_rag", embedding_function=CustomEmbeddingFunction()
     )
 ```
 
-#### 5. Fungsi `ingest_material` Signature
+#### 6. Fungsi `ingest_material` Signature
+
 **File: `app/agents/base.py`**
+
 ```python
 from typing import Literal
+
 
 async def ingest_material(
     material_id: str,
@@ -72,12 +103,12 @@ async def ingest_material(
 ) -> dict:
     """
     Ingest material into vector database.
-    
+
     Args:
         material_id: Unique identifier for the material
         file_path: Path to the file
         file_type: Type of file (pdf/txt)
-    
+
     Returns:
         dict with ingestion status and metadata
     """
@@ -85,156 +116,112 @@ async def ingest_material(
 ```
 
 ### Deliverables
+
 - [ ] Dependencies terinstall
 - [ ] ChromaDB client terinisialisasi
-- [ ] Collection `materials` tersedia
+- [ ] Custom embedding function configured
+- [ ] Collection `pdf_rag` tersedia
 - [ ] Fungsi `ingest_material` signature terdefinisi
 
 ---
 
 ## Hari 2: Arsitektur RAG & Embedding (6 Mei)
 
-### Tujuan
+### Tujuangit
+
 Implementasi embedding pipeline dan text chunking.
 
 ### Tugas Detail
 
-#### 1. OpenAI Embeddings Integration
-**File: `app/vector_db/embeddings.py`**
-```python
-from openai import OpenAI
-from app.core.config import settings
+#### 1. Text Chunking dengan Chonkie
 
-class OpenAIEmbeddings:
-    def __init__(self):
-        self.client = OpenAI(api_key=settings.openai_api_key)
-        self.model = "text-embedding-3-small"
-    
-    async def embed(self, text: str) -> list[float]:
-        """Generate embedding for single text."""
-        response = self.client.embeddings.create(
-            input=text,
-            model=self.model
-        )
-        return response.data[0].embedding
-    
-    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
-        """Generate embeddings for batch of texts."""
-        response = self.client.embeddings.create(
-            input=texts,
-            model=self.model
-        )
-        return [d.embedding for d in response.data]
-```
-
-#### 2. Text Chunking dengan Chonkie
 **File: `app/agents/chunking.py`**
+
 ```python
 from chonkie import SemanticChunker
 from typing import List
 
+
 class DocumentChunker:
-    def __init__(self, method: str = "semantic"):
-        if method == "semantic":
-            self.chunker = SemanticChunker(
-                embedding_model="text-embedding-3-small",
-                threshold=0.5
-            )
-        elif method == "recursive":
-            self.chunker = RecursiveChunker(
-                chunk_size=500,
-                chunk_overlap=50
-            )
-    
+    def __init__(self):
+        self.chunker = SemanticChunker(
+            embedding_model="text-embedding-3-small",
+            threshold=0.5
+        )
+
     def chunk(self, text: str) -> List[str]:
-        """Chunk text into smaller pieces."""
-        return self.chunker.chunk(text)
+        chunks = self.chunker.chunk(text)
+        return [c.text for c in chunks]
 ```
 
-#### 3. PDF Parser
+#### 2. PDF Parser
+
 **File: `app/agents/parsers.py`**
+
 ```python
 from pypdf import PdfReader
-from typing import List
 
-class PDFParser:
-    def parse(self, file_path: str) -> List[str]:
-        """Parse PDF and return list of pages."""
-        reader = PdfReader(file_path)
-        return [page.extract_text() for page in reader.pages if page.extract_text()]
+
+def pdf_parser(file_path: str) -> list[str]:
+    reader = PdfReader(file_path)
+    return [page.extract_text() for page in reader.pages if page.extract_text()]
+
+
+def txt_parser(file_path: str) -> list[str]:
+    with open(file_path, "r", encoding="utf-8") as file:
+        return [file.read()]
 ```
 
-#### 4. TXT Parser
-**File: `app/agents/parsers.py`**
-```python
-class TXTParser:
-    def parse(self, file_path: str) -> List[str]:
-        """Parse TXT and return content."""
-        with open(file_path, 'r', encoding='utf-8') as f:
-            return [f.read()]
-```
+#### 3. Embedding Pipeline (ChromaDB Auto-Embedding)
 
-#### 5. Embedding Pipeline
 **File: `app/agents/embedding_pipeline.py`**
-```python
-from typing import List, Tuple
 
-async def generate_embeddings_for_chunks(
-    chunks: List[str],
-    embeddings: OpenAIEmbeddings
-) -> Tuple[List[str], List[List[float]]]:
-    """Generate embeddings for text chunks."""
-    embeddings_list = await embeddings.embed_batch(chunks)
-    return chunks, embeddings_list
+```python
+from app.vector_db.collections import get_pdf_collection
+
+
+def store_chunks(chunks: list[str], material_id: str) -> None:
+    """
+    Store chunks in ChromaDB using auto-embedding.
+    ChromaDB will automatically generate embeddings via CustomEmbeddingFunction.
+    """
+    collection = get_pdf_collection()
+    collection.add(
+        documents=chunks,
+        ids=[f"{material_id}_chunk_{i}" for i in range(len(chunks))],
+        metadatas=[{"material_id": material_id, "chunk_index": i} for i in range(len(chunks))]
+    )
 ```
 
 ### Deliverables
-- [ ] OpenAI embeddings integration
+
 - [ ] Text chunking untuk PDF dan TXT
-- [ ] Embedding generation pipeline
-- [ ] Unit tests untuk chunking dan embedding
+- [ ] Document parsers (pdf_parser, txt_parser)
+- [ ] Chunk storage with auto-embedding
 
 ---
 
 ## Hari 3: Agen Ingestion (7 Mei)
 
 ### Tujuan
+
 Implementasi fungsi `ingest_material` lengkap.
 
 ### Tugas Detail
 
-#### 1. Material Model Extension
-**File: `app/models/material.py`**
-```python
-from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional
-from datetime import datetime
-import uuid
+#### 1. Ingestion Agent Implementation
 
-class MaterialBase(SQLModel):
-    title: str = Field(max_length=255)
-    description: Optional[str] = None
-    file_path: str = Field(max_length=500)
-    file_type: str = Field(max_length=10)
-    project_id: str = Field(foreign_key="project.id")
-
-class Material(MaterialBase, table=True):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    
-    project: Optional["Project"] = Relationship(back_populates="materials")
-```
-
-#### 2. Ingestion Agent Implementation
 **File: `app/agents/ingestion.py`**
+
 ```python
 from typing import Literal
-from app.vector_db.client import get_chroma_client
-from app.vector_db.collections import get_materials_collection
+from app.vector_db.collections import get_pdf_collection
 from app.agents.chunking import DocumentChunker
-from app.agents.embeddings import OpenAIEmbeddings
-from app.agents.parsers import PDFParser, TXTParser
-from app.db.database import SessionLocal
+from app.agents.parsers import pdf_parser, txt_parser
+from app.agents.embedding_pipeline import store_chunks
+from app.database import SessionLocal
+from app.models.material import Material
+
 
 async def ingest_material(
     material_id: str,
@@ -243,54 +230,36 @@ async def ingest_material(
 ) -> dict:
     """
     Ingest material into vector database.
-    
+
     1. Parse document
     2. Chunk text
-    3. Generate embeddings
-    4. Store in ChromaDB
-    5. Update database
+    3. Store in ChromaDB (embeddings auto-generated)
+    4. Update database
     """
     # Parse document
     if file_type == "pdf":
-        parser = PDFParser()
+        pages = pdf_parser(file_path)
     else:
-        parser = TXTParser()
-    
-    pages = parser.parse(file_path)
-    
+        pages = txt_parser(file_path)
+
     # Chunk text
     chunker = DocumentChunker()
     all_chunks = []
     for page in pages:
         chunks = chunker.chunk(page)
         all_chunks.extend(chunks)
-    
-    # Generate embeddings
-    embeddings = OpenAIEmbeddings()
-    _, embeddings_list = await generate_embeddings_for_chunks(
-        all_chunks, embeddings
-    )
-    
-    # Store in ChromaDB
-    client = get_chroma_client()
-    collection = get_materials_collection(client)
-    
-    collection.add(
-        ids=[f"{material_id}_chunk_{i}" for i in range(len(all_chunks))],
-        documents=all_chunks,
-        embeddings=embeddings_list,
-        metadatas=[{"material_id": material_id, "chunk_index": i} 
-                   for i in range(len(all_chunks))]
-    )
-    
-    # Update database
+
+    # Store in ChromaDB (auto-embedding via CustomEmbeddingFunction)
+    store_chunks(all_chunks, material_id)
+
+    # Update material status in database
     db = SessionLocal()
     material = db.query(Material).filter(Material.id == material_id).first()
     if material:
-        material.file_path = file_path
-        material.file_type = file_type
+        material.status = "processed"
         db.commit()
-    
+    db.close()
+
     return {
         "status": "success",
         "material_id": material_id,
@@ -299,10 +268,12 @@ async def ingest_material(
     }
 ```
 
-#### 3. Error Handling
+#### 2. Error Handling
+
 ```python
 class IngestionError(Exception):
     pass
+
 
 async def ingest_material_with_retry(
     material_id: str,
@@ -321,31 +292,39 @@ async def ingest_material_with_retry(
 ```
 
 ### Deliverables
+
 - [ ] Fungsi `ingest_material` lengkap
 - [ ] Error handling dan retry logic
 - [ ] Integration dengan MySQL
-- [ ] Unit tests
 
 ---
 
 ## Hari 4: Agen Sintesis (Ringkasan & Ekstraksi) (8 Mei)
 
 ### Tujuan
+
 Implementasi `generate_summary` dengan streaming support.
 
 ### Tugas Detail
 
 #### 1. Summary Agent
+
 **File: `app/agents/summarization.py`**
+
 ```python
 from typing import AsyncGenerator
 from openai import AsyncOpenAI
 from app.core.config import settings
+from app.vector_db.collections import get_pdf_collection
+
 
 class SummaryAgent:
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-    
+        self.client = AsyncOpenAI(
+            api_key=settings.OPENAI_API_KEY,
+            base_url=settings.OPENAI_BASE_URL
+        )
+
     async def generate_summary(
         self,
         material_id: str,
@@ -353,26 +332,23 @@ class SummaryAgent:
     ) -> AsyncGenerator[str, None]:
         """
         Generate summary using RAG.
-        
+
         1. Retrieve relevant chunks from ChromaDB
         2. Send to LLM for summarization
         3. Stream response
         """
-        # Retrieve chunks
-        client = get_chroma_client()
-        collection = get_materials_collection(client)
-        
+        collection = get_pdf_collection()
+
         results = collection.query(
             query_texts=[f"Summarize this material: {material_id}"],
-            n_results=5
+            n_results=5,
+            where={"material_id": material_id}
         )
-        
-        # Build context
-        context = "\n\n".join(results['documents'][0])
-        
-        # Generate summary with streaming
+
+        context = "\n\n".join(results['documents'][0]) if results['documents'] else ""
+
         stream = await self.client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that summarizes documents."},
                 {"role": "user", "content": f"Summarize the following text:\n\n{context}"}
@@ -380,19 +356,23 @@ class SummaryAgent:
             stream=True,
             max_tokens=max_tokens
         )
-        
+
         async for chunk in stream:
             if chunk.choices[0].delta.content:
                 yield chunk.choices[0].delta.content
 ```
 
 #### 2. Streaming Endpoint
+
 **File: `app/api/v1/agents.py`**
+
 ```python
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
 router = APIRouter()
+summary_agent = SummaryAgent()
+
 
 @router.get("/materials/{material_id}/summary")
 async def get_summary(material_id: str):
@@ -400,31 +380,38 @@ async def get_summary(material_id: str):
     async def generate():
         async for token in summary_agent.generate_summary(material_id):
             yield token
-    
+
     return StreamingResponse(generate(), media_type="text/event-stream")
 ```
 
 ### Deliverables
+
 - [ ] Fungsi `generate_summary` dengan streaming
 - [ ] RAG integration untuk context retrieval
 - [ ] Streaming endpoint
-- [ ] Unit tests
 
 ---
 
 ## Hari 5: Agen Kuis - Rekayasa Prompt (9 Mei)
 
 ### Tujuan
+
 Implementasi `generate_mcq_quiz` dengan prompt engineering.
 
 ### Tugas Detail
 
 #### 1. Quiz Agent dengan Prompt Engineering
+
 **File: `app/agents/quiz.py`**
+
 ```python
 from typing import List, Literal
 from pydantic import BaseModel
+from openai import AsyncOpenAI
+from app.core.config import settings
+from app.vector_db.collections import get_pdf_collection
 import json
+
 
 class MCQQuestion(BaseModel):
     question: str
@@ -433,10 +420,14 @@ class MCQQuestion(BaseModel):
     explanation: str
     citation: str
 
+
 class QuizAgent:
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-    
+        self.client = AsyncOpenAI(
+            api_key=settings.OPENAI_API_KEY,
+            base_url=settings.OPENAI_BASE_URL
+        )
+
     def _build_quiz_prompt(
         self,
         material_context: str,
@@ -470,7 +461,7 @@ Requirements:
 - Explanations should be clear and concise
 - Citations should reference specific parts of the material
 """
-    
+
     async def generate_mcq_quiz(
         self,
         quiz_id: str,
@@ -479,35 +470,34 @@ Requirements:
         num_questions: int
     ) -> List[MCQQuestion]:
         """Generate MCQ quiz using RAG and LLM."""
-        # Retrieve relevant chunks
-        client = get_chroma_client()
-        collection = get_materials_collection(client)
-        
+        collection = get_pdf_collection()
+
         results = collection.query(
             query_texts=[f"Generate quiz questions about {material_id}"],
-            n_results=10
+            n_results=10,
+            where={"material_id": material_id}
         )
-        
-        context = "\n\n".join(results['documents'][0])
-        
-        # Generate quiz
+
+        context = "\n\n".join(results['documents'][0]) if results['documents'] else ""
+
         prompt = self._build_quiz_prompt(context, difficulty, num_questions)
-        
+
         response = await self.client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are an expert quiz creator."},
                 {"role": "user", "content": prompt}
             ],
             response_format={"type": "json_object"}
         )
-        
+
         quiz_data = json.loads(response.choices[0].message.content)
-        
+
         return [MCQQuestion(**q) for q in quiz_data['questions']]
 ```
 
 #### 2. Difficulty Prompt Engineering
+
 ```python
 def _get_difficulty_instructions(self, difficulty: str) -> str:
     """Get difficulty-specific instructions."""
@@ -520,21 +510,23 @@ def _get_difficulty_instructions(self, difficulty: str) -> str:
 ```
 
 ### Deliverables
+
 - [ ] Fungsi `generate_mcq_quiz` lengkap
 - [ ] Prompt engineering untuk MCQ
 - [ ] JSON output validation
-- [ ] Unit tests
 
 ---
 
 ## Hari 6: Logika Kuis Adaptif & Persistensi (10 Mei)
 
 ### Tujuan
+
 Implementasi adaptive difficulty dan database persistence.
 
 ### Tugas Detail
 
 #### 1. Adaptive Difficulty Logic
+
 ```python
 async def generate_adaptive_quiz(
     quiz_id: str,
@@ -544,8 +536,7 @@ async def generate_adaptive_quiz(
     user_level: Optional[int] = None  # 1-10 scale
 ) -> List[MCQQuestion]:
     """Generate adaptive quiz based on user level."""
-    
-    # Adjust difficulty based on user level
+
     if user_level:
         if user_level <= 3:
             actual_difficulty = "easy"
@@ -555,54 +546,63 @@ async def generate_adaptive_quiz(
             actual_difficulty = "hard"
     else:
         actual_difficulty = difficulty
-    
-    # Retrieve chunks specific to difficulty
+
     chunk_filter = {
         "easy": "basic concepts",
         "medium": "core concepts",
         "hard": "advanced concepts"
     }
-    
+
+    collection = get_pdf_collection()
     results = collection.query(
         query_texts=[f"{chunk_filter[actual_difficulty]} about {material_id}"],
-        n_results=10
+        n_results=10,
+        where={"material_id": material_id}
     )
-    
-    # Generate quiz with adjusted context
+
     return await self.generate_mcq_quiz(
         quiz_id, material_id, actual_difficulty, num_questions
     )
 ```
 
 #### 2. Database Persistence
+
 **File: `app/models/quiz.py`**
+
 ```python
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional, List
+from datetime import datetime
 import uuid
+
 
 class Question(SQLModel, table=True):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    quiz_id: str = Field(foreign_key="quiz.id")
+    quiz_id: str = Field(foreign_key="quizzes.id")
     question_text: str
     options: str = Field(sa_column_kwargs={"type_": "JSON"})
     correct_answer: str
     explanation: str
     citation: str
     difficulty: str
-    
+
     quiz: Optional["Quiz"] = Relationship(back_populates="questions")
+
 
 class Quiz(SQLModel, table=True):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    material_id: str = Field(foreign_key="material.id")
+    material_id: str = Field(foreign_key="materials.id")
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    
+
     questions: List["Question"] = Relationship(back_populates="quiz")
 ```
 
 #### 3. Save Quiz to Database
+
 ```python
+from app.database import SessionLocal
+
+
 async def save_quiz_to_db(
     quiz: List[MCQQuestion],
     quiz_id: str,
@@ -610,14 +610,14 @@ async def save_quiz_to_db(
 ) -> str:
     """Save generated quiz to MySQL."""
     db = SessionLocal()
-    
+
     db_quiz = Quiz(
         id=quiz_id,
         material_id=material_id
     )
     db.add(db_quiz)
     db.commit()
-    
+
     for q in quiz:
         db_question = Question(
             quiz_id=quiz_id,
@@ -626,39 +626,52 @@ async def save_quiz_to_db(
             correct_answer=q.correct_answer,
             explanation=q.explanation,
             citation=q.citation,
-            difficulty="medium"  # Store difficulty
+            difficulty="medium"
         )
         db.add(db_question)
-    
+
     db.commit()
-    
+    db.close()
+
     return quiz_id
 ```
 
 ### Deliverables
+
 - [ ] Adaptive difficulty logic
 - [ ] Database models untuk Quiz dan Question
 - [ ] Persistence logic
-- [ ] Unit tests
 
 ---
 
 ## Hari 7: Agen Umpan Balik Streaming (11 Mei)
 
 ### Tujuan
+
 Implementasi `generate_feedback` dengan streaming.
 
 ### Tugas Detail
 
 #### 1. Feedback Agent
+
 **File: `app/agents/feedback.py`**
+
 ```python
 from typing import AsyncGenerator
+from openai import AsyncOpenAI
+from app.core.config import settings
+from app.vector_db.collections import get_pdf_collection
+from app.database import SessionLocal
+from app.models.question import Question
+
 
 class FeedbackAgent:
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-    
+        self.client = AsyncOpenAI(
+            api_key=settings.OPENAI_API_KEY,
+            base_url=settings.OPENAI_BASE_URL
+        )
+
     async def generate_feedback(
         self,
         session_id: str,
@@ -668,29 +681,26 @@ class FeedbackAgent:
     ) -> AsyncGenerator[str, None]:
         """
         Generate detailed feedback with streaming.
-        
+
         1. Retrieve question and material context
         2. Generate feedback explaining correctness
         3. Stream response
         """
-        # Retrieve question context
         db = SessionLocal()
         question = db.query(Question).filter(Question.id == question_id).first()
-        
-        # Retrieve material chunks
-        client = get_chroma_client()
-        collection = get_materials_collection(client)
-        
+        db.close()
+
+        collection = get_pdf_collection()
         results = collection.query(
             query_texts=[f"Explain: {question.question_text}"],
-            n_results=3
+            n_results=3,
+            where={"material_id": question.quiz.material_id if hasattr(question, 'quiz') else None}
         )
-        
-        context = "\n\n".join(results['documents'][0])
-        
-        # Build feedback prompt
+
+        context = "\n\n".join(results['documents'][0]) if results['documents'] else ""
+
         correctness = "correct" if is_correct else "incorrect"
-        
+
         prompt = f"""You are a helpful tutor. Provide detailed feedback for a {correctness} answer.
 
 Question: {question.question_text}
@@ -709,23 +719,23 @@ Provide:
 
 Format as markdown with clear sections.
 """
-        
-        # Stream feedback
+
         stream = await self.client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are an expert tutor."},
                 {"role": "user", "content": prompt}
             ],
             stream=True
         )
-        
+
         async for chunk in stream:
             if chunk.choices[0].delta.content:
                 yield chunk.choices[0].delta.content
 ```
 
 #### 2. Streaming Endpoint
+
 ```python
 @router.get("/feedback/{session_id}/{question_id}")
 async def get_feedback(
@@ -740,32 +750,37 @@ async def get_feedback(
             session_id, question_id, selected_answer, is_correct
         ):
             yield token
-    
+
     return StreamingResponse(generate(), media_type="text/event-stream")
 ```
 
 ### Deliverables
+
 - [ ] Fungsi `generate_feedback` dengan streaming
 - [ ] RAG integration untuk context
 - [ ] Streaming endpoint
-- [ ] Unit tests
 
 ---
 
 ## Hari 8: Orkes Agen & Penanganan Error (12 Mei)
 
 ### Tujuan
+
 Integrasi semua agen dan implementasi error handling.
 
 ### Tugas Detail
 
 #### 1. Agent Orchestrator
+
 **File: `app/agents/orchestrator.py`**
+
 ```python
 from app.agents.ingestion import ingest_material
 from app.agents.summarization import SummaryAgent
 from app.agents.quiz import QuizAgent
 from app.agents.feedback import FeedbackAgent
+from typing import List
+
 
 class AgentOrchestrator:
     def __init__(self):
@@ -773,7 +788,7 @@ class AgentOrchestrator:
         self.summary_agent = SummaryAgent()
         self.quiz_agent = QuizAgent()
         self.feedback_agent = FeedbackAgent()
-    
+
     async def process_material(
         self,
         material_id: str,
@@ -781,11 +796,9 @@ class AgentOrchestrator:
         file_type: str
     ) -> dict:
         """Process material through full pipeline."""
-        # Ingest
         ingestion_result = await ingest_material(material_id, file_path, file_type)
-        
         return ingestion_result
-    
+
     async def generate_material_summary(
         self,
         material_id: str
@@ -795,7 +808,7 @@ class AgentOrchestrator:
         async for token in self.summary_agent.generate_summary(material_id):
             summary += token
         return summary
-    
+
     async def generate_material_quiz(
         self,
         quiz_id: str,
@@ -810,9 +823,8 @@ class AgentOrchestrator:
 ```
 
 #### 2. Error Handling
-```python
-from tenacity import retry, stop_after_attempt, wait_exponential
 
+```python
 class AgentError(Exception):
     pass
 
@@ -824,187 +836,116 @@ class VectorDBError(AgentError):
 
 class IngestionError(AgentError):
     pass
-
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
-async def safe_llm_call(func, *args, **kwargs):
-    """Safe LLM call with retry."""
-    try:
-        return await func(*args, **kwargs)
-    except Exception as e:
-        raise LLMError(f"LLM call failed: {str(e)}")
-
-async def safe_vector_db_call(func, *args, **kwargs):
-    """Safe Vector DB call with retry."""
-    try:
-        return await func(*args, **kwargs)
-    except Exception as e:
-        raise VectorDBError(f"Vector DB operation failed: {str(e)}")
-```
-
-#### 3. Circuit Breaker
-```python
-from app.agents.circuit_breaker import CircuitBreaker
-
-class AgentCircuitBreaker:
-    def __init__(self):
-        self.llm_breaker = CircuitBreaker(
-            failure_threshold=5,
-            recovery_timeout=30
-        )
-        self.vdb_breaker = CircuitBreaker(
-            failure_threshold=3,
-            recovery_timeout=10
-        )
 ```
 
 ### Deliverables
+
 - [ ] Agent orchestrator
 - [ ] Error handling untuk semua agen
-- [ ] Retry logic
-- [ ] Circuit breaker implementation
-- [ ] Integration tests
 
 ---
 
 ## Hari 9: Penyempurnaan RAG (13 Mei)
 
 ### Tujuan
+
 Implementasi advanced RAG techniques.
 
 ### Tugas Detail
 
 #### 1. Hybrid Search
+
 ```python
-async def hybrid_search(
+def hybrid_search(
     query: str,
     material_id: str,
     keyword_weight: float = 0.3,
     vector_weight: float = 0.7
 ) -> List[str]:
     """Combine keyword and vector search."""
-    # Vector search
+    collection = get_pdf_collection()
+
     vector_results = collection.query(
         query_texts=[query],
         n_results=10,
         where={"material_id": material_id}
     )
-    
-    # Keyword search (simple implementation)
+
     keyword_results = collection.get(
         where={"material_id": material_id}
     )
-    
-    # RRF (Reciprocal Rank Fusion)
+
     combined_scores = {}
     for i, doc in enumerate(vector_results['documents'][0]):
         combined_scores[doc] = combined_scores.get(doc, 0) + vector_weight / (i + 60)
-    
+
     for i, doc in enumerate(keyword_results['documents']):
         combined_scores[doc] = combined_scores.get(doc, 0) + keyword_weight / (i + 60)
-    
-    # Sort and return top results
+
     sorted_docs = sorted(combined_scores.items(), key=lambda x: x[1], reverse=True)
     return [doc for doc, score in sorted_docs[:5]]
 ```
 
 #### 2. Re-ranking
+
 ```python
-async def rerank_chunks(
-    query: str,
-    chunks: List[str],
-    model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-) -> List[str]:
+from app.vector_db.embedding import CustomEmbeddingFunction
+import numpy as np
+
+
+def rerank_chunks(query: str, chunks: List[str]) -> List[str]:
     """Re-rank chunks based on query relevance."""
-    # Use cross-encoder for re-ranking
-    # For now, use simple similarity scoring
-    embeddings = OpenAIEmbeddings()
-    query_embedding = await embeddings.embed(query)
-    
-    # Score each chunk
+    embedding_fn = CustomEmbeddingFunction()
+
+    query_embedding = embedding_fn([query])[0]
+    chunk_embeddings = embedding_fn(chunks)
+
     scored_chunks = []
-    for chunk in chunks:
-        chunk_embedding = await embeddings.embed(chunk)
-        score = cosine_similarity(query_embedding, chunk_embedding)
+    for chunk, embedding in zip(chunks, chunk_embeddings):
+        score = np.dot(query_embedding, embedding) / (
+            np.linalg.norm(query_embedding) * np.linalg.norm(embedding)
+        )
         scored_chunks.append((chunk, score))
-    
-    # Sort by score
+
     scored_chunks.sort(key=lambda x: x[1], reverse=True)
-    
     return [chunk for chunk, score in scored_chunks]
 ```
 
-#### 3. Chunking Strategy Evaluation
-```python
-from chonkie import SemanticChunker, RecursiveChunker
-
-class ChunkingEvaluator:
-    def __init__(self):
-        self.semantic_chunker = SemanticChunker(
-            embedding_model="text-embedding-3-small",
-            threshold=0.5
-        )
-        self.recursive_chunker = RecursiveChunker(
-            chunk_size=500,
-            chunk_overlap=50
-        )
-        self.fixed_chunker = FixedChunker(chunk_size=500)
-    
-    def evaluate_chunking(self, text: str) -> dict:
-        """Evaluate different chunking strategies."""
-        semantic_chunks = self.semantic_chunker.chunk(text)
-        recursive_chunks = self.recursive_chunker.chunk(text)
-        fixed_chunks = self.fixed_chunker.chunk(text)
-        
-        return {
-            "semantic": {
-                "count": len(semantic_chunks),
-                "avg_length": sum(len(c) for c in semantic_chunks) / len(semantic_chunks)
-            },
-            "recursive": {
-                "count": len(recursive_chunks),
-                "avg_length": sum(len(c) for c in recursive_chunks) / len(recursive_chunks)
-            },
-            "fixed": {
-                "count": len(fixed_chunks),
-                "avg_length": sum(len(c) for c in fixed_chunks) / len(fixed_chunks)
-            }
-        }
-```
-
 ### Deliverables
+
 - [ ] Hybrid search implementation
 - [ ] Re-ranking logic
-- [ ] Chunking strategy evaluation
-- [ ] Performance benchmarks
 
 ---
 
 ## Hari 10: Penyesuaian Prompt & Mitigasi Halusinasi (14 Mei)
 
 ### Tujuan
+
 Optimize prompts dan implementasi guardrails.
 
 ### Tugas Detail
 
 #### 1. Prompt Optimization
+
 ```python
 class PromptOptimizer:
     def __init__(self):
         self.system_prompts = {
-            "summary": """You are an expert academic summarizer. 
+            "summary": """You are an expert academic summarizer.
             Follow these rules:
             1. Use clear, academic language
             2. Maintain factual accuracy
             3. Include key concepts and definitions
             4. Keep summary concise (max 300 words)""",
-            
+
             "quiz": """You are an expert exam creator.
             Follow these rules:
             1. Questions must be unambiguous
             2. Distractors must be plausible
             3. Explanations must cite specific material
             4. All questions must be answerable from given context""",
-            
+
             "feedback": """You are an expert tutor.
             Follow these rules:
             1. Be constructive and encouraging
@@ -1012,7 +953,7 @@ class PromptOptimizer:
             3. Provide additional context
             4. Reference specific material sections"""
         }
-    
+
     def optimize_prompt(self, task: str, user_prompt: str) -> str:
         """Optimize prompt for specific task."""
         system_prompt = self.system_prompts[task]
@@ -1020,6 +961,7 @@ class PromptOptimizer:
 ```
 
 #### 2. Guardrails Implementation
+
 ```python
 class Guardrails:
     def __init__(self):
@@ -1029,204 +971,40 @@ class Guardrails:
             "summary": ["summary", "key_points"],
             "feedback": ["feedback", "explanation"]
         }
-    
+
     def validate_quiz_output(self, output: dict) -> bool:
         """Validate quiz output structure."""
         if "questions" not in output:
             return False
-        
+
         for question in output["questions"]:
             for field in self.required_fields["quiz"]:
                 if field not in question:
                     return False
-            
-            # Validate options count
+
             if len(question["options"]) != 4:
                 return False
-            
-            # Validate correct answer is in options
+
             if question["correct_answer"] not in question["options"]:
                 return False
-        
+
         return True
-    
-    def validate_output(self, task: str, output: dict) -> tuple[bool, str]:
-        """Validate output for given task."""
-        if task not in self.required_fields:
-            return True, ""
-        
-        for field in self.required_fields[task]:
-            if field not in output:
-                return False, f"Missing required field: {field}"
-        
-        return True, ""
-```
-
-#### 3. Factual Accuracy Check
-```python
-async def check_factual_accuracy(
-    generated_text: str,
-    source_material: str
-) -> dict:
-    """Check if generated text is factually consistent with source."""
-    prompt = f"""Check if the following text is factually consistent with the source material.
-
-Source Material:
-{source_material}
-
-Generated Text:
-{generated_text}
-
-Respond with JSON:
-{{
-    "is_consistent": boolean,
-    "discrepancies": ["list of discrepancies"],
-    "confidence": 0.0-1.0
-}}"""
-
-    response = await client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are a fact-checking assistant."},
-            {"role": "user", "content": prompt}
-        ],
-        response_format={"type": "json_object"}
-    )
-    
-    return json.loads(response.choices[0].message.content)
 ```
 
 ### Deliverables
+
 - [ ] Optimized system prompts
 - [ ] Guardrails implementation
 - [ ] Output validation
-- [ ] Factual accuracy checking
-
----
-
-## Hari 11: Pengujian Agen Akhir (15 Mei)
-
-### Tujuan
-Comprehensive testing semua agen.
-
-### Tugas Detail
-
-#### 1. Unit Tests
-```python
-# tests/test_agents.py
-import pytest
-
-@pytest.mark.asyncio
-async def test_ingest_material_pdf():
-    """Test PDF ingestion pipeline."""
-    result = await ingest_material(
-        material_id="test-123",
-        file_path="tests/fixtures/test.pdf",
-        file_type="pdf"
-    )
-    assert result["status"] == "success"
-    assert result["chunks_count"] > 0
-
-@pytest.mark.asyncio
-async def test_generate_summary():
-    """Test summary generation."""
-    summary = ""
-    async for token in summary_agent.generate_summary("test-123"):
-        summary += token
-    assert len(summary) > 0
-
-@pytest.mark.asyncio
-async def test_generate_quiz():
-    """Test quiz generation."""
-    quiz = await quiz_agent.generate_mcq_quiz(
-        quiz_id="quiz-123",
-        material_id="test-123",
-        difficulty="medium",
-        num_questions=3
-    )
-    assert len(quiz) == 3
-    for question in quiz:
-        assert len(question.options) == 4
-        assert question.correct_answer in question.options
-```
-
-#### 2. Integration Tests
-```python
-# tests/test_integration.py
-@pytest.mark.asyncio
-async def test_full_pipeline():
-    """Test complete ingestion to quiz pipeline."""
-    # Ingest
-    result = await ingest_material("full-test", "tests/fixtures/test.pdf", "pdf")
-    assert result["status"] == "success"
-    
-    # Generate summary
-    summary = ""
-    async for token in summary_agent.generate_summary("full-test"):
-        summary += token
-    assert len(summary) > 0
-    
-    # Generate quiz
-    quiz = await quiz_agent.generate_mcq_quiz(
-        "quiz-full-test", "full-test", "medium", 2
-    )
-    assert len(quiz) == 2
-```
-
-#### 3. Performance Tests
-```python
-# tests/test_performance.py
-import time
-
-@pytest.mark.performance
-@pytest.mark.asyncio
-async def test_ingestion_performance():
-    """Test ingestion performance."""
-    start = time.time()
-    result = await ingest_material("perf-test", "tests/fixtures/large.pdf", "pdf")
-    elapsed = time.time() - start
-    
-    assert elapsed < 60  # Should complete in under 60 seconds
-    assert result["status"] == "success"
-```
-
-#### 4. Load Tests
-```python
-# tests/test_load.py
-import asyncio
-
-@pytest.mark.load
-@pytest.mark.asyncio
-async def test_concurrent_quizzes():
-    """Test concurrent quiz generation."""
-    tasks = [
-        quiz_agent.generate_mcq_quiz(
-            f"quiz-{i}", "test-material", "medium", 5
-        )
-        for i in range(10)
-    ]
-    results = await asyncio.gather(*tasks)
-    assert len(results) == 10
-    for quiz in results:
-        assert len(quiz) == 5
-```
-
-### Deliverables
-- [ ] Unit tests untuk semua agen
-- [ ] Integration tests
-- [ ] Performance benchmarks
-- [ ] Load testing
-- [ ] Test coverage report
 
 ---
 
 ## Catatan
 
-- Semua agen menggunakan OpenAI GPT-4 untuk LLM
-- Vector database: ChromaDB
-- Text chunking: Chonkie
+- Semua agen menggunakan OpenAI-compatible API (via base_url config)
+- Vector database: ChromaDB dengan PersistentClient
+- Text chunking: Chonkie SemanticChunker
 - PDF parsing: PyPDF
-- Embeddings: OpenAI text-embedding-3-small
+- Embeddings: Perplexity pplx-embed-v1-4b via CustomEmbeddingFunction
 - Streaming: FastAPI StreamingResponse
-- Error handling: Retry logic + Circuit breaker
-- Testing: pytest + pytest-asyncio
+- Error handling: Exception classes + retry logic

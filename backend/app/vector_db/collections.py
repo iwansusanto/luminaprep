@@ -1,7 +1,8 @@
-from app.vector_db.client import chromadb_client, CustomEmbeddingFunction
+from app.vector_db.client import chromadb_client
+from app.vector_db.embedding import CustomEmbeddingFunction
 
 
-def get_pdf_collection():
+def chromadb_collections():
     return chromadb_client.get_or_create_collection(
-        name="pdf_rag", embedding_function=CustomEmbeddingFunction()
+        name="luminaprep_rag", embedding_function=CustomEmbeddingFunction()
     )
