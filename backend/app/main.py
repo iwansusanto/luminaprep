@@ -35,33 +35,31 @@ async def root():
     return {
         "message": f"Welcome to {settings.app_name}",
         "version": settings.app_version,
-        "status": "running"
+        "status": "running",
     }
 
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "database": "connected" if engine else "disconnected"
-    }
+    return {"status": "healthy", "database": "connected" if engine else "disconnected"}
 
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
 
-# Scalar API Documentation
-scalar_docs = get_scalar_api_reference(
-    openapi_url=app.openapi_url,
-    title=app.title + " - API Documentation"
-)
 
-app.add_route("/scalar", scalar_docs, include_in_schema=False)
+@app.get("/scalar", include_in_schema=False)
+async def scalar_html():
+    return get_scalar_api_reference(
+        openapi_url=app.openapi_url,
+        title=app.title + " - API Documentation",
+    )
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",

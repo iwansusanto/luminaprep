@@ -26,11 +26,11 @@ def create_material(db: Session, project_id: str, user_id: str, file_name: str,
 
 def get_materials_by_project(db: Session, project_id: str, user_id: str) -> List[Material]:
     """Get all materials for a project."""
-    return db.query(Material).filter(Material.project_id == project_id, Material.user_id == user_id).all()
+    return db.query(Material).filter(Material.project_id == project_id, Material.user_id == user_id, Material.deleted_at.is_(None)).all()
 
 def get_material_by_id(db: Session, material_id: str, user_id: str) -> Optional[Material]:
     """Get material by ID for a specific user."""
-    return db.query(Material).filter(Material.id == material_id, Material.user_id == user_id).first()
+    return db.query(Material).filter(Material.id == material_id, Material.user_id == user_id, Material.deleted_at.is_(None)).first()
 
 def update_material(db: Session, material_id: str, user_id: str, file_name: Optional[str] = None,
                    storage_path: Optional[str] = None, file_type: Optional[str] = None,
@@ -56,7 +56,7 @@ def update_material(db: Session, material_id: str, user_id: str, file_name: Opti
     return material
 
 def delete_material(db: Session, material_id: str, user_id: str) -> Optional[Material]:
-    """Delete a material."""
+    """Delete a material (soft delete)."""
     material = get_material_by_id(db, material_id, user_id)
     if not material:
         return None
@@ -68,8 +68,12 @@ def delete_material(db: Session, material_id: str, user_id: str) -> Optional[Mat
         except Exception:
             pass  # Ignore file deletion errors
     
-    db.delete(material)
+    # Soft delete - set deleted_at timestamp
+    from datetime import datetime
+    material.deleted_at = datetime.utcnow()
+    
     db.commit()
+    db.refresh(material)
     return material
 
 def save_uploaded_file(file, filename: str) -> str:

@@ -1,0 +1,110 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from typing import List
+from app.database import get_db
+from app.crud.quiz import create_quiz, get_quiz_by_id, get_quizzes_by_project, delete_quiz
+from app.crud.question import get_questions_by_quiz
+from app.crud.project import get_project_by_id
+from app.schemas.quiz import QuizCreate, QuizRead, QuizWithQuestions, QuizGenerationRequest, QuizGenerationResponse
+from app.api.deps import get_current_active_user
+from app.models.user import User
+
+router = APIRouter()
+
+
+@router.post("/materials/{material_id}/quizzes", response_model=QuizGenerationResponse)
+def create_quiz_from_material(
+    material_id: str,
+    quiz_request: QuizGenerationRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Create a quiz from material and queue AI generation task."""
+    # Verify material exists and belongs to user
+    from app.crud.material import get_material_by_id
+    material = get_material_by_id(db, material_id, current_user.id)
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not found"
+        )
+    
+    # Create quiz
+    quiz = create_quiz(
+        db=db,
+        project_id=material.project_id,
+        difficulty_level=quiz_request.difficulty_level,
+        question_count=quiz_request.question_count,
+        user_id=current_user.id
+    )
+    
+    if not quiz:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to create quiz"
+        )
+    
+    # For now, just create quiz without async task
+    return {
+        "task_id": quiz.id,
+        "status": "created",
+        "message": "Quiz created successfully (async task disabled)"
+    }
+
+
+@router.get("/quizzes/{quiz_id}", response_model=QuizWithQuestions)
+def get_quiz(
+    quiz_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get quiz with questions."""
+    quiz = get_quiz_by_id(db, quiz_id, current_user.id)
+    if not quiz:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz not found"
+        )
+    
+    questions = get_questions_by_quiz(db, quiz_id, current_user.id)
+    
+    return QuizWithQuestions(
+        **quiz.dict(),
+        questions=questions
+    )
+
+
+@router.get("/projects/{project_id}/quizzes", response_model=List[QuizRead])
+def get_project_quizzes(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get all quizzes for a project."""
+    # Verify project exists and belongs to user
+    project = get_project_by_id(db, project_id, current_user.id)
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
+    
+    quizzes = get_quizzes_by_project(db, project_id, current_user.id)
+    return quizzes
+
+
+@router.delete("/quizzes/{quiz_id}")
+def delete_quiz_endpoint(
+    quiz_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Delete a quiz."""
+    quiz = delete_quiz(db, quiz_id, current_user.id)
+    if not quiz:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz not found"
+        )
+    
+    return {"message": "Quiz deleted successfully"}

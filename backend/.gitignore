@@ -139,6 +139,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+backend/.env
 
 # Spyder project settings
 .spyderproject
@@ -253,3 +254,6 @@ logs/
 *.temp
 temp/
 tmp/
+
+# farisbay tasks note
+backend/task-faris.md
