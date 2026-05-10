@@ -12,10 +12,12 @@ class ProjectBase(SQLModel):
 
 
 class Project(ProjectBase, table=True):
+    __tablename__ = "projects"
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str = Field(foreign_key="user.id")
+    user_id: str = Field(foreign_key="users.id")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    deleted_at: Optional[datetime] = Field(default=None, sa_column_kwargs={"comment": "Soft delete timestamp"})
     
     # Relationships
     user: Optional["User"] = Relationship(back_populates="projects")

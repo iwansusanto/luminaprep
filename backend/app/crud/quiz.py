@@ -7,7 +7,7 @@ import uuid
 def create_quiz(db: Session, project_id: str, difficulty_level: str, question_count: int, user_id: str) -> Optional[Quiz]:
     """Create a new quiz."""
     # Verify project exists and belongs to user
-    project = db.query(Project).filter(Project.id == project_id, Project.user_id == user_id).first()
+    project = db.query(Project).filter(Project.id == project_id, Project.user_id == user_id, Project.deleted_at.is_(None)).first()
     if not project:
         return None
     
@@ -27,7 +27,9 @@ def get_quiz_by_id(db: Session, quiz_id: str, user_id: str) -> Optional[Quiz]:
     """Get quiz by ID with user verification."""
     quiz = db.query(Quiz).join(Project).filter(
         Quiz.id == quiz_id,
-        Project.user_id == user_id
+        Project.user_id == user_id,
+        Quiz.deleted_at.is_(None),
+        Project.deleted_at.is_(None)
     ).first()
     return quiz
 
@@ -35,7 +37,9 @@ def get_quizzes_by_project(db: Session, project_id: str, user_id: str) -> List[Q
     """Get all quizzes for a project."""
     quizzes = db.query(Quiz).join(Project).filter(
         Quiz.project_id == project_id,
-        Project.user_id == user_id
+        Project.user_id == user_id,
+        Quiz.deleted_at.is_(None),
+        Project.deleted_at.is_(None)
     ).all()
     return quizzes
 
@@ -57,11 +61,15 @@ def update_quiz(db: Session, quiz_id: str, status: Optional[str] = None, difficu
     return quiz
 
 def delete_quiz(db: Session, quiz_id: str, user_id: str) -> Optional[Quiz]:
-    """Delete a quiz."""
+    """Delete a quiz (soft delete)."""
     quiz = get_quiz_by_id(db, quiz_id, user_id)
     if not quiz:
         return None
     
-    db.delete(quiz)
+    # Soft delete - set deleted_at timestamp
+    from datetime import datetime
+    quiz.deleted_at = datetime.utcnow()
+    
     db.commit()
+    db.refresh(quiz)
     return quiz

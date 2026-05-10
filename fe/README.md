@@ -1,73 +1,96 @@
-# React + TypeScript + Vite
+# LuminaPrep
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This repository contains the LuminaPrep application, structured as a monorepo with Frontend (FE) and Backend API (API) services.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🎨 Frontend (FE)
 
-## React Compiler
+The LuminaPrep frontend is a modern, high-performance React application built with:
+- **React 19 & TypeScript**
+- **Vite** (Build Tool)
+- **TanStack Router** (Type-safe file-based routing)
+- **Tailwind CSS & Shadcn UI** (Styling & Components)
+- **Framer Motion** (Animations)
+- **PM2** (Production Process Management)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Environment Variables
 
-## Expanding the ESLint configuration
+Before running or building the frontend, you must configure the necessary environment variables, particularly for Google OAuth authentication.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. **For Local Development (Without Docker):**
+   Create a `.env` file inside the `fe` directory and add your Google Client ID:
+   ```env
+   VITE_GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
+   ```
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+2. **For Docker Deployment:**
+   Create a `.env` file in the **root** directory (`luminarep`) with the same variable:
+   ```env
+   VITE_GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
+   ```
+   *Docker Compose is configured to automatically pick up the root `.env` file and pass this variable into the frontend build process.*
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### How to Run: Without Docker (Local Development)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+If you want to run the frontend locally on your machine for development:
+
+1. Open your terminal and navigate to the `fe` directory:
+   ```bash
+   cd fe
+   ```
+2. Install the required Node dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
+   *The app will be available at `http://localhost:5173`.*
+
+**To test the Production Build locally:**
+```bash
+npm run build
+npm run start
 ```
+*This uses `pm2` and `server.js` to serve the optimized `dist` folder on `http://localhost:3000`.*
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### How to Run: With Docker (Recommended)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Running with Docker automatically sets up the frontend, the network, and the databases without needing Node.js installed locally.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. Open your terminal in the **root** directory (`luminarep`).
+2. Run Docker Compose in detached mode:
+   ```bash
+   docker-compose up -d --build
+   ```
+3. The frontend is now accessible at **`http://localhost:3000`**.
+
+*(To stop the containers, run `docker-compose down`)*
+
+---
+
+## ⚙️ Backend (API) & Infrastructure
+
+The backend API handles data processing, authentication, and core business logic.
+
+### API Connection Details
+The frontend is configured to securely communicate with the API without CORS issues using an internal proxy (`server.js`):
+- **Local Dev:** Proxies `/api` requests to `http://localhost:8000`.
+- **Docker:** Proxies `/api` requests to the internal Docker service at `http://api:8000`.
+
+*(You can easily override the API endpoint by passing the `API_URL` environment variable).*
+
+### Database & Services (Docker)
+When you run `docker-compose up -d`, the following infrastructure is automatically provisioned for the API:
+
+- **MySQL Database (v8.4)**
+  - Mapped to your local port: `3363`
+  - Database Name: `db_lp`
+  - User: `user_lp`
+  - Data is persistently saved in the `./dbdata` folder.
+
+- **phpMyAdmin**
+  - Accessible at: **`http://localhost:8099`**
+  - Use this to visually manage your MySQL database. (Log in with `root` or `user_lp`).

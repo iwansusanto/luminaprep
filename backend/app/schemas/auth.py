@@ -20,9 +20,22 @@ class GoogleAuthCallback(SQLModel):
     state: str
 
 
+class UserSignIn(SQLModel):
+    email: str = Field(max_length=255)
+    name: str = Field(max_length=255)
+    avatar_url: Optional[str] = Field(default=None, description="User avatar URL")
+
+
+class SigninResponse(SQLModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: "UserResponse"
+
+
 class UserResponse(SQLModel):
     id: str
     email: str
     full_name: Optional[str]
+    avatar_url: Optional[str]
     created_at: str
     updated_at: str

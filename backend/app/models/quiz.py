@@ -17,6 +17,7 @@ class Quiz(QuizBase, table=True):
     project_id: str = Field(foreign_key="projects.id")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    deleted_at: Optional[datetime] = Field(default=None, sa_column_kwargs={"comment": "Soft delete timestamp"})
     
     # Relationships
     project: "Project" = Relationship(back_populates="quizzes")

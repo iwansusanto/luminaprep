@@ -21,6 +21,7 @@ class AgentMetric(AgentMetricBase, table=True):
     project_id: str = Field(foreign_key="projects.id")
     token_usage: Optional[Dict[str, Any]] = Field(sa_type=JSON, default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    deleted_at: Optional[datetime] = Field(default=None, sa_column_kwargs={"comment": "Soft delete timestamp"})
     
     # Relationships
     project: "Project" = Relationship(back_populates="agent_metrics")
