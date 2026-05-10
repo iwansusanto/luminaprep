@@ -1,0 +1,79 @@
+services:
+  fe:
+    build:
+      context: ./fe
+      dockerfile: Dockerfile
+      args:
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+    container_name: luminaprep-fe
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - API_URL=http://api:8000 # Points to the api service
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - luminaprep-net
+
+  redis:
+    image: redis:alpine
+    container_name: luminaprep-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - luminaprep-net
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: luminaprep-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=mysql+mysqlconnector://user_lp:Z1KkO7XJXVX9ZZCC1DaiRCsJYuxMlRkR@db:3306/db_lp
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=your-secret-key-change-in-production
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+    networks:
+      - luminaprep-net
+
+  db:
+    image: mysql:8.4
+    container_name: luminaprep-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: weGFDaWcfNa/a9c3qftpkbzxiiyJ9UM+
+      MYSQL_DATABASE: db_lp
+      MYSQL_USER: user_lp
+      MYSQL_PASSWORD: Z1KkO7XJXVX9ZZCC1DaiRCsJYuxMlRkR
+    ports:
+      - "3363:3306"
+    volumes:
+      - ./dbdata:/var/lib/mysql
+    networks:
+      - luminaprep-net
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: luminaprep-phpmyadmin
+    restart: always
+    ports:
+      - "8099:80"
+    environment:
+      PMA_HOST: db
+    depends_on:
+      - db
+    networks:
+      - luminaprep-net
+
+networks:
+  luminaprep-net:
+    driver: bridge

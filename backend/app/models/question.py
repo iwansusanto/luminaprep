@@ -20,6 +20,7 @@ class Question(QuestionBase, table=True):
     question_metadata: Optional[Dict[str, Any]] = Field(sa_type=JSON, default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    deleted_at: Optional[datetime] = Field(default=None, sa_column_kwargs={"comment": "Soft delete timestamp"})
     
     # Relationships
     quiz: "Quiz" = Relationship(back_populates="questions")

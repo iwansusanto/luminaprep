@@ -21,13 +21,19 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     try:
         payload = jwt.decode(credentials.credentials, settings.secret_key, algorithms=[settings.algorithm])
         email: str = payload.get("sub")
+        user_id: str = payload.get("user_id")
         if email is None:
             raise credentials_exception
         token_data = TokenData(email=email)
     except JWTError:
         raise credentials_exception
     
-    user = db.query(User).filter(User.email == token_data.email).first()
+    # Use user_id if available, otherwise fallback to email lookup
+    if user_id:
+        user = db.query(User).filter(User.id == user_id, User.deleted_at.is_(None)).first()
+    else:
+        user = db.query(User).filter(User.email == token_data.email, User.deleted_at.is_(None)).first()
+    
     if user is None:
         raise credentials_exception
     return user

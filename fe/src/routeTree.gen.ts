@@ -9,38 +9,205 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermOfServiceRouteImport } from './routes/term-of-service'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardQuizzesRouteImport } from './routes/dashboard/quizzes'
+import { Route as DashboardMaterialsRouteImport } from './routes/dashboard/materials'
+import { Route as DashboardQuizzesIndexRouteImport } from './routes/dashboard/quizzes/index'
+import { Route as DashboardQuizzesStartUuidRouteImport } from './routes/dashboard/quizzes/start.$uuid'
+import { Route as DashboardQuizzesRetakeUuidRouteImport } from './routes/dashboard/quizzes/retake.$uuid'
+import { Route as DashboardQuizzesContinueUuidRouteImport } from './routes/dashboard/quizzes/continue.$uuid'
 
+const TermOfServiceRoute = TermOfServiceRouteImport.update({
+  id: '/term-of-service',
+  path: '/term-of-service',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardQuizzesRoute = DashboardQuizzesRouteImport.update({
+  id: '/quizzes',
+  path: '/quizzes',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardMaterialsRoute = DashboardMaterialsRouteImport.update({
+  id: '/materials',
+  path: '/materials',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardQuizzesIndexRoute = DashboardQuizzesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardQuizzesRoute,
+} as any)
+const DashboardQuizzesStartUuidRoute =
+  DashboardQuizzesStartUuidRouteImport.update({
+    id: '/start/$uuid',
+    path: '/start/$uuid',
+    getParentRoute: () => DashboardQuizzesRoute,
+  } as any)
+const DashboardQuizzesRetakeUuidRoute =
+  DashboardQuizzesRetakeUuidRouteImport.update({
+    id: '/retake/$uuid',
+    path: '/retake/$uuid',
+    getParentRoute: () => DashboardQuizzesRoute,
+  } as any)
+const DashboardQuizzesContinueUuidRoute =
+  DashboardQuizzesContinueUuidRouteImport.update({
+    id: '/continue/$uuid',
+    path: '/continue/$uuid',
+    getParentRoute: () => DashboardQuizzesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRouteWithChildren
+  '/login': typeof LoginRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/term-of-service': typeof TermOfServiceRoute
+  '/dashboard/materials': typeof DashboardMaterialsRoute
+  '/dashboard/quizzes': typeof DashboardQuizzesRouteWithChildren
+  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/quizzes/': typeof DashboardQuizzesIndexRoute
+  '/dashboard/quizzes/continue/$uuid': typeof DashboardQuizzesContinueUuidRoute
+  '/dashboard/quizzes/retake/$uuid': typeof DashboardQuizzesRetakeUuidRoute
+  '/dashboard/quizzes/start/$uuid': typeof DashboardQuizzesStartUuidRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/term-of-service': typeof TermOfServiceRoute
+  '/dashboard/materials': typeof DashboardMaterialsRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/quizzes': typeof DashboardQuizzesIndexRoute
+  '/dashboard/quizzes/continue/$uuid': typeof DashboardQuizzesContinueUuidRoute
+  '/dashboard/quizzes/retake/$uuid': typeof DashboardQuizzesRetakeUuidRoute
+  '/dashboard/quizzes/start/$uuid': typeof DashboardQuizzesStartUuidRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRouteWithChildren
+  '/login': typeof LoginRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/term-of-service': typeof TermOfServiceRoute
+  '/dashboard/materials': typeof DashboardMaterialsRoute
+  '/dashboard/quizzes': typeof DashboardQuizzesRouteWithChildren
+  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/quizzes/': typeof DashboardQuizzesIndexRoute
+  '/dashboard/quizzes/continue/$uuid': typeof DashboardQuizzesContinueUuidRoute
+  '/dashboard/quizzes/retake/$uuid': typeof DashboardQuizzesRetakeUuidRoute
+  '/dashboard/quizzes/start/$uuid': typeof DashboardQuizzesStartUuidRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/privacy-policy'
+    | '/term-of-service'
+    | '/dashboard/materials'
+    | '/dashboard/quizzes'
+    | '/dashboard/'
+    | '/dashboard/quizzes/'
+    | '/dashboard/quizzes/continue/$uuid'
+    | '/dashboard/quizzes/retake/$uuid'
+    | '/dashboard/quizzes/start/$uuid'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/login'
+    | '/privacy-policy'
+    | '/term-of-service'
+    | '/dashboard/materials'
+    | '/dashboard'
+    | '/dashboard/quizzes'
+    | '/dashboard/quizzes/continue/$uuid'
+    | '/dashboard/quizzes/retake/$uuid'
+    | '/dashboard/quizzes/start/$uuid'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/privacy-policy'
+    | '/term-of-service'
+    | '/dashboard/materials'
+    | '/dashboard/quizzes'
+    | '/dashboard/'
+    | '/dashboard/quizzes/'
+    | '/dashboard/quizzes/continue/$uuid'
+    | '/dashboard/quizzes/retake/$uuid'
+    | '/dashboard/quizzes/start/$uuid'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
+  LoginRoute: typeof LoginRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
+  TermOfServiceRoute: typeof TermOfServiceRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/term-of-service': {
+      id: '/term-of-service'
+      path: '/term-of-service'
+      fullPath: '/term-of-service'
+      preLoaderRoute: typeof TermOfServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +215,97 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/quizzes': {
+      id: '/dashboard/quizzes'
+      path: '/quizzes'
+      fullPath: '/dashboard/quizzes'
+      preLoaderRoute: typeof DashboardQuizzesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/materials': {
+      id: '/dashboard/materials'
+      path: '/materials'
+      fullPath: '/dashboard/materials'
+      preLoaderRoute: typeof DashboardMaterialsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/quizzes/': {
+      id: '/dashboard/quizzes/'
+      path: '/'
+      fullPath: '/dashboard/quizzes/'
+      preLoaderRoute: typeof DashboardQuizzesIndexRouteImport
+      parentRoute: typeof DashboardQuizzesRoute
+    }
+    '/dashboard/quizzes/start/$uuid': {
+      id: '/dashboard/quizzes/start/$uuid'
+      path: '/start/$uuid'
+      fullPath: '/dashboard/quizzes/start/$uuid'
+      preLoaderRoute: typeof DashboardQuizzesStartUuidRouteImport
+      parentRoute: typeof DashboardQuizzesRoute
+    }
+    '/dashboard/quizzes/retake/$uuid': {
+      id: '/dashboard/quizzes/retake/$uuid'
+      path: '/retake/$uuid'
+      fullPath: '/dashboard/quizzes/retake/$uuid'
+      preLoaderRoute: typeof DashboardQuizzesRetakeUuidRouteImport
+      parentRoute: typeof DashboardQuizzesRoute
+    }
+    '/dashboard/quizzes/continue/$uuid': {
+      id: '/dashboard/quizzes/continue/$uuid'
+      path: '/continue/$uuid'
+      fullPath: '/dashboard/quizzes/continue/$uuid'
+      preLoaderRoute: typeof DashboardQuizzesContinueUuidRouteImport
+      parentRoute: typeof DashboardQuizzesRoute
+    }
   }
 }
 
+interface DashboardQuizzesRouteChildren {
+  DashboardQuizzesIndexRoute: typeof DashboardQuizzesIndexRoute
+  DashboardQuizzesContinueUuidRoute: typeof DashboardQuizzesContinueUuidRoute
+  DashboardQuizzesRetakeUuidRoute: typeof DashboardQuizzesRetakeUuidRoute
+  DashboardQuizzesStartUuidRoute: typeof DashboardQuizzesStartUuidRoute
+}
+
+const DashboardQuizzesRouteChildren: DashboardQuizzesRouteChildren = {
+  DashboardQuizzesIndexRoute: DashboardQuizzesIndexRoute,
+  DashboardQuizzesContinueUuidRoute: DashboardQuizzesContinueUuidRoute,
+  DashboardQuizzesRetakeUuidRoute: DashboardQuizzesRetakeUuidRoute,
+  DashboardQuizzesStartUuidRoute: DashboardQuizzesStartUuidRoute,
+}
+
+const DashboardQuizzesRouteWithChildren =
+  DashboardQuizzesRoute._addFileChildren(DashboardQuizzesRouteChildren)
+
+interface DashboardRouteChildren {
+  DashboardMaterialsRoute: typeof DashboardMaterialsRoute
+  DashboardQuizzesRoute: typeof DashboardQuizzesRouteWithChildren
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardMaterialsRoute: DashboardMaterialsRoute,
+  DashboardQuizzesRoute: DashboardQuizzesRouteWithChildren,
+  DashboardIndexRoute: DashboardIndexRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRouteWithChildren,
+  LoginRoute: LoginRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
+  TermOfServiceRoute: TermOfServiceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

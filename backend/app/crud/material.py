@@ -39,7 +39,11 @@ def get_materials_by_project(
     """Get all materials for a project."""
     return (
         db.query(Material)
-        .filter(Material.project_id == project_id, Material.user_id == user_id)
+        .filter(
+            Material.project_id == project_id,
+            Material.user_id == user_id,
+            Material.deleted_at.is_(None),
+        )
         .all()
     )
 
@@ -50,7 +54,11 @@ def get_material_by_id(
     """Get material by ID for a specific user."""
     return (
         db.query(Material)
-        .filter(Material.id == material_id, Material.user_id == user_id)
+        .filter(
+            Material.id == material_id,
+            Material.user_id == user_id,
+            Material.deleted_at.is_(None),
+        )
         .first()
     )
 
@@ -93,7 +101,7 @@ def update_material(
 
 
 def delete_material(db: Session, material_id: str, user_id: str) -> Optional[Material]:
-    """Delete a material."""
+    """Delete a material (soft delete)."""
     material = get_material_by_id(db, material_id, user_id)
     if not material:
         return None
@@ -105,8 +113,13 @@ def delete_material(db: Session, material_id: str, user_id: str) -> Optional[Mat
         except Exception:
             pass  # Ignore file deletion errors
 
-    db.delete(material)
+    # Soft delete - set deleted_at timestamp
+    from datetime import datetime
+
+    material.deleted_at = datetime.utcnow()
+
     db.commit()
+    db.refresh(material)
     return material
 
 
