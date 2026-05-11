@@ -95,6 +95,14 @@ async def signin(
             expires_delta=access_token_expires
         )
         
+        # Fetch active projects
+        from app.models.project import Project
+        projects = db.query(Project).filter(
+            Project.user_id == user.id,
+            Project.status == "active",
+            Project.deleted_at.is_(None)
+        ).all()
+        
         # Step 3: Return response with token and user data
         return {
             "access_token": access_token,
@@ -105,7 +113,11 @@ async def signin(
                 "full_name": user.full_name,
                 "avatar_url": user.avatar_url,
                 "created_at": user.created_at.isoformat(),
-                "updated_at": user.updated_at.isoformat()
+                "updated_at": user.updated_at.isoformat(),
+                "projects": [
+                    {"id": p.id, "title": p.title, "description": p.description}
+                    for p in projects
+                ]
             }
         }
         
@@ -127,5 +139,9 @@ def get_current_user_info(
         "full_name": current_user.full_name,
         "avatar_url": current_user.avatar_url,
         "created_at": current_user.created_at.isoformat(),
-        "updated_at": current_user.updated_at.isoformat()
+        "updated_at": current_user.updated_at.isoformat(),
+        "projects": [
+            {"id": p.id, "title": p.title, "description": p.description}
+            for p in getattr(current_user, 'projects_list', [])
+        ]
     }

@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Field
-from typing import Optional
+from typing import List, Optional
 
 
 class Token(SQLModel):
@@ -32,6 +32,12 @@ class SigninResponse(SQLModel):
     user: "UserResponse"
 
 
+class UserProject(SQLModel):
+    id: str
+    title: str
+    description: Optional[str]
+
+
 class UserResponse(SQLModel):
     id: str
     email: str
@@ -39,3 +45,4 @@ class UserResponse(SQLModel):
     avatar_url: Optional[str]
     created_at: str
     updated_at: str
+    projects: List[UserProject] = []
