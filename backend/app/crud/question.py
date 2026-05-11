@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.question import Question
 from app.models.quiz import Quiz
+from app.models.project import Project
 from typing import List, Optional
 
 def get_questions_by_quiz(db: Session, quiz_id: str, user_id: str) -> List[Question]:
@@ -19,7 +20,7 @@ def get_question_by_id(db: Session, question_id: str, user_id: str) -> Optional[
     ).first()
     return question
 
-def create_question(db: Session, quiz_id: str, question_text: str, options: dict, correct_answer: str, explanation: Optional[str] = None, metadata: Optional[dict] = None) -> Optional[Question]:
+def create_question(db: Session, quiz_id: str, question_text: str, options: dict, correct_answer: str, explanation: Optional[str] = None, question_metadata: Optional[dict] = None) -> Optional[Question]:
     """Create a new question."""
     question = Question(
         quiz_id=quiz_id,
@@ -27,7 +28,7 @@ def create_question(db: Session, quiz_id: str, question_text: str, options: dict
         options=options,
         correct_answer=correct_answer,
         explanation=explanation,
-        metadata=metadata
+        question_metadata=question_metadata
     )
     
     db.add(question)
@@ -35,7 +36,7 @@ def create_question(db: Session, quiz_id: str, question_text: str, options: dict
     db.refresh(question)
     return question
 
-def update_question(db: Session, question_id: str, user_id: str, question_text: Optional[str] = None, options: Optional[dict] = None, correct_answer: Optional[str] = None, explanation: Optional[str] = None, metadata: Optional[dict] = None) -> Optional[Question]:
+def update_question(db: Session, question_id: str, user_id: str, question_text: Optional[str] = None, options: Optional[dict] = None, correct_answer: Optional[str] = None, explanation: Optional[str] = None, question_metadata: Optional[dict] = None) -> Optional[Question]:
     """Update a question."""
     question = get_question_by_id(db, question_id, user_id)
     if not question:
@@ -49,8 +50,8 @@ def update_question(db: Session, question_id: str, user_id: str, question_text: 
         question.correct_answer = correct_answer
     if explanation is not None:
         question.explanation = explanation
-    if metadata is not None:
-        question.metadata = metadata
+    if question_metadata is not None:
+        question.question_metadata = question_metadata
     
     db.commit()
     db.refresh(question)

@@ -22,6 +22,7 @@ class User(UserBase, table=True):
     projects: List["Project"] = Relationship(back_populates="user")
     materials: List["Material"] = Relationship(back_populates="user")
     user_attempts: List["UserAttempt"] = Relationship(back_populates="user")
+    quiz_sessions: List["QuizSession"] = Relationship(back_populates="user")
 
 
 class UserCreate(SQLModel):

@@ -5,7 +5,9 @@ from app.database import get_db
 from app.crud.quiz import create_quiz, get_quiz_by_id, get_quizzes_by_project, delete_quiz
 from app.crud.question import get_questions_by_quiz
 from app.crud.project import get_project_by_id
+from app.crud.quiz_session import create_quiz_session
 from app.schemas.quiz import QuizCreate, QuizRead, QuizWithQuestions, QuizGenerationRequest, QuizGenerationResponse
+from app.models.quiz_session import QuizSessionRead
 from app.api.deps import get_current_active_user
 from app.models.user import User
 
@@ -100,7 +102,33 @@ def create_quiz_from_material(
         )
 
 
-@router.get("/quizzes/{quiz_id}", response_model=QuizWithQuestions)
+@router.post("/{quiz_id}/sessions", response_model=QuizSessionRead)
+def start_quiz_session(
+    quiz_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Start a new quiz session."""
+    # Verify quiz exists and belongs to user's project
+    quiz = get_quiz_by_id(db, quiz_id, current_user.id)
+    if not quiz:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz not found"
+        )
+    
+    # Create quiz session
+    quiz_session = create_quiz_session(db, current_user.id, quiz_id)
+    if not quiz_session:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to create quiz session"
+        )
+    
+    return quiz_session
+
+
+@router.get("/{quiz_id}", response_model=QuizWithQuestions)
 def get_quiz(
     quiz_id: str,
     db: Session = Depends(get_db),
