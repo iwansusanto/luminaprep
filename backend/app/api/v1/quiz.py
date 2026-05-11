@@ -5,7 +5,9 @@ from app.database import get_db
 from app.crud.quiz import create_quiz, get_quiz_by_id, get_quizzes_by_project, delete_quiz
 from app.crud.question import get_questions_by_quiz
 from app.crud.project import get_project_by_id
+from app.crud.quiz_session import create_quiz_session
 from app.schemas.quiz import QuizCreate, QuizRead, QuizWithQuestions, QuizGenerationRequest, QuizGenerationResponse
+from app.models.quiz_session import QuizSessionRead
 from app.api.deps import get_current_active_user
 from app.models.user import User
 
@@ -19,7 +21,7 @@ def create_quiz_from_material(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Create a quiz from material and queue AI generation task."""
+    """Create a quiz from material and generate AI questions."""
     # Verify material exists and belongs to user
     from app.crud.material import get_material_by_id
     material = get_material_by_id(db, material_id, current_user.id)
@@ -44,15 +46,89 @@ def create_quiz_from_material(
             detail="Failed to create quiz"
         )
     
-    # For now, just create quiz without async task
-    return {
-        "task_id": quiz.id,
-        "status": "created",
-        "message": "Quiz created successfully (async task disabled)"
-    }
+    # Generate AI questions
+    try:
+        from app.agents.mcq_quiz import generate_mcq_quiz
+        from app.crud.question import create_question
+        from app.agents.summarization import generate_summary
+        
+        # Generate summary from material content if available
+        summary = material.summary or ""
+        if not summary:
+            # If no summary, generate from material content
+            summary = "Material content for quiz generation"
+        
+        # Generate questions using AI
+        ai_questions = generate_mcq_quiz(
+            num_questions=quiz_request.question_count,
+            summary=summary,
+            difficulty=quiz_request.difficulty_level
+        )
+        
+        # Save questions to database
+        created_questions = []
+        for ai_q in ai_questions:
+            question = create_question(
+                db=db,
+                quiz_id=quiz.id,
+                question_text=ai_q.question,
+                correct_answer=ai_q.correct_answer,
+                options=ai_q.options,
+                explanation=ai_q.explanation,
+                question_metadata={"difficulty": quiz_request.difficulty_level}
+            )
+            if question:
+                created_questions.append(question)
+        
+        # Update quiz status
+        from app.crud.quiz import update_quiz_status
+        update_quiz_status(db, quiz.id, "completed")
+        
+        return {
+            "task_id": quiz.id,
+            "status": "completed",
+            "message": f"Quiz created successfully with {len(created_questions)} questions generated",
+            "questions_count": len(created_questions)
+        }
+        
+    except Exception as e:
+        # Update quiz status to failed
+        from app.crud.quiz import update_quiz_status
+        update_quiz_status(db, quiz.id, "failed")
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate questions: {str(e)}"
+        )
 
 
-@router.get("/quizzes/{quiz_id}", response_model=QuizWithQuestions)
+@router.post("/{quiz_id}/sessions", response_model=QuizSessionRead)
+def start_quiz_session(
+    quiz_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Start a new quiz session."""
+    # Verify quiz exists and belongs to user's project
+    quiz = get_quiz_by_id(db, quiz_id, current_user.id)
+    if not quiz:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz not found"
+        )
+    
+    # Create quiz session
+    quiz_session = create_quiz_session(db, current_user.id, quiz_id)
+    if not quiz_session:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to create quiz session"
+        )
+    
+    return quiz_session
+
+
+@router.get("/{quiz_id}", response_model=QuizWithQuestions)
 def get_quiz(
     quiz_id: str,
     db: Session = Depends(get_db),

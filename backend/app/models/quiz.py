@@ -23,6 +23,7 @@ class Quiz(QuizBase, table=True):
     project: "Project" = Relationship(back_populates="quizzes")
     questions: List["Question"] = Relationship(back_populates="quiz")
     user_attempts: List["UserAttempt"] = Relationship(back_populates="quiz")
+    quiz_sessions: List["QuizSession"] = Relationship(back_populates="quiz")
 
 
 class QuizCreate(QuizBase):

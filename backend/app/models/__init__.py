@@ -4,6 +4,7 @@ from .material import Material
 from .quiz import Quiz
 from .question import Question
 from .user_attempt import UserAttempt
+from .quiz_session import QuizSession
 from .agent_metric import AgentMetric
 
 __all__ = [
@@ -13,5 +14,6 @@ __all__ = [
     "Quiz",
     "Question",
     "UserAttempt",
+    "QuizSession",
     "AgentMetric",
 ]
