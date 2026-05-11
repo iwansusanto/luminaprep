@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { setting_material } from '../../lib/utils'
 import { Link } from '@tanstack/react-router'
 import { motion, type Variants } from 'framer-motion'
 import {
@@ -11,7 +12,8 @@ import {
   Trash2,
   PlusCircle,
   Trophy,
-  ArrowUpRight
+  ArrowUpRight,
+  AlertCircle
 } from 'lucide-react'
 import { Skeleton, Dropdown, type MenuProps } from 'antd'
 import { QuizGenerationDrawer } from './QuizGenerationDrawer'
@@ -70,10 +72,11 @@ export const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={onAddMaterial}
-              className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-indigo-600 text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 group whitespace-nowrap"
+              disabled={materials.length >= setting_material.maximal}
+              className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-indigo-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 group whitespace-nowrap"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Add <span className="hidden xs:inline">Material</span>
+              {materials.length >= setting_material.maximal ? 'Limit reached' : 'Add Material'}
             </button>
             <Link to="/dashboard/materials" className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-slate-50 text-indigo-600 text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-50 transition-all border border-slate-200/50 flex items-center justify-center gap-2 group whitespace-nowrap">
               Library
@@ -159,10 +162,11 @@ export const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({
               <p className="text-slate-400 font-bold uppercase tracking-widest text-[11px] mb-6">Your vault is currently empty</p>
               <button
                 onClick={onAddMaterial}
-                className="px-8 py-4 bg-indigo-50 text-indigo-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-100 transition-all flex items-center gap-2"
+                disabled={materials.length >= setting_material.maximal}
+                className="px-8 py-4 bg-indigo-50 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-indigo-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-100 transition-all flex items-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
-                Add Your First Material
+                {materials.length >= setting_material.maximal ? 'Maximum limit reached' : 'Add Your First Material'}
               </button>
             </div>
           )}
@@ -172,21 +176,32 @@ export const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-6 sm:mt-8 p-6 sm:p-8 bg-slate-50/50 border border-dashed border-slate-200 rounded-[1.5rem] sm:rounded-[2rem] flex items-center justify-between group cursor-pointer hover:bg-indigo-50/30 hover:border-indigo-200 transition-all"
-              onClick={onAddMaterial}
+              className={`mt-6 sm:mt-8 p-6 sm:p-8 border border-dashed rounded-[1.5rem] sm:rounded-[2rem] flex items-center justify-between group transition-all ${materials.length >= setting_material.maximal
+                  ? 'bg-rose-50/30 border-rose-200 cursor-not-allowed opacity-80'
+                  : 'bg-slate-50/50 border-slate-200 cursor-pointer hover:bg-indigo-50/30 hover:border-indigo-200'
+                }`}
+              onClick={() => materials.length < setting_material.maximal && onAddMaterial()}
             >
               <div className="flex items-center gap-4 sm:gap-6">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm text-indigo-500 group-hover:scale-110 transition-transform duration-500 shrink-0">
-                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm transition-transform duration-500 shrink-0 ${materials.length >= setting_material.maximal ? 'bg-rose-50 text-rose-500' : 'bg-white text-indigo-500 group-hover:scale-110'
+                  }`}>
+                  {materials.length >= setting_material.maximal ? <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6" /> : <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />}
                 </div>
                 <div>
-                  <p className="text-sm sm:text-base font-black text-slate-800 mb-0.5">Expand your Vault</p>
-                  <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider sm:tracking-[0.15em] leading-relaxed">
-                    Upload more to unlock neural <br className="hidden sm:block" /> insights & mastery challenges.
+                  <p className={`text-sm sm:text-base font-black mb-0.5 ${materials.length >= setting_material.maximal ? 'text-rose-600' : 'text-slate-800'}`}>
+                    {materials.length >= setting_material.maximal ? 'Vault Capacity Full' : 'Expand your Vault'}
+                  </p>
+                  <p className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.15em] leading-relaxed ${materials.length >= setting_material.maximal ? 'text-rose-400' : 'text-slate-400'}`}>
+                    {materials.length >= setting_material.maximal
+                      ? 'You have reached the maximum study material limit.'
+                      : <>Upload more to unlock neural <br className="hidden sm:block" /> insights & mastery challenges.</>}
                   </p>
                 </div>
               </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white text-indigo-600 rounded-lg sm:rounded-xl shadow-sm border border-slate-100 flex items-center justify-center group-hover:translate-x-1 transition-transform shrink-0">
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl shadow-sm border flex items-center justify-center transition-transform shrink-0 ${materials.length >= setting_material.maximal
+                  ? 'bg-rose-50 text-rose-300 border-rose-100'
+                  : 'bg-white text-indigo-600 border-slate-100 group-hover:translate-x-1'
+                }`}>
                 <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
             </motion.div>

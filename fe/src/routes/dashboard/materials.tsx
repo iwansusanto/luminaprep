@@ -230,10 +230,11 @@ function MaterialsPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsUploadModalVisible(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-wider hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
+            disabled={materials.length >= setting_material.maximal}
+            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-2xl text-xs font-black uppercase tracking-wider hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
           >
             <Plus className="w-4 h-4" />
-            Add New
+            {materials.length >= setting_material.maximal ? 'Limit Reached' : 'Add New'}
           </button>
         </div>
       </motion.div>

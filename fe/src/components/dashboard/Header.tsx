@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import { Modal } from 'antd';
 import { MaterialUploader } from './MaterialUploader';
+import { setting_material } from '../../lib/utils';
 
 const Header = () => {
   const auth = useAuth();
@@ -73,10 +74,11 @@ const Header = () => {
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-slate-900 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-slate-900/10 active:scale-95 group"
+          disabled={materialsCount >= setting_material.maximal}
+          className="flex items-center gap-2 bg-slate-900 hover:bg-indigo-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-slate-900/10 active:scale-95 group"
         >
           <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
-          <span>New Material</span>
+          <span>{materialsCount >= setting_material.maximal ? 'Limit Reached' : 'New Material'}</span>
         </button>
 
         <Modal
