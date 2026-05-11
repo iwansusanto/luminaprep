@@ -21,43 +21,89 @@ app.use(
   createProxyMiddleware({
     target: API_URL,
     changeOrigin: true,
+    onProxyReq: (proxyReq, req, res) => {
+      // Inject bearer token from cookie if it exists
+      const accessToken = req.cookies.access_token;
+      if (accessToken) {
+        proxyReq.setHeader('Authorization', `Bearer ${accessToken}`);
+      }
+    },
   })
 );
 
 // --- Auth Session Endpoints (BFF) ---
-app.post('/auth/login', (req, res) => {
-  const userData = req.body;
-  
-  // Only use secure cookies if the connection is HTTPS
-  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
-  
-  // Set HttpOnly cookie
-  res.cookie('luminaprep_session', JSON.stringify(userData), {
-    httpOnly: true,
-    secure: isSecure,
-    sameSite: 'lax', // Use 'lax' to ensure it works across simple local setups
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-  });
-  res.json({ success: true });
+app.post('/auth/login', async (req, res) => {
+  try {
+    const { email, name, avatar_url } = req.body;
+    
+    // Hit backend endpoint /api/v1/auth/signin
+    const backendResponse = await fetch(`${API_URL}/api/v1/auth/signin`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, name, avatar_url }),
+    });
+
+    if (!backendResponse.ok) {
+      const errorData = await backendResponse.json().catch(() => ({}));
+      return res.status(backendResponse.status).json({ 
+        success: false, 
+        message: errorData.detail || errorData.message || 'Authentication failed' 
+      });
+    }
+
+    const data = await backendResponse.json();
+    const { access_token, user } = data;
+    
+    // Only use secure cookies if the connection is HTTPS
+    const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+    
+    // Set access_token in HttpOnly cookie
+    res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: isSecure,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error during login' });
+  }
 });
 
 app.post('/auth/logout', (req, res) => {
-  res.clearCookie('luminaprep_session');
+  res.clearCookie('access_token');
   res.json({ success: true });
 });
 
-app.get('/auth/session', (req, res) => {
-  const sessionCookie = req.cookies.luminaprep_session;
-  if (sessionCookie) {
-    try {
-      const userData = JSON.parse(sessionCookie);
-      return res.json({ authenticated: true, user: userData });
-    } catch (e) {
+app.get('/auth/session', async (req, res) => {
+  const accessToken = req.cookies.access_token;
+  if (!accessToken) {
+    return res.status(401).json({ authenticated: false });
+  }
+
+  try {
+    const backendResponse = await fetch(`${API_URL}/api/v1/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!backendResponse.ok) {
       return res.status(401).json({ authenticated: false });
     }
+
+    const user = await backendResponse.json();
+    res.json({ authenticated: true, user });
+  } catch (error) {
+    console.error('Session check error:', error);
+    res.status(401).json({ authenticated: false });
   }
-  return res.status(401).json({ authenticated: false });
 });
+
 
 // Serve static files from the dist directory
 app.use(express.static(path.join(__dirname, 'dist')));
