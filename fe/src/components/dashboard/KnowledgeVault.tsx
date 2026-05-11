@@ -54,7 +54,7 @@ export const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({
     setQuizDrawerVisible(true)
   }
 
-  const handleGenerateQuiz = (materialId: string, settings: { questions: number; complexity: string }) => {
+  const handleGenerateQuiz = (materialId: string) => {
     onAddQuiz?.(materialId)
     setQuizDrawerVisible(false)
   }
