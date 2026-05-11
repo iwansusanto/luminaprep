@@ -35,7 +35,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=mysql+mysqlconnector://user_lp:Z1KkO7XJXVX9ZZCC1DaiRCsJYuxMlRkR@db:3306/db_lp
+      - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=your-secret-key-change-in-production
     depends_on:

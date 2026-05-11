@@ -13,14 +13,10 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const API_URL = (process.env.API_URL || 'http://localhost:8000').replace(/\/$/, '');
+const API_URL = (process.env.API_URL || 'http://api:8000').replace(/\/$/, '');
 
 // Trust first proxy (necessary for req.secure behind Nginx/PM2)
 app.set('trust proxy', 1);
-
-// Middleware for parsing JSON and cookies
-app.use(express.json());
-app.use(cookieParser());
 
 // Fix for Google OAuth: Allow popups to communicate with the main window
 app.use((req, res, next) => {
@@ -29,21 +25,46 @@ app.use((req, res, next) => {
   next();
 });
 
+// Middleware for parsing cookies (Must be before proxy to inject tokens)
+app.use(cookieParser());
+
+// Debug logger
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api')) {
+    console.log(`[BFF Incoming] ${req.method} ${req.url}`);
+  }
+  next();
+});
+
 // Proxy API requests to the backend
+// MUST be before express.json() to prevent body-parsing from hanging the proxy
 app.use(
-  '/api',
   createProxyMiddleware({
+    pathFilter: '/api',
     target: API_URL,
     changeOrigin: true,
-    onProxyReq: (proxyReq, req, res) => {
-      // Inject bearer token from cookie if it exists
-      const accessToken = req.cookies.access_token;
-      if (accessToken) {
-        proxyReq.setHeader('Authorization', `Bearer ${accessToken}`);
+    on: {
+      proxyReq: (proxyReq, req, res) => {
+        const targetUrl = `${API_URL}${proxyReq.path}`;
+        console.log(`[BFF Proxy Request] ${req.method} ${req.url} -> ${targetUrl}`);
+
+        const accessToken = req.cookies?.access_token;
+        if (accessToken) {
+          proxyReq.setHeader('Authorization', `Bearer ${accessToken}`);
+        }
+      },
+      proxyRes: (proxyRes, req, res) => {
+        console.log(`[BFF Proxy Response] ${req.method} ${req.url} -> Status: ${proxyRes.statusCode}`);
+      },
+      error: (err, req, res) => {
+        console.error(`[BFF Proxy Error] ${req.method} ${req.url} -> ${err.message}`);
       }
-    },
+    }
   })
 );
+
+// Middleware for parsing JSON (Only for non-proxied routes like /auth/login)
+app.use(express.json());
 
 // --- Auth Session Endpoints (BFF) ---
 app.post('/auth/login', async (req, res) => {

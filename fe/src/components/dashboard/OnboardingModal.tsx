@@ -39,7 +39,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isVisible }) =
   const onSubmit = async (data: ProjectFormData) => {
     setLoading(true);
     try {
-      await api.post('/projects', data);
+      await api.post('/projects/', data);
       message.success('Project created successfully! Welcome to LuminaPrep.');
       // Refresh session to update projects list
       await session();
