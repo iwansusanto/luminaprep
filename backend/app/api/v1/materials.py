@@ -124,7 +124,7 @@ def get_project_materials(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Get all materials for a project."""
+    """Get all materials for a project with summary and quiz status."""
     # Check if project exists and belongs to user
     project = get_project_by_id(db, project_id, current_user.id)
     if not project:
@@ -133,7 +133,56 @@ def get_project_materials(
         )
 
     materials = get_materials_by_project(db, project_id, current_user.id)
-    return {"materials": materials}
+    
+    # Enhance materials with quiz status
+    enhanced_materials = []
+    try:
+        # Get all quizzes for the project once
+        from app.crud.quiz import get_quizzes_by_project
+        quizzes = get_quizzes_by_project(db, project_id, current_user.id)
+        quiz_count = len(quizzes) if quizzes else 0
+        latest_quiz_status = quizzes[-1].status if quizzes else None
+        
+        for material in materials:
+            material_dict = {
+                "id": material.id,
+                "project_id": material.project_id,
+                "user_id": material.user_id,
+                "file_name": material.file_name,
+                "file_type": material.file_type,
+                "storage_path": material.storage_path,
+                "status": material.status,
+                "summary": material.summary,
+                "citations": material.citations,
+                "created_at": material.created_at,
+                "updated_at": material.updated_at,
+                "quiz_status": latest_quiz_status,
+                "quiz_count": quiz_count
+            }
+            
+            enhanced_materials.append(material_dict)
+    except Exception as e:
+        # Fallback to basic material data if quiz enhancement fails
+        for material in materials:
+            material_dict = {
+                "id": material.id,
+                "project_id": material.project_id,
+                "user_id": material.user_id,
+                "file_name": material.file_name,
+                "file_type": material.file_type,
+                "storage_path": material.storage_path,
+                "status": material.status,
+                "summary": material.summary,
+                "citations": material.citations,
+                "created_at": material.created_at,
+                "updated_at": material.updated_at,
+                "quiz_status": None,
+                "quiz_count": 0
+            }
+            
+            enhanced_materials.append(material_dict)
+    
+    return {"materials": enhanced_materials}
 
 
 @router.get("/{material_id}", response_model=MaterialResponse)
