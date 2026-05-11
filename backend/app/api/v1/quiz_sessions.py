@@ -18,7 +18,6 @@ from app.models.quiz_session import QuizSessionCreate, QuizSessionRead, QuizSess
 from app.models.user_attempt import UserAttemptRead
 from app.api.deps import get_current_active_user
 from app.models.user import User
-
 router = APIRouter()
 
 
@@ -122,7 +121,7 @@ def get_quiz_session_details(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Get quiz session details with all attempts."""
+    """Get complete quiz session details with all attempts and analytics."""
     result = get_session_with_attempts(db, session_id, current_user.id)
     
     if not result:
@@ -133,10 +132,17 @@ def get_quiz_session_details(
     
     quiz_session, attempts = result
     
-    # Format attempts
+    # Get quiz details
+    from app.crud.quiz import get_quiz_by_id
+    quiz = get_quiz_by_id(db, quiz_session.quiz_id, current_user.id)
+    
+    # Format attempts with enhanced analytics
     attempts_data = []
+    total_time_spent = 0
+    correct_count = 0
+    
     for attempt, question in attempts:
-        attempts_data.append({
+        attempt_data = {
             "question_id": attempt.question_id,
             "question_text": question.question_text,
             "options": question.options,
@@ -145,21 +151,59 @@ def get_quiz_session_details(
             "is_correct": attempt.is_correct,
             "score_earned": attempt.score_earned,
             "feedback_text": attempt.feedback_text,
-            "created_at": attempt.created_at
-        })
+            "created_at": attempt.created_at,
+            "time_spent": None  # Could be calculated if we track start/end times
+        }
+        attempts_data.append(attempt_data)
+        
+        if attempt.is_correct:
+            correct_count += 1
+    
+    # Calculate analytics
+    analytics = {
+        "total_questions": quiz_session.total_questions,
+        "answered_questions": len(attempts),
+        "correct_answers": correct_count,
+        "incorrect_answers": len(attempts) - correct_count,
+        "accuracy_percentage": (correct_count / len(attempts) * 100) if attempts else 0,
+        "total_score": quiz_session.score,
+        "average_time_per_question": total_time_spent / len(attempts) if attempts else 0,
+        "completion_percentage": (len(attempts) / quiz_session.total_questions * 100) if quiz_session.total_questions else 0
+    }
+    
+    # Performance insights
+    insights = []
+    if analytics["accuracy_percentage"] >= 80:
+        insights.append("Excellent performance! You're mastering this material.")
+    elif analytics["accuracy_percentage"] >= 60:
+        insights.append("Good performance! Review incorrect answers to improve.")
+    else:
+        insights.append("Keep practicing! Focus on understanding key concepts.")
+    
+    if analytics["completion_percentage"] == 100:
+        insights.append("Quiz completed! Great job finishing all questions.")
     
     return {
         "session": {
             "id": quiz_session.id,
             "quiz_id": quiz_session.quiz_id,
+            "quiz_title": quiz.question_count if quiz else "Unknown Quiz",
             "status": quiz_session.status,
             "score": quiz_session.score,
             "total_questions": quiz_session.total_questions,
             "correct_answers": quiz_session.correct_answers,
             "started_at": quiz_session.started_at,
-            "completed_at": quiz_session.completed_at
+            "completed_at": quiz_session.completed_at,
+            "duration_minutes": None  # Could be calculated from timestamps
         },
-        "attempts": attempts_data
+        "attempts": attempts_data,
+        "analytics": analytics,
+        "insights": insights,
+        "recommendations": [
+            "Review materials for questions you got wrong",
+            "Practice similar question types",
+            "Focus on understanding core concepts"
+        ]
     }
 
 
