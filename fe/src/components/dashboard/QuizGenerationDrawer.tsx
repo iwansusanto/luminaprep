@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Drawer, Segmented, Select, ConfigProvider } from 'antd'
 import { Sparkles as SparklesIcon, Zap } from 'lucide-react'
+import { setting_quiz } from '../../lib/utils'
 
 interface Material {
   id: string;
@@ -83,7 +84,7 @@ export const QuizGenerationDrawer: React.FC<QuizGenerationDrawerProps> = ({
               <Segmented
                 block
                 size="large"
-                options={[10, 20, 50]}
+                options={setting_quiz.count}
                 value={quizSettings.questions}
                 onChange={(val) => setQuizSettings(prev => ({ ...prev, questions: val as number }))}
                 className="premium-segmented p-1.5 rounded-2xl bg-white border border-slate-200/60 font-black"
@@ -97,11 +98,7 @@ export const QuizGenerationDrawer: React.FC<QuizGenerationDrawerProps> = ({
               className="w-full h-16 premium-select"
               value={quizSettings.complexity}
               onChange={(val) => setQuizSettings(prev => ({ ...prev, complexity: val }))}
-              options={[
-                { value: 'foundational', label: 'Foundational' },
-                { value: 'intermediate', label: 'Intermediate' },
-                { value: 'mastery', label: 'Mastery' },
-              ]}
+              options={setting_quiz.level}
             />
           </div>
 

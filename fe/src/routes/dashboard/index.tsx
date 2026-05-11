@@ -13,6 +13,7 @@ import { Segmented, Select, ConfigProvider, theme, Modal, message } from 'antd'
 import { KnowledgeVault } from '../../components/dashboard/KnowledgeVault'
 import { MaterialUploader } from '../../components/dashboard/MaterialUploader'
 import { OnboardingModal } from '../../components/dashboard/OnboardingModal'
+import { setting_quiz } from '../../lib/utils'
 
 export const Route = createFileRoute('/dashboard/')({
   component: DashboardIndexPage,
@@ -208,7 +209,7 @@ function DashboardIndexPage() {
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-white leading-none mb-2">Quiz Architect</h3>
-                  <p className="text-[10px] font-bold text-indigo-300 uppercase tracking-[0.3em]">AI Engine v2.4</p>
+                  <p className="text-[10px] font-bold text-indigo-300 uppercase tracking-[0.3em]">AI Engine v{setting_quiz.ai_version}</p>
                 </div>
               </div>
 
@@ -255,7 +256,7 @@ function DashboardIndexPage() {
                       <label className="text-[10px] font-black text-indigo-300/60 uppercase tracking-[0.25em] block px-1">Count</label>
                       <Segmented
                         block
-                        options={[10, 20, 50]}
+                        options={setting_quiz.count}
                         value={quizSettings.questions}
                         onChange={(val) => setQuizSettings(prev => ({ ...prev, questions: val as number }))}
                       />
@@ -266,11 +267,7 @@ function DashboardIndexPage() {
                         className="w-full"
                         value={quizSettings.complexity}
                         onChange={(val) => setQuizSettings(prev => ({ ...prev, complexity: val }))}
-                        options={[
-                          { value: 'foundational', label: 'Basic' },
-                          { value: 'intermediate', label: 'Mid' },
-                          { value: 'mastery', label: 'Pro' },
-                        ]}
+                        options={setting_quiz.level}
                       />
                     </div>
                   </div>
