@@ -20,7 +20,8 @@ app.use(cookieParser());
 
 // Fix for Google OAuth: Allow popups to communicate with the main window
 app.use((req, res, next) => {
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
 });
 
