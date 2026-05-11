@@ -3,8 +3,8 @@ import { Modal, Input, Button, message } from 'antd';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Layout, AlignLeft, Rocket } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Sparkles, Layout, AlignLeft } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 
