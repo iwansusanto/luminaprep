@@ -28,7 +28,7 @@ function LoginPage() {
         await auth.login({
           email: userInfo.email,
           name: userInfo.name,
-          picture: userInfo.picture,
+          avatar_url: userInfo.picture,
         })
         navigate({ to: '/dashboard' })
       } catch (err) {

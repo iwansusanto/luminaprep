@@ -72,7 +72,7 @@ function DashboardIndexPage() {
           <h2 className="text-4xl font-black text-slate-800 tracking-tight leading-none mb-4">
             Keep growing, <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">
-              {auth?.user?.name?.split(' ')[0] || 'Explorer'}.
+              {auth?.user?.full_name?.split(' ')[0] || 'Explorer'}.
             </span>
           </h2>
           <p className="text-slate-500 text-sm font-medium max-w-sm leading-relaxed">

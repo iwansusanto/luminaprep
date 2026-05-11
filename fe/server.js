@@ -82,7 +82,7 @@ app.post('/auth/logout', (req, res) => {
 app.get('/auth/session', async (req, res) => {
   const accessToken = req.cookies.access_token;
   if (!accessToken) {
-    return res.status(401).json({ authenticated: false });
+    return res.status(200).json({ authenticated: false });
   }
 
   try {
@@ -93,14 +93,14 @@ app.get('/auth/session', async (req, res) => {
     });
 
     if (!backendResponse.ok) {
-      return res.status(401).json({ authenticated: false });
+      return res.status(200).json({ authenticated: false });
     }
 
     const user = await backendResponse.json();
     res.json({ authenticated: true, user });
   } catch (error) {
     console.error('Session check error:', error);
-    res.status(401).json({ authenticated: false });
+    res.status(200).json({ authenticated: false });
   }
 });
 
