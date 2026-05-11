@@ -113,7 +113,7 @@ function DashboardIndexPage() {
         variants={container}
         initial="hidden"
         animate="show"
-        className="space-y-12 pb-20"
+        className="space-y-8 sm:space-y-12 pb-10 sm:pb-20"
       >
         {/* Hero & Quick Actions */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
@@ -122,29 +122,29 @@ function DashboardIndexPage() {
               <Sparkles className="w-3.5 h-3.5" />
               Intelligence Synchronized
             </div>
-            <h1 className="text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[0.9] mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.1] sm:leading-[0.9] mb-4 sm:mb-6">
               Elevate your <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600">
                 Lumina Experience.
               </span>
             </h1>
-            <p className="text-slate-500 text-lg font-medium leading-relaxed max-w-lg">
+            <p className="text-slate-500 text-sm sm:text-lg font-medium leading-relaxed max-w-lg">
               Welcome back, {auth?.user?.full_name?.split(' ')[0] || 'Explorer'}. Your personal knowledge vault is ready for new insights.
             </p>
           </motion.div>
 
           <motion.div variants={item} className="flex flex-wrap gap-4 lg:justify-end">
             {stats.map((stat) => (
-              <div key={stat.label} className="bg-white/50 backdrop-blur-md p-6 rounded-[2rem] border border-slate-200/60 shadow-sm min-w-[240px] flex-1 lg:flex-none">
-                <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 ${stat.color} rounded-2xl flex items-center justify-center shadow-sm`}>
-                    <stat.icon className="w-6 h-6" />
+              <div key={stat.label} className="bg-white/50 backdrop-blur-md p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-200/60 shadow-sm min-w-[200px] sm:min-w-[240px] flex-1 lg:flex-none">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className={`w-10 h-10 sm:w-14 sm:h-14 ${stat.color} rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm shrink-0`}>
+                    <stat.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
+                    <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5 sm:mb-1">{stat.label}</p>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-black text-slate-800">{stat.value}</span>
-                      <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md">{stat.trend}</span>
+                      <span className="text-xl sm:text-3xl font-black text-slate-800">{stat.value}</span>
+                      <span className="text-[9px] sm:text-[10px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md">{stat.trend}</span>
                     </div>
                   </div>
                 </div>
@@ -164,7 +164,7 @@ function DashboardIndexPage() {
             />
           </div>
 
-          <motion.div variants={item} className="lg:col-span-5 bg-slate-900 rounded-[3rem] p-12 shadow-2xl shadow-indigo-900/40 flex flex-col relative overflow-hidden group border border-white/10 noise-bg">
+          <motion.div variants={item} className="lg:col-span-5 bg-slate-900 rounded-[2.5rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-2xl shadow-indigo-900/40 flex flex-col relative overflow-hidden group border border-white/10 noise-bg">
             <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-indigo-500/20 rounded-full blur-[100px] pointer-events-none group-hover:scale-110 transition-transform duration-1000" />
             <div className="absolute -top-20 -left-20 w-64 h-64 bg-purple-500/10 rounded-full blur-[80px] pointer-events-none" />
 

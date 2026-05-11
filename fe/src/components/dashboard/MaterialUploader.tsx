@@ -1,9 +1,10 @@
-import React, { useRef } from 'react'
+import React, { useRef, useState } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import {
   UploadCloud,
   FileText,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react'
 
 interface MaterialUploaderProps {
@@ -15,6 +16,7 @@ interface MaterialUploaderProps {
 
 export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, className, projectId, onUploadSuccess }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -27,6 +29,7 @@ export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, cl
 
     const formData = new FormData();
     formData.append('file', file);
+    setIsUploading(true);
 
     try {
       const response = await fetch(`/api/v1/materials/upload?project_id=${projectId}`, {
@@ -36,13 +39,14 @@ export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, cl
 
       if (response.ok) {
         if (onUploadSuccess) onUploadSuccess();
-        alert('Material uploaded successfully!');
       } else {
         alert('Failed to upload material.');
       }
     } catch (error) {
       console.error('Upload error:', error);
       alert('An error occurred during upload.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -75,16 +79,35 @@ export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, cl
         />
 
         <div
-          onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-slate-200 rounded-[2.5rem] p-16 flex flex-col items-center justify-center gap-6 hover:border-indigo-400 hover:bg-indigo-50/20 transition-all cursor-pointer group/upload bg-slate-50/30"
+          onClick={() => !isUploading && fileInputRef.current?.click()}
+          className={`border-2 border-dashed border-slate-200 rounded-[2.5rem] p-16 flex flex-col items-center justify-center gap-6 transition-all bg-slate-50/30 relative overflow-hidden ${isUploading ? 'cursor-wait' : 'hover:border-indigo-400 hover:bg-indigo-50/20 cursor-pointer group/upload'
+            }`}
         >
-          <div className="w-24 h-24 bg-white text-indigo-600 rounded-3xl flex items-center justify-center group-hover/upload:scale-110 group-hover/upload:rotate-3 transition-all duration-500 shadow-xl shadow-indigo-500/10 border border-slate-100">
-            <UploadCloud className="w-12 h-12" />
-          </div>
-          <div className="text-center">
-            <p className="font-black text-slate-800 text-xl">Drop your PDF here</p>
-            <p className="text-xs text-slate-400 mt-2 font-bold uppercase tracking-[0.2em]">or click to browse documents</p>
-          </div>
+          {isUploading ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center gap-4"
+            >
+              <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/10 border border-indigo-100">
+                <Loader2 className="w-10 h-10 animate-spin" />
+              </div>
+              <div className="text-center">
+                <p className="font-black text-slate-800 text-lg">Uploading Insight...</p>
+                <p className="text-[10px] text-slate-400 mt-1 font-bold uppercase tracking-[0.2em]">Synchronizing with your vault</p>
+              </div>
+            </motion.div>
+          ) : (
+            <>
+              <div className="w-24 h-24 bg-white text-indigo-600 rounded-3xl flex items-center justify-center group-hover/upload:scale-110 group-hover/upload:rotate-3 transition-all duration-500 shadow-xl shadow-indigo-500/10 border border-slate-100">
+                <UploadCloud className="w-12 h-12" />
+              </div>
+              <div className="text-center">
+                <p className="font-black text-slate-800 text-xl">Drop your PDF here</p>
+                <p className="text-xs text-slate-400 mt-2 font-bold uppercase tracking-[0.2em]">or click to browse documents</p>
+              </div>
+            </>
+          )}
 
           <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-[10px] font-bold uppercase tracking-wider">
             <AlertCircle className="w-3.5 h-3.5" />

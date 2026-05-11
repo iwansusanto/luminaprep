@@ -62,22 +62,22 @@ export const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({
 
   return (
     <>
-      <motion.div variants={variants} className="bg-white rounded-[2.5rem] border border-slate-200/60 p-10 shadow-sm spotlight-card">
-        <div className="flex items-center justify-between mb-8">
+      <motion.div variants={variants} className="bg-white rounded-[2rem] sm:rounded-[2.5rem] border border-slate-200/60 p-6 sm:p-10 shadow-sm spotlight-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 sm:gap-0 mb-8">
           <div>
-            <h3 className="text-2xl font-black text-slate-800 tracking-tight">Knowledge Vault</h3>
-            <p className="text-sm text-slate-500 font-medium">Your curated study collection.</p>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">Knowledge Vault</h3>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium">Your curated study collection.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={onAddMaterial}
-              className="px-5 py-2.5 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2 group"
+              className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-indigo-600 text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 group whitespace-nowrap"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Add Material
+              Add <span className="hidden xs:inline">Material</span>
             </button>
-            <Link to="/dashboard/materials" className="px-5 py-2.5 bg-slate-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-50 transition-all border border-slate-200/50 flex items-center gap-2 group">
-              Full Library
+            <Link to="/dashboard/materials" className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 bg-slate-50 text-indigo-600 text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-50 transition-all border border-slate-200/50 flex items-center justify-center gap-2 group whitespace-nowrap">
+              Library
               <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
@@ -122,17 +122,17 @@ export const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({
               ];
 
               return (
-                <div key={material.id} className="flex items-center justify-between p-4 hover:bg-slate-50/80 border border-transparent hover:border-slate-200/50 rounded-[1.5rem] transition-all group cursor-pointer">
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500">
-                      <FileText className="w-6 h-6" />
+                <div key={material.id} className="flex items-center justify-between p-3 sm:p-4 hover:bg-slate-50/80 border border-transparent hover:border-slate-200/50 rounded-2xl sm:rounded-[1.5rem] transition-all group cursor-pointer">
+                  <div className="flex items-center gap-3 sm:gap-5">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-indigo-50 text-indigo-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500 shrink-0">
+                      <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
-                    <div>
-                      <p className="text-sm font-black text-slate-800 leading-none mb-2">{material.file_name}</p>
-                      <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(material.created_at).toLocaleDateString()}</span>
-                        <span className="w-1 h-1 bg-slate-300 rounded-full" />
-                        <span>PDF Document</span>
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-black text-slate-800 leading-none mb-1.5 truncate pr-2">{material.file_name}</p>
+                      <div className="flex items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                        <span className="flex items-center gap-1 whitespace-nowrap"><Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {new Date(material.created_at).toLocaleDateString()}</span>
+                        <span className="w-0.5 h-0.5 bg-slate-300 rounded-full" />
+                        <span className="truncate">PDF</span>
                       </div>
                     </div>
                   </div>
@@ -169,26 +169,26 @@ export const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({
           )}
 
           {/* Fill space if few records */}
-          {!loading && materials.length > 0 && materials.length < 3 && (
+          {!loading && materials.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-8 p-8 bg-slate-50/50 border border-dashed border-slate-200 rounded-[2rem] flex items-center justify-between group cursor-pointer hover:bg-indigo-50/30 hover:border-indigo-200 transition-all"
+              className="mt-6 sm:mt-8 p-6 sm:p-8 bg-slate-50/50 border border-dashed border-slate-200 rounded-[1.5rem] sm:rounded-[2rem] flex items-center justify-between group cursor-pointer hover:bg-indigo-50/30 hover:border-indigo-200 transition-all"
               onClick={onAddMaterial}
             >
-              <div className="flex items-center gap-6">
-                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm text-indigo-500 group-hover:scale-110 transition-transform duration-500">
-                  <Sparkles className="w-6 h-6" />
+              <div className="flex items-center gap-4 sm:gap-6">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm text-indigo-500 group-hover:scale-110 transition-transform duration-500 shrink-0">
+                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <div>
-                  <p className="text-base font-black text-slate-800 mb-1">Expand your Vault</p>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.15em] leading-relaxed">
-                    Upload more documents to unlock neural <br /> cross-material insights & mastery challenges.
+                  <p className="text-sm sm:text-base font-black text-slate-800 mb-0.5">Expand your Vault</p>
+                  <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider sm:tracking-[0.15em] leading-relaxed">
+                    Upload more to unlock neural <br className="hidden sm:block" /> insights & mastery challenges.
                   </p>
                 </div>
               </div>
-              <div className="w-12 h-12 bg-white text-indigo-600 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center group-hover:translate-x-1 transition-transform">
-                <ChevronRight className="w-5 h-5" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white text-indigo-600 rounded-lg sm:rounded-xl shadow-sm border border-slate-100 flex items-center justify-center group-hover:translate-x-1 transition-transform shrink-0">
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
             </motion.div>
           )}
@@ -199,23 +199,23 @@ export const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="mt-6 p-8 bg-gradient-to-br from-slate-900 to-indigo-950 rounded-[2.5rem] text-white relative overflow-hidden group cursor-pointer border border-white/5"
+              className="mt-4 sm:mt-6 p-6 sm:p-8 bg-gradient-to-br from-slate-900 to-indigo-950 rounded-[1.5rem] sm:rounded-[2.5rem] text-white relative overflow-hidden group cursor-pointer border border-white/5"
             >
               <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12 group-hover:scale-110 transition-transform">
-                <Trophy className="w-40 h-40" />
+                <Trophy className="w-32 sm:w-40 h-32 sm:h-40" />
               </div>
               <div className="relative z-10">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-md">
-                    <Trophy className="w-6 h-6 text-indigo-400" />
+                <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/10 rounded-lg sm:rounded-xl flex items-center justify-center backdrop-blur-md">
+                    <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-400" />
                   </div>
-                  <h4 className="text-xl font-black tracking-tight">Mastery Challenge</h4>
+                  <h4 className="text-lg sm:text-xl font-black tracking-tight">Mastery Challenge</h4>
                 </div>
-                <p className="text-indigo-200/60 text-[11px] font-bold uppercase tracking-[0.2em] mb-8 leading-relaxed">
-                  Synthesize knowledge from your <br /> entire vault into a final assessment.
+                <p className="text-indigo-200/60 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.2em] mb-6 sm:mb-8 leading-relaxed">
+                  Synthesize knowledge from your <br className="hidden sm:block" /> entire vault into a final assessment.
                 </p>
-                <button className="px-6 py-3 bg-white text-indigo-600 rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center gap-2 hover:bg-indigo-50 transition-all active:scale-95">
-                  Start Mastery <ArrowUpRight className="w-4 h-4" />
+                <button className="px-5 py-2.5 sm:px-6 sm:py-3 bg-white text-indigo-600 rounded-lg sm:rounded-xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] flex items-center gap-2 hover:bg-indigo-50 transition-all active:scale-95">
+                  Start Mastery <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               </div>
             </motion.div>

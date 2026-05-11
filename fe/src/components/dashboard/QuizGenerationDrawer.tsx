@@ -45,7 +45,7 @@ export const QuizGenerationDrawer: React.FC<QuizGenerationDrawerProps> = ({
       placement="right"
       onClose={onClose}
       open={isVisible}
-      width={480}
+      width={typeof window !== 'undefined' && window.innerWidth < 640 ? '100%' : 480}
       closeIcon={null}
       styles={{
         body: { padding: 0, overflow: 'hidden' },
@@ -53,7 +53,7 @@ export const QuizGenerationDrawer: React.FC<QuizGenerationDrawerProps> = ({
       }}
     >
       <div className="h-full flex flex-col bg-slate-50">
-        <div className="p-10 bg-white border-b border-slate-100 relative overflow-hidden">
+        <div className="p-6 sm:p-10 bg-white border-b border-slate-100 relative overflow-hidden">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/5 rounded-full blur-3xl" />
           <div className="relative z-10">
             <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20 mb-6 rotate-3">
@@ -66,7 +66,7 @@ export const QuizGenerationDrawer: React.FC<QuizGenerationDrawerProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 p-10 space-y-10 overflow-y-auto">
+        <div className="flex-1 p-6 sm:p-10 space-y-8 sm:space-y-10 overflow-y-auto">
           <div className="space-y-4">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block px-1">Questions Count</label>
             <ConfigProvider
@@ -120,7 +120,7 @@ export const QuizGenerationDrawer: React.FC<QuizGenerationDrawerProps> = ({
           </div>
         </div>
 
-        <div className="p-10 bg-white border-t border-slate-100">
+        <div className="p-6 sm:p-10 bg-white border-t border-slate-100">
           <button
             onClick={handleGenerate}
             className="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 active:scale-[0.98] group"
