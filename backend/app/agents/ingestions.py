@@ -1,7 +1,7 @@
 from app.agents.chunking import DocumentChunker
 from app.agents.parsers import pdf_parser, txt_parser
 from app.agents.embedding_pipeline import store_chunks
-from app.db.database import SessionLocal
+from app.database import SessionLocal
 from app.models.material import Material
 from app.crud.material import update_material
 from typing import Literal
