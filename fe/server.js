@@ -18,6 +18,12 @@ app.set('trust proxy', 1);
 app.use(express.json());
 app.use(cookieParser());
 
+// Fix for Google OAuth: Allow popups to communicate with the main window
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  next();
+});
+
 // Proxy API requests to the backend
 app.use(
   '/api',
