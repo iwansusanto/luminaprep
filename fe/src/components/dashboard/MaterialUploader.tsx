@@ -4,8 +4,10 @@ import {
   UploadCloud,
   FileText,
   AlertCircle,
-  Loader2
+  Loader2,
+  CheckCircle
 } from 'lucide-react'
+import { notification } from 'antd'
 
 interface MaterialUploaderProps {
   variants?: Variants
@@ -38,9 +40,20 @@ export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, cl
       });
 
       if (response.ok) {
+        notification.success({
+          message: 'Intelligence Uploaded',
+          description: 'Your material has been successfully synchronized and is ready for analysis.',
+          placement: 'topRight',
+          icon: <CheckCircle className="w-6 h-6 text-emerald-500" />,
+          className: 'premium-notification',
+        });
         if (onUploadSuccess) onUploadSuccess();
       } else {
-        alert('Failed to upload material.');
+        notification.error({
+          message: 'Upload Failed',
+          description: 'We encountered an error while processing your material. Please try again.',
+          placement: 'topRight',
+        });
       }
     } catch (error) {
       console.error('Upload error:', error);

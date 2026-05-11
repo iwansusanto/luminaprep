@@ -103,7 +103,6 @@ function DashboardIndexPage() {
   const stats = [
     { label: 'Materials', value: (materials?.length || 0).toString(), sub: 'Total items', icon: FileText, color: 'bg-indigo-50 text-indigo-600', trend: '+2 this week' },
     { label: 'Quizzes', value: '24', sub: 'Completed', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600', trend: '92% avg score' },
-    { label: 'Learning Streak', value: '7', sub: 'Days active', icon: Trophy, color: 'bg-amber-50 text-amber-600', trend: 'Personal best' },
   ]
 
   return (

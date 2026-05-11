@@ -194,7 +194,7 @@ export const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({
           )}
 
           {/* Mastery Challenge placeholder if few records */}
-          {!loading && materials.length > 0 && materials.length < 3 && (
+          {!loading && materials.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
