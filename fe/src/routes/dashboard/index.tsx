@@ -4,9 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   FileText,
   CheckCircle2,
-  Trophy,
   Sparkles,
-  ArrowUpRight,
   Zap,
   BookOpen
 } from 'lucide-react'

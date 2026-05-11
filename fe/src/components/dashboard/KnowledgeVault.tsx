@@ -13,8 +13,7 @@ import {
   Trophy,
   ArrowUpRight
 } from 'lucide-react'
-import { Skeleton, Dropdown, type MenuProps, ConfigProvider } from 'antd'
-import { Sparkles as SparklesIcon, Zap } from 'lucide-react'
+import { Skeleton, Dropdown, type MenuProps } from 'antd'
 import { QuizGenerationDrawer } from './QuizGenerationDrawer'
 
 interface Material {
