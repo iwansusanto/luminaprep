@@ -133,9 +133,9 @@ function DashboardIndexPage() {
             </p>
           </motion.div>
 
-          <motion.div variants={item} className="flex gap-4">
-            {stats.slice(0, 1).map((stat) => (
-              <div key={stat.label} className="bg-white/50 backdrop-blur-md p-6 rounded-[2rem] border border-slate-200/60 shadow-sm min-w-[240px]">
+          <motion.div variants={item} className="flex flex-wrap gap-4 lg:justify-end">
+            {stats.map((stat) => (
+              <div key={stat.label} className="bg-white/50 backdrop-blur-md p-6 rounded-[2rem] border border-slate-200/60 shadow-sm min-w-[240px] flex-1 lg:flex-none">
                 <div className="flex items-center gap-4">
                   <div className={`w-14 h-14 ${stat.color} rounded-2xl flex items-center justify-center shadow-sm`}>
                     <stat.icon className="w-6 h-6" />
@@ -256,46 +256,6 @@ function DashboardIndexPage() {
           </motion.div>
         </div>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {stats.slice(1).map((stat) => (
-            <motion.div
-              key={stat.label}
-              variants={item}
-              className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all group relative overflow-hidden spotlight-card"
-            >
-              <div className="flex flex-col gap-6">
-                <div className={`w-14 h-14 ${stat.color} rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-6 shadow-sm`}>
-                  <stat.icon className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{stat.label}</p>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-3xl font-black text-slate-800">{stat.value}</span>
-                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">{stat.trend}</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-
-          <motion.div variants={item} className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12 group-hover:scale-110 transition-transform">
-              <Trophy className="w-32 h-32" />
-            </div>
-            <div className="relative z-10 h-full flex flex-col justify-between">
-              <div>
-                <h3 className="text-2xl font-black mb-2">Mastery Challenge</h3>
-                <p className="text-indigo-100/70 text-xs font-medium leading-relaxed max-w-[200px]">
-                  Synthesize knowledge from your entire vault.
-                </p>
-              </div>
-              <button className="mt-6 bg-white text-indigo-600 px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:bg-indigo-50 transition-all active:scale-95 self-start">
-                Start Final <ArrowUpRight className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
-        </div>
       </motion.div>
       <ConfigProvider
         theme={{
