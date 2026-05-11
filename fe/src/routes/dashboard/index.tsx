@@ -168,7 +168,7 @@ function DashboardIndexPage() {
                   <Select
                     defaultValue="intermediate"
                     className="w-full h-14"
-                    dropdownStyle={{ borderRadius: '1rem' }}
+                    styles={{ popup: { root: { borderRadius: '1rem' } } }}
                     options={[
                       { value: 'foundational', label: 'Foundational' },
                       { value: 'intermediate', label: 'Intermediate' },
