@@ -1,20 +1,18 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useAuth } from '../../context/AuthContext'
 import { useState, useEffect, useCallback } from 'react'
 import {
   FileText,
   CheckCircle2,
   Trophy,
-  MoreVertical,
   Sparkles,
   ArrowUpRight,
-  Clock,
   Zap,
-  ChevronRight,
   BookOpen
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
-import { Segmented, Select, ConfigProvider, theme, Skeleton, Empty, Button, Modal } from 'antd'
+import { Segmented, Select, ConfigProvider, theme, Modal } from 'antd'
+import { KnowledgeVault } from '../../components/dashboard/KnowledgeVault'
 import { MaterialUploader } from '../../components/dashboard/MaterialUploader'
 import { OnboardingModal } from '../../components/dashboard/OnboardingModal'
 
@@ -158,75 +156,12 @@ function DashboardIndexPage() {
         {/* Main Grid: Upload & Generator */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-7 space-y-8">
-            <motion.div variants={item} className="bg-white rounded-[2.5rem] border border-slate-200/60 p-10 shadow-sm spotlight-card">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h3 className="text-2xl font-black text-slate-800 tracking-tight">Knowledge Vault</h3>
-                  <p className="text-sm text-slate-500 font-medium">Your curated study collection.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setIsUploadModalVisible(true)}
-                    className="px-5 py-2.5 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2 group"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Add Material
-                  </button>
-                  <Link to="/dashboard/materials" className="px-5 py-2.5 bg-slate-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-50 transition-all border border-slate-200/50 flex items-center gap-2 group">
-                    Full Library
-                    <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                  </Link>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {loading ? (
-                  Array(3).fill(0).map((_, i) => (
-                    <div key={i} className="flex items-center gap-4 p-4 border border-slate-100 rounded-[1.5rem]">
-                      <Skeleton.Avatar active size={56} shape="square" className="rounded-2xl" />
-                      <div className="flex-1">
-                        <Skeleton active paragraph={{ rows: 1 }} />
-                      </div>
-                    </div>
-                  ))
-                ) : materials.length > 0 ? (
-                  materials.slice(0, 3).map((material) => (
-                    <div key={material.id} className="flex items-center justify-between p-4 hover:bg-slate-50/80 border border-transparent hover:border-slate-200/50 rounded-[1.5rem] transition-all group cursor-pointer">
-                      <div className="flex items-center gap-5">
-                        <div className="w-14 h-14 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500">
-                          <FileText className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-black text-slate-800 leading-none mb-2">{material.file_name}</p>
-                          <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                            <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(material.created_at).toLocaleDateString()}</span>
-                            <span className="w-1 h-1 bg-slate-300 rounded-full" />
-                            <span>PDF Document</span>
-                          </div>
-                        </div>
-                      </div>
-                      <button className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-slate-100">
-                        <MoreVertical className="w-5 h-5" />
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <div className="py-12 flex flex-col items-center justify-center text-center">
-                    <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6">
-                      <BookOpen className="w-8 h-8 text-slate-300" />
-                    </div>
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[11px] mb-6">Your vault is currently empty</p>
-                    <button
-                      onClick={() => setIsUploadModalVisible(true)}
-                      className="px-8 py-4 bg-indigo-50 text-indigo-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-100 transition-all flex items-center gap-2"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      Add Your First Material
-                    </button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
+            <KnowledgeVault
+              materials={materials}
+              loading={loading}
+              onAddMaterial={() => setIsUploadModalVisible(true)}
+              variants={item}
+            />
           </div>
 
           <motion.div variants={item} className="lg:col-span-5 bg-slate-900 rounded-[3rem] p-12 shadow-2xl shadow-indigo-900/40 flex flex-col relative overflow-hidden group border border-white/10 noise-bg">
