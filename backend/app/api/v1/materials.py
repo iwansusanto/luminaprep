@@ -79,6 +79,45 @@ async def upload_material(
     return material
 
 
+@router.post("", response_model=MaterialResponse)
+def create_test_material(
+    material_data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Create a test material for AI quiz generation (testing only)."""
+    # Validate required fields
+    required_fields = ['project_id', 'file_name', 'file_type', 'storage_path', 'status']
+    for field in required_fields:
+        if field not in material_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Missing required field: {field}"
+            )
+    
+    # Check if project exists and belongs to user
+    project = get_project_by_id(db, material_data['project_id'], current_user.id)
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+
+    # Create material record
+    material = create_material(
+        db=db,
+        project_id=material_data['project_id'],
+        user_id=current_user.id,
+        file_name=material_data['file_name'],
+        storage_path=material_data['storage_path'],
+        file_type=material_data['file_type'],
+        summary=material_data.get('summary'),
+        citations=material_data.get('citations'),
+        status=material_data['status']
+    )
+
+    return material
+
+
 @router.get("/project/{project_id}", response_model=MaterialListResponse)
 def get_project_materials(
     project_id: str,
@@ -111,6 +150,88 @@ def get_material(
         )
 
     return material
+
+
+@router.post("/{material_id}/quizzes", response_model=dict)
+def create_quiz_from_material(
+    material_id: str,
+    quiz_request: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Create a quiz from material and generate AI questions."""
+    # Import quiz functions
+    from app.crud.quiz import create_quiz, update_quiz_status
+    from app.crud.question import create_question
+    from app.agents.mcq_quiz import generate_mcq_quiz
+    
+    # Verify material exists and belongs to user
+    material = get_material_by_id(db, material_id, current_user.id)
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not found"
+        )
+    
+    # Create quiz
+    quiz = create_quiz(
+        db=db,
+        project_id=material.project_id,
+        difficulty_level=quiz_request.get('difficulty_level', 'medium'),
+        question_count=quiz_request.get('question_count', 5),
+        user_id=current_user.id
+    )
+    
+    if not quiz:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to create quiz"
+        )
+    
+    # Generate AI questions
+    try:
+        summary = material.summary or "Material content for quiz generation"
+        
+        # Generate questions using AI
+        ai_questions = generate_mcq_quiz(
+            num_questions=quiz_request.get('question_count', 5),
+            summary=summary,
+            difficulty=quiz_request.get('difficulty_level', 'medium')
+        )
+        
+        # Save questions to database
+        created_questions = []
+        for ai_q in ai_questions:
+            question = create_question(
+                db=db,
+                quiz_id=quiz.id,
+                question_text=ai_q.question,
+                correct_answer=ai_q.correct_answer,
+                options=ai_q.options,
+                explanation=ai_q.explanation,
+                question_metadata={"difficulty": quiz_request.get('difficulty_level', 'medium')}
+            )
+            if question:
+                created_questions.append(question)
+        
+        # Update quiz status
+        update_quiz_status(db, quiz.id, "completed")
+        
+        return {
+            "task_id": quiz.id,
+            "status": "completed",
+            "message": f"Quiz created successfully with {len(created_questions)} questions generated",
+            "questions_count": len(created_questions)
+        }
+        
+    except Exception as e:
+        # Update quiz status to failed
+        update_quiz_status(db, quiz.id, "failed")
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate questions: {str(e)}"
+        )
 
 
 @router.delete("/{material_id}")

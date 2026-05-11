@@ -15,6 +15,8 @@ def create_material(
     file_type: str,
     file_size: Optional[int] = None,
     citations: Optional[str] = None,
+    summary: Optional[str] = None,
+    status: Optional[str] = None,
 ) -> Optional[Material]:
     """Create a new material."""
     material = Material(
@@ -25,6 +27,8 @@ def create_material(
         file_type=file_type,
         file_size=file_size,
         citations=citations,
+        summary=summary,
+        status=status,
     )
 
     db.add(material)

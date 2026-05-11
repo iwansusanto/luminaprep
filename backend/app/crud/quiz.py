@@ -3,6 +3,7 @@ from app.models.quiz import Quiz
 from app.models.project import Project
 from typing import List, Optional
 import uuid
+from datetime import datetime
 
 def create_quiz(db: Session, project_id: str, difficulty_level: str, question_count: int, user_id: str) -> Optional[Quiz]:
     """Create a new quiz."""
@@ -62,14 +63,22 @@ def update_quiz(db: Session, quiz_id: str, status: Optional[str] = None, difficu
 
 def delete_quiz(db: Session, quiz_id: str, user_id: str) -> Optional[Quiz]:
     """Delete a quiz (soft delete)."""
-    quiz = get_quiz_by_id(db, quiz_id, user_id)
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id, Quiz.project.has(Project.user_id == user_id), Quiz.deleted_at.is_(None)).first()
     if not quiz:
         return None
     
-    # Soft delete - set deleted_at timestamp
-    from datetime import datetime
     quiz.deleted_at = datetime.utcnow()
+    db.commit()
+    db.refresh(quiz)
+    return quiz
+
+def update_quiz_status(db: Session, quiz_id: str, status: str) -> Optional[Quiz]:
+    """Update quiz status."""
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id, Quiz.deleted_at.is_(None)).first()
+    if not quiz:
+        return None
     
+    quiz.status = status
     db.commit()
     db.refresh(quiz)
     return quiz
