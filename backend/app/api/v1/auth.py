@@ -130,9 +130,17 @@ async def signin(
 
 @router.get("/me", response_model=UserResponse)
 def get_current_user_info(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """Get current user information."""
+    from app.models.project import Project
+    projects = db.query(Project).filter(
+        Project.user_id == current_user.id,
+        Project.status == "active",
+        Project.deleted_at.is_(None)
+    ).all()
+
     return {
         "id": current_user.id,
         "email": current_user.email,
@@ -142,6 +150,6 @@ def get_current_user_info(
         "updated_at": current_user.updated_at.isoformat(),
         "projects": [
             {"id": p.id, "title": p.title, "description": p.description}
-            for p in getattr(current_user, 'projects_list', [])
+            for p in projects
         ]
     }

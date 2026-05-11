@@ -36,14 +36,6 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     
     if user is None:
         raise credentials_exception
-
-    # Add active projects to user object
-    from app.models.project import Project
-    user.projects_list = db.query(Project).filter(
-        Project.user_id == user.id,
-        Project.status == "active",
-        Project.deleted_at.is_(None)
-    ).all()
     
     return user
 

@@ -9,7 +9,10 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const API_URL = process.env.API_URL || 'http://localhost:8000';
+const API_URL = (process.env.API_URL || 'http://localhost:8000').replace(/\/$/, '');
+
+// Trust first proxy (necessary for req.secure behind Nginx/PM2)
+app.set('trust proxy', 1);
 
 // Middleware for parsing JSON and cookies
 app.use(express.json());
@@ -81,25 +84,32 @@ app.post('/auth/logout', (req, res) => {
 
 app.get('/auth/session', async (req, res) => {
   const accessToken = req.cookies.access_token;
+  
   if (!accessToken) {
+    console.log('[BFF] No access_token cookie found');
     return res.status(200).json({ authenticated: false });
   }
 
   try {
-    const backendResponse = await fetch(`${API_URL}/api/v1/auth/me`, {
+    const url = `${API_URL}/api/v1/auth/me`;
+    console.log(`[BFF] Checking session at: ${url}`);
+    
+    const backendResponse = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
       },
     });
 
     if (!backendResponse.ok) {
+      console.error(`[BFF] Session check failed: Backend returned ${backendResponse.status}`);
       return res.status(200).json({ authenticated: false });
     }
 
     const user = await backendResponse.json();
+    console.log('[BFF] Session check success for:', user.email);
     res.json({ authenticated: true, user });
   } catch (error) {
-    console.error('Session check error:', error);
+    console.error('[BFF] Session check error:', error.message);
     res.status(200).json({ authenticated: false });
   }
 });
