@@ -146,8 +146,13 @@ export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, cl
           </div>
           <div className="w-px h-8 bg-slate-200" />
           <div className="flex flex-col items-center gap-1">
+            <span className="text-xl font-black text-slate-800">{Math.max(0, setting_material.maximal - (currentCount || 0))}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Slots Left</span>
+          </div>
+          <div className="w-px h-8 bg-slate-200" />
+          <div className="flex flex-col items-center gap-1">
             <span className="text-xl font-black text-slate-800">{setting_material.maximal}</span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Max Files</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Limit</span>
           </div>
         </div>
       </div>

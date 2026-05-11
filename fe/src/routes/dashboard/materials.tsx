@@ -19,6 +19,7 @@ import {
 import { DataTable } from '../../components/dashboard/DataTable'
 import { MaterialUploader } from '../../components/dashboard/MaterialUploader'
 import { QuizGenerationDrawer } from '../../components/dashboard/QuizGenerationDrawer'
+import { setting_material } from '../../lib/utils'
 
 export const Route = createFileRoute('/dashboard/materials')({
   component: MaterialsPage,
@@ -247,6 +248,17 @@ function MaterialsPage() {
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Files</p>
               <p className="text-lg font-black text-slate-800">{materials.length}</p>
+            </div>
+          </div>
+          <div className="flex-1 sm:flex-none bg-white border border-slate-200/60 rounded-3xl p-4 flex items-center gap-4 shadow-sm min-w-[200px]">
+            <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Slots Left</p>
+              <p className="text-lg font-black text-slate-800">
+                {Math.max(0, setting_material.maximal - materials.length)}
+              </p>
             </div>
           </div>
           <div className="flex-1 sm:flex-none bg-white border border-slate-200/60 rounded-3xl p-4 flex items-center gap-4 shadow-sm min-w-[200px]">

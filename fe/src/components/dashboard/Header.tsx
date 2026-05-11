@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Bell, Search, Plus, ChevronDown, Settings, Calendar } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
@@ -8,7 +8,29 @@ import { MaterialUploader } from './MaterialUploader';
 const Header = () => {
   const auth = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [materialsCount, setMaterialsCount] = useState(0);
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  const projectId = auth?.user?.projects?.[0]?.id;
+
+  const fetchMaterialsCount = useCallback(async () => {
+    if (!projectId) return;
+    try {
+      const response = await fetch(`/api/v1/materials/project/${projectId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setMaterialsCount(Array.isArray(data.materials) ? data.materials.length : 0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch materials count for header:', error);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    if (isModalOpen) {
+      fetchMaterialsCount();
+    }
+  }, [isModalOpen, fetchMaterialsCount]);
 
   return (
     <header className="h-20 bg-white/60 backdrop-blur-xl border-b border-slate-200/50 fixed top-4 right-4 left-[18rem] z-30 px-8 flex items-center justify-between rounded-3xl shadow-sm">
@@ -70,7 +92,15 @@ const Header = () => {
           }}
           closeIcon={null}
         >
-          <MaterialUploader className="bg-white p-10 relative overflow-hidden" />
+          <MaterialUploader 
+            className="bg-white p-10 relative overflow-hidden" 
+            projectId={projectId}
+            currentCount={materialsCount}
+            onUploadSuccess={() => {
+              fetchMaterialsCount();
+              setIsModalOpen(false);
+            }}
+          />
         </Modal>
 
         <div className="w-[1px] h-8 bg-slate-200 ml-2" />

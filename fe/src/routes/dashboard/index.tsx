@@ -13,7 +13,7 @@ import { Segmented, Select, ConfigProvider, theme, Modal, message } from 'antd'
 import { KnowledgeVault } from '../../components/dashboard/KnowledgeVault'
 import { MaterialUploader } from '../../components/dashboard/MaterialUploader'
 import { OnboardingModal } from '../../components/dashboard/OnboardingModal'
-import { setting_quiz } from '../../lib/utils'
+import { setting_quiz, setting_material } from '../../lib/utils'
 
 export const Route = createFileRoute('/dashboard/')({
   component: DashboardIndexPage,
@@ -136,6 +136,7 @@ function DashboardIndexPage() {
 
   const stats = [
     { label: 'Materials', value: (materials?.length || 0).toString(), sub: 'Total items', icon: FileText, color: 'bg-indigo-50 text-indigo-600', trend: `+${materialsThisWeek} this week` },
+    { label: 'Slots Left', value: Math.max(0, setting_material.maximal - (materials?.length || 0)).toString(), sub: 'Remaining quota', icon: Sparkles, color: 'bg-amber-50 text-amber-600', trend: `${setting_material.maximal} limit` },
     { label: 'Quizzes', value: '24', sub: 'Completed', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600', trend: '92% avg score' },
   ]
 
