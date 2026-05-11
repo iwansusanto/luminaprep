@@ -7,16 +7,18 @@ import {
   Loader2,
   CheckCircle
 } from 'lucide-react'
-import { notification } from 'antd'
+import { notification, message } from 'antd'
+import { setting_material } from '../../lib/utils'
 
 interface MaterialUploaderProps {
   variants?: Variants
   className?: string
   projectId?: string
+  currentCount?: number
   onUploadSuccess?: () => void
 }
 
-export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, className, projectId, onUploadSuccess }) => {
+export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, className, projectId, currentCount, onUploadSuccess }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -25,7 +27,16 @@ export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, cl
     if (!file || !projectId) return;
 
     if (file.type !== 'application/pdf') {
-      alert('Only PDF files are allowed for this MVP.');
+      message.error('Only PDF files are allowed for this MVP.');
+      return;
+    }
+
+    if (currentCount !== undefined && currentCount >= setting_material.maximal) {
+      notification.warning({
+        message: 'Upload Limit Reached',
+        description: `You have reached the maximum limit of ${setting_material.maximal} materials. Please remove some materials to upload new ones.`,
+        placement: 'topRight',
+      });
       return;
     }
 
@@ -135,8 +146,8 @@ export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, cl
           </div>
           <div className="w-px h-8 bg-slate-200" />
           <div className="flex flex-col items-center gap-1">
-            <span className="text-xl font-black text-slate-800">Unlimited</span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Storage</span>
+            <span className="text-xl font-black text-slate-800">{setting_material.maximal}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Max Files</span>
           </div>
         </div>
       </div>

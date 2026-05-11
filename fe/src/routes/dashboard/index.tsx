@@ -9,7 +9,7 @@ import {
   BookOpen
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
-import { Segmented, Select, ConfigProvider, theme, Modal } from 'antd'
+import { Segmented, Select, ConfigProvider, theme, Modal, message } from 'antd'
 import { KnowledgeVault } from '../../components/dashboard/KnowledgeVault'
 import { MaterialUploader } from '../../components/dashboard/MaterialUploader'
 import { OnboardingModal } from '../../components/dashboard/OnboardingModal'
@@ -66,6 +66,34 @@ function DashboardIndexPage() {
 
   const projectId = auth?.user?.projects?.[0]?.id
 
+  const handleRemoveMaterial = async (id: string) => {
+    Modal.confirm({
+      title: 'Remove Material',
+      content: 'Are you sure you want to remove this material? This action cannot be undone.',
+      okText: 'Remove',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      centered: true,
+      onOk: async () => {
+        try {
+          const response = await fetch(`/api/v1/materials/${id}`, {
+            method: 'DELETE',
+          })
+          if (response.ok) {
+            setMaterials(prev => prev.filter(m => m.id !== id))
+            message.success('Material removed successfully')
+          } else {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || errorData.message || 'Failed to remove material')
+          }
+        } catch (error: any) {
+          console.error('Failed to remove material:', error)
+          message.error(error.message || 'Failed to remove material')
+        }
+      },
+    })
+  }
+
   const fetchMaterials = useCallback(async () => {
     if (!projectId) return;
     setLoading(true)
@@ -98,8 +126,15 @@ function DashboardIndexPage() {
 
   const showOnboarding = !!(auth?.user && auth.user.projects?.length === 0);
 
+  const materialsThisWeek = materials.filter(m => {
+    const createdAt = new Date(m.created_at);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return createdAt >= sevenDaysAgo;
+  }).length;
+
   const stats = [
-    { label: 'Materials', value: (materials?.length || 0).toString(), sub: 'Total items', icon: FileText, color: 'bg-indigo-50 text-indigo-600', trend: '+2 this week' },
+    { label: 'Materials', value: (materials?.length || 0).toString(), sub: 'Total items', icon: FileText, color: 'bg-indigo-50 text-indigo-600', trend: `+${materialsThisWeek} this week` },
     { label: 'Quizzes', value: '24', sub: 'Completed', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600', trend: '92% avg score' },
   ]
 
@@ -157,6 +192,7 @@ function DashboardIndexPage() {
               materials={materials}
               loading={loading}
               onAddMaterial={() => setIsUploadModalVisible(true)}
+              onRemoveMaterial={handleRemoveMaterial}
               variants={item}
             />
           </div>
@@ -287,6 +323,7 @@ function DashboardIndexPage() {
           <div className="p-2">
             <MaterialUploader
               projectId={projectId}
+              currentCount={materials.length}
               onUploadSuccess={() => {
                 fetchMaterials()
                 setIsUploadModalVisible(false)
