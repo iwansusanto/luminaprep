@@ -81,12 +81,12 @@ const Header = () => {
           className="flex items-center gap-3 pl-2 group cursor-pointer"
         >
           <div className="text-right hidden sm:block">
-            <p className="text-xs font-black text-slate-800 leading-none">{auth?.user?.name || 'Alex Putra'}</p>
+            <p className="text-xs font-black text-slate-800 leading-none">{auth?.user?.full_name || 'Alex Putra'}</p>
             <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter mt-1">Student Plan</p>
           </div>
           <div className="relative">
             <img
-              src={auth?.user?.picture || 'https://ui-avatars.com/api/?name=' + (auth?.user?.name || 'User')}
+              src={auth?.user?.avatar_url || 'https://ui-avatars.com/api/?name=' + (auth?.user?.full_name || 'User')}
               alt="Profile"
               className="w-10 h-10 rounded-2xl border-2 border-white shadow-md group-hover:shadow-indigo-200 transition-all object-cover"
               referrerPolicy="no-referrer"
