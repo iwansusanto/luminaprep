@@ -1,5 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+export interface Project {
+  id: string;
+  title: string;
+  description: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -7,6 +13,7 @@ export interface User {
   avatar_url: string;
   created_at: string;
   updated_at: string;
+  projects: Project[];
 }
 
 interface AuthContextType {
