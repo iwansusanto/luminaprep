@@ -21,6 +21,151 @@ Implikasi untuk QA:
 - Observability awal harus fokus ke API yang ada: auth, project CRUD, material upload, health check, dan proxy frontend.
 - Langfuse disiapkan sebagai fondasi saja, lalu diaktifkan untuk LLM setelah modul AI/quiz masuk.
 
+## Implementasi QA Metrik Latensi & Token Usage
+
+Task metrik latensi dan token usage diimplementasikan secara non-invasif di folder
+`qa/observability`, supaya tidak mengganggu perubahan frontend/backend yang sedang
+dikerjakan owner lain.
+
+File yang tersedia:
+
+- `qa/observability/day-1-scope.md`: scope endpoint yang bisa diuji sekarang dan gap token usage.
+- `qa/observability/metrics-spec.md`: kontrak metrik latency API dan token usage LLM.
+- `qa/observability/backend-contract.md`: handoff kontrak middleware/logging untuk backend owner.
+- `qa/observability/test-scenarios.md`: skenario uji yang bisa dijalankan sekarang dan yang menunggu auth/AI.
+- `qa/observability/report-template.md`: template laporan QA.
+- `qa/observability/day-6-handoff.md`: ringkasan handoff Day 6.
+- `qa/observability/templates/latency_probe.py`: black-box latency probe tanpa dependency tambahan.
+- `qa/observability/templates/token_usage_report.py`: aggregator JSONL token usage untuk AI/LLM nanti.
+- `qa/observability/sample-token-usage.jsonl`: sample event untuk validasi format token usage.
+
+### Cara Menjalankan Latency Probe
+
+Jalankan backend terlebih dahulu. Sesuaikan port dengan backend lokal yang aktif.
+Dokumentasi backend lama menyebut `8008`, sedangkan default script memakai `8000`.
+
+Dari root repo:
+
+```bash
+python3 qa/observability/templates/latency_probe.py \
+  --base-url http://localhost:8000 \
+  --samples 5
+```
+
+Jika backend berjalan di port `8008`:
+
+```bash
+python3 qa/observability/templates/latency_probe.py \
+  --base-url http://localhost:8008 \
+  --samples 5
+```
+
+Output JSON akan dibuat di:
+
+```bash
+qa/observability/reports/latency-report.json
+```
+
+Endpoint default yang dicek:
+
+- `GET /` expected `200`
+- `GET /health` expected `200`
+- `GET /api/v1/auth/google/auth` expected `200`
+- `GET /api/v1/auth/me` expected `401`
+- `GET /api/v1/projects/` expected `401`
+- `GET /api/v1/materials/project/test-project` expected `401`
+
+Status `401` pada protected endpoint dihitung sukses jika memang expected status-nya
+`401`. Ini penting agar QA bisa mengukur latency auth rejection tanpa membutuhkan
+token login.
+
+Untuk custom endpoint:
+
+```bash
+python3 qa/observability/templates/latency_probe.py \
+  --base-url http://localhost:8000 \
+  --samples 10 \
+  --endpoint "GET /health 200" \
+  --endpoint "GET /api/v1/auth/me 401"
+```
+
+Field penting di report:
+
+- `p50_ms`
+- `p95_ms`
+- `p99_ms`
+- `error_rate`
+- `ok_count`
+- `error_count`
+
+Threshold awal local QA:
+
+- `/health` p95 sebaiknya di bawah `300 ms`.
+- protected endpoint p95 sebaiknya di bawah `1000 ms`.
+- `error_rate` harus `0` untuk expected status yang benar.
+
+### Cara Menggunakan Token Usage Report
+
+Saat ini backend belum punya call AI/LLM, jadi token usage real belum bisa
+divalidasi. Script token usage disiapkan sebagai kontrak dan tooling readiness.
+
+Validasi dengan sample:
+
+```bash
+python3 qa/observability/templates/token_usage_report.py \
+  --input qa/observability/sample-token-usage.jsonl
+```
+
+Output JSON akan dibuat di:
+
+```bash
+qa/observability/reports/token-usage-summary.json
+```
+
+Nanti setelah backend AI/quiz tersedia, backend perlu menghasilkan event JSONL
+dengan field minimal:
+
+- `timestamp`
+- `operation`
+- `provider`
+- `model`
+- `input_tokens`
+- `output_tokens`
+- `total_tokens`
+- `latency_ms`
+
+Field tambahan yang direkomendasikan:
+
+- `request_id`
+- `user_id`
+- `project_id`
+- `material_id`
+- `quiz_id`
+- `estimated_cost_usd`
+
+Contoh event ada di `qa/observability/sample-token-usage.jsonl`.
+
+### Cara Membaca Hasil
+
+Untuk latency:
+
+- Jika `error_rate > 0`, cek `samples[].status`, `samples[].error`, dan `body_preview`.
+- Jika p95 tinggi tapi error rate nol, API masih benar secara fungsi namun perlu dicatat sebagai risiko performa.
+- Jika `/api/v1/auth/google/auth` gagal, cek konfigurasi Google OAuth env; hasil ini tidak otomatis berarti latency middleware bermasalah.
+
+Untuk token usage:
+
+- `event_count` menunjukkan jumlah call LLM yang terekam.
+- `groups[]` mengelompokkan biaya/token berdasarkan `operation`, `provider`, dan `model`.
+- Jika ada event tanpa field wajib, script akan gagal cepat supaya kontrak observability tidak longgar.
+
+### Batasan Scope QA
+
+- QA tidak mengubah `backend/app/*`, `backend/pyproject.toml`, `backend/uv.lock`, atau `fe/*`.
+- Latency probe bersifat black-box terhadap server lokal.
+- Token usage real menunggu implementasi AI/LLM dari backend owner.
+- Langfuse belum wajib untuk Day 1-6; JSONL usage event cukup untuk baseline kontrak.
+
 ## Risiko Teknis Yang Perlu Diverifikasi
 
 - Backend memakai `Base.metadata.create_all`, tetapi model menggunakan `SQLModel`; ini berisiko tabel tidak dibuat oleh metadata yang benar.
