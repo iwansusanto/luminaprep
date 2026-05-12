@@ -33,7 +33,7 @@ class Settings(BaseSettings):
 
     # OpenAI
     OPENAI_API_KEY: str = ""
-    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    OPENAI_BASE_URL: str = "https://openrouter.ai/api/v1"
 
     model_config = {"env_file": ".env", "case_sensitive": False}
 

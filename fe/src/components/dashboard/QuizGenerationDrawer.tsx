@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { Drawer, Segmented, Select, ConfigProvider } from 'antd'
-import { Sparkles as SparklesIcon, Zap } from 'lucide-react'
+import { Drawer, Segmented, Select, ConfigProvider, message } from 'antd'
+import { Sparkles as SparklesIcon, Zap, Loader2 } from 'lucide-react'
 import { setting_quiz } from '../../lib/utils'
 
 interface Material {
@@ -33,10 +33,36 @@ export const QuizGenerationDrawer: React.FC<QuizGenerationDrawerProps> = ({
     questions: 20,
     complexity: 'intermediate'
   })
+  const [generating, setGenerating] = useState(false)
 
-  const handleGenerate = () => {
-    if (material) {
-      onGenerate(material.id, quizSettings)
+  const handleGenerate = async () => {
+    if (!material) return
+
+    setGenerating(true)
+    try {
+      const response = await fetch(`/api/v1/quizzes/materials/${material.id}/quizzes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question_count: quizSettings.questions,
+          difficulty_level: quizSettings.complexity
+        }),
+      })
+
+      if (response.ok) {
+        message.success('Quiz generation started successfully!')
+        onGenerate(material.id, quizSettings)
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || errorData.message || 'Failed to generate quiz')
+      }
+    } catch (error: any) {
+      console.error('Failed to generate quiz:', error)
+      message.error(error.message || 'Failed to generate quiz. Please check your connection.')
+    } finally {
+      setGenerating(false)
     }
   }
 
@@ -120,10 +146,15 @@ export const QuizGenerationDrawer: React.FC<QuizGenerationDrawerProps> = ({
         <div className="p-6 sm:p-10 bg-white border-t border-slate-100">
           <button
             onClick={handleGenerate}
-            className="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 active:scale-[0.98] group"
+            disabled={generating || !material}
+            className="w-full py-5 bg-indigo-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 active:scale-[0.98] group"
           >
-            <Zap className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-            Initialize Generation
+            {generating ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Zap className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+            )}
+            {generating ? 'Architecting Quiz...' : 'Initialize Generation'}
           </button>
           <button
             onClick={onClose}

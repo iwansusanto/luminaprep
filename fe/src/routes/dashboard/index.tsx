@@ -6,7 +6,8 @@ import {
   CheckCircle2,
   Sparkles,
   Zap,
-  BookOpen
+  BookOpen,
+  Loader2
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
 import { Segmented, Select, ConfigProvider, theme, Modal, message } from 'antd'
@@ -64,6 +65,7 @@ function DashboardIndexPage() {
     complexity: 'intermediate'
   })
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false)
+  const [generating, setGenerating] = useState(false)
 
   const projectId = auth?.user?.projects?.[0]?.id
 
@@ -118,11 +120,36 @@ function DashboardIndexPage() {
 
   const handleGenerateQuiz = async () => {
     if (!selectedMaterial) {
-      alert('Please select a material first.')
+      message.warning('Please select a material first.')
       return
     }
-    // Logic for quiz generation would go here
-    alert(`Generating ${quizSettings.questions} ${quizSettings.complexity} questions for material ID: ${selectedMaterial}`)
+
+    setGenerating(true)
+    try {
+      const response = await fetch(`/api/v1/quizzes/materials/${selectedMaterial}/quizzes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question_count: quizSettings.questions,
+          difficulty_level: quizSettings.complexity
+        }),
+      })
+
+      if (response.ok) {
+        message.success('Quiz generation started successfully! You can view it in the Quizzes section.')
+        // Optional: Reset selection or navigate
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || errorData.message || 'Failed to generate quiz')
+      }
+    } catch (error: any) {
+      console.error('Failed to generate quiz:', error)
+      message.error(error.message || 'Failed to generate quiz. Please check your connection.')
+    } finally {
+      setGenerating(false)
+    }
   }
 
   const showOnboarding = !!(auth?.user && auth.user.projects?.length === 0);
@@ -277,11 +304,15 @@ function DashboardIndexPage() {
 
               <button
                 onClick={handleGenerateQuiz}
-                disabled={!selectedMaterial}
+                disabled={!selectedMaterial || generating}
                 className="w-full mt-12 py-6 bg-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-3 hover:bg-indigo-500 transition-all shadow-2xl shadow-indigo-600/30 active:scale-[0.97] group/gen disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                Initialize Generation
+                {generating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                )}
+                {generating ? 'Processing Neural Patterns...' : 'Initialize Generation'}
               </button>
             </div>
           </motion.div>
