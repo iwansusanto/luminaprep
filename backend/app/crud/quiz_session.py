@@ -23,7 +23,7 @@ def create_quiz_session(
         user_id=user_id,
         quiz_id=quiz_id,
         status="active",
-        total_questions=len(quiz.questions) if quiz.questions else 0,
+        total_questions=quiz.question_count if quiz.question_count else 0,
         score=0.0,
         correct_answers=0
     )
