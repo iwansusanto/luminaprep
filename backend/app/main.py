@@ -2,10 +2,8 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from app.core.config import settings
-from app.database import engine, Base
+from app.db.database import engine, Base
 from app.models import User, Project
-from scalar_fastapi import get_scalar_api_reference
-from app.api.v1.api import api_router
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -35,31 +33,26 @@ async def root():
     return {
         "message": f"Welcome to {settings.app_name}",
         "version": settings.app_version,
-        "status": "running",
+        "status": "running"
     }
 
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "database": "connected" if engine else "disconnected"}
+    return {
+        "status": "healthy",
+        "database": "connected" if engine else "disconnected"
+    }
 
 
-# Include API routes
-app.include_router(api_router, prefix="/api/v1")
-
-
-@app.get("/scalar", include_in_schema=False)
-async def scalar_html():
-    return get_scalar_api_reference(
-        openapi_url=app.openapi_url,
-        title=app.title + " - API Documentation",
-    )
+# Import routers (will be created later)
+# from app.api.v1.api import api_router
+# app.include_router(api_router, prefix="/api/v1")
 
 
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",

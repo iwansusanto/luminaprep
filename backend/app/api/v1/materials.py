@@ -22,7 +22,7 @@ from app.crud.project import get_project_by_id
 from app.schemas.material import MaterialResponse, MaterialListResponse
 from app.api.deps import get_current_active_user
 from app.models.user import User
-from app.agents.ingestions import ingest_material_with_retry
+from app.agents import IngestionAgent
 
 router = APIRouter()
 
@@ -69,12 +69,21 @@ async def upload_material(
     )
 
     # Run ingestion in background
-    background_tasks.add_task(
-        ingest_material_with_retry,
-        material_id=str(material.id),
-        file_path=file_path,
-        file_type=file_type,
-    )
+    from app.database import SessionLocal
+
+    def run_ingestion():
+        db = SessionLocal()
+        try:
+            agent = IngestionAgent(db)
+            return agent.ingest_with_retry(
+                material_id=str(material.id),
+                file_path=file_path,
+                file_type=file_type,
+            )
+        finally:
+            db.close()
+
+    background_tasks.add_task(run_ingestion)
 
     return material
 
@@ -87,16 +96,16 @@ def create_test_material(
 ):
     """Create a test material for AI quiz generation (testing only)."""
     # Validate required fields
-    required_fields = ['project_id', 'file_name', 'file_type', 'storage_path', 'status']
+    required_fields = ["project_id", "file_name", "file_type", "storage_path", "status"]
     for field in required_fields:
         if field not in material_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Missing required field: {field}"
+                detail=f"Missing required field: {field}",
             )
-    
+
     # Check if project exists and belongs to user
-    project = get_project_by_id(db, material_data['project_id'], current_user.id)
+    project = get_project_by_id(db, material_data["project_id"], current_user.id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
@@ -105,14 +114,14 @@ def create_test_material(
     # Create material record
     material = create_material(
         db=db,
-        project_id=material_data['project_id'],
+        project_id=material_data["project_id"],
         user_id=current_user.id,
-        file_name=material_data['file_name'],
-        storage_path=material_data['storage_path'],
-        file_type=material_data['file_type'],
-        summary=material_data.get('summary'),
-        citations=material_data.get('citations'),
-        status=material_data['status']
+        file_name=material_data["file_name"],
+        storage_path=material_data["storage_path"],
+        file_type=material_data["file_type"],
+        summary=material_data.get("summary"),
+        citations=material_data.get("citations"),
+        status=material_data["status"],
     )
 
     return material
@@ -133,16 +142,17 @@ def get_project_materials(
         )
 
     materials = get_materials_by_project(db, project_id, current_user.id)
-    
+
     # Enhance materials with quiz status
     enhanced_materials = []
     try:
         # Get all quizzes for the project once
         from app.crud.quiz import get_quizzes_by_project
+
         quizzes = get_quizzes_by_project(db, project_id, current_user.id)
         quiz_count = len(quizzes) if quizzes else 0
         latest_quiz_status = quizzes[-1].status if quizzes else None
-        
+
         for material in materials:
             material_dict = {
                 "id": material.id,
@@ -157,9 +167,9 @@ def get_project_materials(
                 "created_at": material.created_at,
                 "updated_at": material.updated_at,
                 "quiz_status": latest_quiz_status,
-                "quiz_count": quiz_count
+                "quiz_count": quiz_count,
             }
-            
+
             enhanced_materials.append(material_dict)
     except Exception as e:
         # Fallback to basic material data if quiz enhancement fails
@@ -177,11 +187,11 @@ def get_project_materials(
                 "created_at": material.created_at,
                 "updated_at": material.updated_at,
                 "quiz_status": None,
-                "quiz_count": 0
+                "quiz_count": 0,
             }
-            
+
             enhanced_materials.append(material_dict)
-    
+
     return {"materials": enhanced_materials}
 
 
@@ -212,39 +222,37 @@ def create_quiz_from_material(
     # Import quiz functions
     from app.crud.quiz import create_quiz, update_quiz_status
     from app.crud.question import create_question
-    from app.agents.mcq_quiz import generate_mcq_quiz, MCQQuestion
-    
+    from app.agents import MCQQuizAgent
+
     # Verify material exists and belongs to user
     material = get_material_by_id(db, material_id, current_user.id)
     if not material:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Material not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
         )
-    
+
     # Create quiz
     quiz = create_quiz(
         db=db,
         project_id=material.project_id,
-        difficulty_level=quiz_request.get('difficulty_level', 'medium'),
-        question_count=quiz_request.get('question_count', 5),
-        user_id=current_user.id
+        difficulty_level=quiz_request.get("difficulty_level", "medium"),
+        question_count=quiz_request.get("question_count", 5),
+        user_id=current_user.id,
     )
-    
+
     if not quiz:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to create quiz"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to create quiz"
         )
-    
+
     # Update quiz status to completed
     update_quiz_status(db, quiz.id, "completed")
-    
+
     return {
         "task_id": quiz.id,
         "status": "completed",
         "message": f"Quiz created successfully",
-        "questions_count": 0
+        "questions_count": 0,
     }
 
 
