@@ -237,53 +237,15 @@ def create_quiz_from_material(
             detail="Failed to create quiz"
         )
     
-    # Generate mock questions for testing (AI disabled temporarily)
-    try:
-        summary = material.summary or "Material content for quiz generation"
-        question_count = quiz_request.get('question_count', 5)
-        
-        # Create simple mock questions for testing Hari 6
-        ai_questions = []
-        for i in range(min(question_count, 5)):
-            ai_questions.append(MCQQuestion(
-                question=f"Question {i+1}: What is the main topic of this material about?",
-                correct_answer="A",
-                options=["A", "B", "C", "D"],
-                explanation=f"This is a mock question {i+1} for testing quiz session management."
-            ))
-        
-        # Save questions to database
-        created_questions = []
-        for ai_q in ai_questions:
-            question = create_question(
-                db=db,
-                quiz_id=quiz.id,
-                question_text=ai_q.question,
-                correct_answer=ai_q.correct_answer,
-                options=ai_q.options,
-                explanation=ai_q.explanation
-            )
-            if question:
-                created_questions.append(question)
-        
-        # Update quiz status
-        update_quiz_status(db, quiz.id, "completed")
-        
-        return {
-            "task_id": quiz.id,
-            "status": "completed",
-            "message": f"Quiz created successfully with {len(created_questions)} questions generated",
-            "questions_count": len(created_questions)
-        }
-        
-    except Exception as e:
-        # Update quiz status to failed
-        update_quiz_status(db, quiz.id, "failed")
-        
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate questions: {str(e)}"
-        )
+    # Update quiz status to completed
+    update_quiz_status(db, quiz.id, "completed")
+    
+    return {
+        "task_id": quiz.id,
+        "status": "completed",
+        "message": f"Quiz created successfully",
+        "questions_count": 0
+    }
 
 
 @router.delete("/{material_id}")

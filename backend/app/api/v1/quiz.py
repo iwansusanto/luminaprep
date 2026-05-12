@@ -128,26 +128,36 @@ def start_quiz_session(
     return quiz_session
 
 
-@router.get("/{quiz_id}", response_model=QuizWithQuestions)
+@router.get("/{quiz_id}")
 def get_quiz(
     quiz_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Get quiz with questions."""
-    quiz = get_quiz_by_id(db, quiz_id, current_user.id)
-    if not quiz:
+    """Get quiz details."""
+    try:
+        # Use the existing get_quiz_by_id function
+        quiz = get_quiz_by_id(db, quiz_id, current_user.id)
+        
+        if not quiz:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Quiz not found"
+            )
+        
+        return {
+            "id": quiz.id,
+            "project_id": quiz.project_id,
+            "difficulty_level": quiz.difficulty_level,
+            "question_count": quiz.question_count,
+            "status": quiz.status
+        }
+    except Exception as e:
+        print(f"Error in get_quiz: {e}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Quiz not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get quiz details"
         )
-    
-    questions = get_questions_by_quiz(db, quiz_id, current_user.id)
-    
-    return QuizWithQuestions(
-        **quiz.dict(),
-        questions=questions
-    )
 
 
 @router.get("/projects/{project_id}/quizzes", response_model=List[QuizRead])

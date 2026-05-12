@@ -6,11 +6,15 @@ from typing import List, Optional
 
 def get_questions_by_quiz(db: Session, quiz_id: str, user_id: str) -> List[Question]:
     """Get all questions for a quiz with user verification."""
-    questions = db.query(Question).join(Quiz).join(Project).filter(
-        Question.quiz_id == quiz_id,
-        Project.user_id == user_id
-    ).all()
-    return questions
+    try:
+        questions = db.query(Question).join(Quiz).join(Project).filter(
+            Question.quiz_id == quiz_id,
+            Project.user_id == user_id
+        ).all()
+        return questions
+    except Exception as e:
+        print(f"Error in get_questions_by_quiz: {e}")
+        return []
 
 def get_question_by_id(db: Session, question_id: str, user_id: str) -> Optional[Question]:
     """Get question by ID with user verification."""

@@ -26,13 +26,17 @@ def create_quiz(db: Session, project_id: str, difficulty_level: str, question_co
 
 def get_quiz_by_id(db: Session, quiz_id: str, user_id: str) -> Optional[Quiz]:
     """Get quiz by ID with user verification."""
-    quiz = db.query(Quiz).join(Project).filter(
-        Quiz.id == quiz_id,
-        Project.user_id == user_id,
-        Quiz.deleted_at.is_(None),
-        Project.deleted_at.is_(None)
-    ).first()
-    return quiz
+    try:
+        quiz = db.query(Quiz).join(Project).filter(
+            Quiz.id == quiz_id,
+            Project.user_id == user_id,
+            Quiz.deleted_at.is_(None),
+            Project.deleted_at.is_(None)
+        ).first()
+        return quiz
+    except Exception as e:
+        print(f"Error in get_quiz_by_id: {e}")
+        return None
 
 def get_quizzes_by_project(db: Session, project_id: str, user_id: str) -> List[Quiz]:
     """Get all quizzes for a project."""

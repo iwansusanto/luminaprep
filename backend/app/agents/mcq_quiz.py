@@ -8,7 +8,7 @@ from app.vector_db.collections import chromadb_collections
 class MCQQuestion(BaseModel):
     question: str
     correct_answer: str
-    options: list[str]
+    options: dict
     explanation: str
 
 
