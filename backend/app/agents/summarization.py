@@ -9,7 +9,7 @@ async def generate_summary(text: str):
     """
 
     response = oa_client.chat.completions.create(
-        model="deepseek/deepseek-v4-flash",
+        model="deepseek/deepseek-chat",
         messages=[
             {
                 "role": "system",

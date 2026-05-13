@@ -21,7 +21,7 @@ def generate_topics(num_questions: int, summary: str, difficulty: str) -> list[s
     """
 
     response = oa_client.chat.completions.create(
-        model="deepseek/deepseek-v4-flash",
+        model="deepseek/deepseek-chat",
         messages=[
             {
                 "role": "system",
@@ -57,7 +57,7 @@ def generate_complete_summary(chunks: list[str]) -> str:
     """
 
     response = oa_client.chat.completions.create(
-        model="deepseek/deepseek-v4-flash",
+        model="deepseek/deepseek-chat",
         messages=[
             {
                 "role": "system",
@@ -95,7 +95,7 @@ def generate_mcq_question(
     for attempt in range(max_retries):
         try:
             response = oa_client.chat.completions.create(
-                model="deepseek/deepseek-v4-flash",
+                model="deepseek/deepseek-chat",
                 messages=[
                     {
                         "role": "system",
