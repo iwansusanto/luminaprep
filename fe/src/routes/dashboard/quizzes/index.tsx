@@ -284,10 +284,34 @@ function QuizzesPage() {
       {/* Stats Summary Bar */}
       <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: 'Avg Score', value: '84%', icon: BarChart3, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-          { label: 'Completed', value: '18', icon: History, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-          { label: 'Total Qns', value: '240', icon: BrainCircuit, color: 'text-amber-500', bg: 'bg-amber-50' },
-          { label: 'Accuracy', value: '76%', icon: Sparkles, color: 'text-purple-500', bg: 'bg-purple-50' },
+          {
+            label: 'Avg Score',
+            value: 'N/A',
+            icon: BarChart3,
+            color: 'text-indigo-500',
+            bg: 'bg-indigo-50'
+          },
+          {
+            label: 'Completed',
+            value: quizzes.filter(q => q.status === 'completed').length.toString(),
+            icon: History,
+            color: 'text-emerald-500',
+            bg: 'bg-emerald-50'
+          },
+          {
+            label: 'Total Qns',
+            value: quizzes.reduce((acc, q) => acc + q.question_count, 0).toLocaleString(),
+            icon: BrainCircuit,
+            color: 'text-amber-500',
+            bg: 'bg-amber-50'
+          },
+          {
+            label: 'Accuracy',
+            value: 'N/A',
+            icon: Sparkles,
+            color: 'text-purple-500',
+            bg: 'bg-purple-50'
+          },
         ].map((stat, i) => (
           <div key={i} className="bg-white border border-slate-200/60 rounded-3xl p-5 flex items-center gap-4 shadow-sm">
             <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center`}>
