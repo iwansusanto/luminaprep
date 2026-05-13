@@ -15,7 +15,7 @@ class UserAttempt(UserAttemptBase, table=True):
     __tablename__ = "user_attempts"
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str = Field(foreign_key="users.id")
+    user_id: str = Field(foreign_key="user.id")
     quiz_id: str = Field(foreign_key="quizzes.id")
     question_id: str = Field(foreign_key="questions.id")
     quiz_session_id: Optional[str] = Field(foreign_key="quiz_sessions.id", default=None)
