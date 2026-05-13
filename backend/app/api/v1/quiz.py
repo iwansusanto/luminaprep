@@ -32,9 +32,9 @@ def create_quiz_from_material(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Create a quiz from material and generate AI questions."""
-    # Verify material exists and belongs to user
+    """Create a quiz from material and generate AI questions in background."""
     from app.crud.material import get_material_by_id
+    from app.tasks.quiz_tasks import generate_quiz_task
 
     material = get_material_by_id(db, material_id, current_user.id)
     if not material:
@@ -42,7 +42,6 @@ def create_quiz_from_material(
             status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
         )
 
-    # Create quiz
     quiz = create_quiz(
         db=db,
         project_id=material.project_id,
@@ -56,62 +55,21 @@ def create_quiz_from_material(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to create quiz"
         )
 
-    # Generate AI questions
-    try:
-        from app.agents import MCQQuizAgent
-        from app.crud.question import create_question
+    summary = material.summary or "Material content for quiz generation"
 
-        # Generate summary from material content if available
-        summary = material.summary or ""
-        if not summary:
-            # If no summary, generate from material content
-            summary = "Material content for quiz generation"
+    generate_quiz_task.delay(
+        quiz_id=quiz.id,
+        summary=summary,
+        num_questions=quiz_request.question_count,
+        difficulty=quiz_request.difficulty_level,
+    )
 
-        # Generate questions using AI
-        mcq_agent = MCQQuizAgent()
-        ai_questions = mcq_agent.generate_quiz(
-            num_questions=quiz_request.question_count,
-            summary=summary,
-            difficulty=quiz_request.difficulty_level,
-        )
-
-        # Save questions to database
-        created_questions = []
-        for ai_q in ai_questions:
-            question = create_question(
-                db=db,
-                quiz_id=quiz.id,
-                question_text=ai_q.question,
-                correct_answer=ai_q.correct_answer,
-                options=ai_q.options,
-                explanation=ai_q.explanation,
-                question_metadata={"difficulty": quiz_request.difficulty_level},
-            )
-            if question:
-                created_questions.append(question)
-
-        # Update quiz status
-        from app.crud.quiz import update_quiz_status
-
-        update_quiz_status(db, quiz.id, "completed")
-
-        return {
-            "task_id": quiz.id,
-            "status": "completed",
-            "message": f"Quiz created successfully with {len(created_questions)} questions generated",
-            "questions_count": len(created_questions),
-        }
-
-    except Exception as e:
-        # Update quiz status to failed
-        from app.crud.quiz import update_quiz_status
-
-        update_quiz_status(db, quiz.id, "failed")
-
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate questions: {str(e)}",
-        )
+    return {
+        "task_id": quiz.id,
+        "status": "pending",
+        "message": "Quiz generation started. Poll the status endpoint for updates.",
+        "questions_count": 0,
+    }
 
 
 @router.post("/{quiz_id}/sessions", response_model=QuizSessionRead)
@@ -147,7 +105,6 @@ def get_quiz(
 ):
     """Get quiz details."""
     try:
-        # Use the existing get_quiz_by_id function
         quiz = get_quiz_by_id(db, quiz_id, current_user.id)
 
         if not quiz:
@@ -168,6 +125,30 @@ def get_quiz(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get quiz details",
         )
+
+
+@router.get("/{quiz_id}/status")
+def get_quiz_status(
+    quiz_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Get quiz generation status."""
+    quiz = get_quiz_by_id(db, quiz_id, current_user.id)
+    if not quiz:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Quiz not found"
+        )
+
+    from app.crud.question import get_questions_by_quiz
+
+    questions = get_questions_by_quiz(db, quiz_id)
+
+    return {
+        "quiz_id": quiz.id,
+        "status": quiz.status,
+        "questions_count": len(questions),
+    }
 
 
 @router.get("/projects/{project_id}/quizzes", response_model=List[QuizRead])

@@ -54,6 +54,32 @@ services:
     volumes:
       - ./backend/chroma_db:/app/chroma_db
 
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: luminaprep-celery-worker
+    command: uv run celery -A app.celery_app worker --loglevel=info
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - UPLOAD_DIR=${UPLOAD_DIR}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL}
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+    networks:
+      - luminaprep-net
+    volumes:
+      - ./backend/chroma_db:/app/chroma_db
+
   db:
     image: mysql:8.4
     container_name: luminaprep-mysql
