@@ -9,7 +9,6 @@ import {
   Plus,
   BrainCircuit,
   MoreVertical,
-  Play,
   History,
   BarChart3,
   Award,
