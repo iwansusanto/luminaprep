@@ -1,4 +1,5 @@
 from sqlmodel import SQLModel, Field, Relationship
+import sqlalchemy as sa
 from typing import Optional
 from datetime import datetime
 import uuid
@@ -8,8 +9,8 @@ class MaterialBase(SQLModel):
     file_type: str = Field(max_length=50)
     storage_path: str = Field(max_length=512)
     status: str = Field(default="uploaded", max_length=50)
-    summary: Optional[str] = Field(default=None)
-    citations: Optional[str] = Field(default=None)
+    summary: Optional[str] = Field(default=None, sa_type=sa.TEXT)
+    citations: Optional[str] = Field(default=None, sa_type=sa.TEXT)
 
 class MaterialCreate(MaterialBase):
     project_id: str

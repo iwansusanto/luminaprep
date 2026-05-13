@@ -1,4 +1,5 @@
 from sqlmodel import SQLModel, Field, Relationship
+import sqlalchemy as sa
 from typing import Optional
 from datetime import datetime
 import uuid
@@ -8,7 +9,7 @@ class UserAttemptBase(SQLModel):
     user_answer: Optional[str] = None
     is_correct: Optional[bool] = None
     score_earned: Optional[float] = None
-    feedback_text: Optional[str] = None
+    feedback_text: Optional[str] = Field(default=None, sa_type=sa.TEXT)
 
 
 class UserAttempt(UserAttemptBase, table=True):
