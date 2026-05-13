@@ -18,6 +18,8 @@ class Project(ProjectBase, table=True):
     # Relationships
     user: Optional["User"] = Relationship(back_populates="projects")
     materials: List["Material"] = Relationship(back_populates="project")
+    quizzes: List["Quiz"] = Relationship(back_populates="project")
+    agent_metrics: List["AgentMetric"] = Relationship(back_populates="project")
 
 
 class ProjectCreate(ProjectBase):
