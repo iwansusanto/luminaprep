@@ -4,7 +4,7 @@ import numpy as np
 
 
 class CustomEmbeddingFunction(EmbeddingFunction):
-    def __init__(self, model: str = "perplexity/pplx-embed-v1-4b"):
+    def __init__(self, model: str = "openai/text-embedding-3-small"):
         self.client = oa_client
         self.model = model
 
