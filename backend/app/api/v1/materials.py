@@ -68,14 +68,11 @@ async def upload_material(
         file_type=file_type,
     )
 
-    # Run ingestion in background
-    from app.database import SessionLocal
-
-    def run_ingestion():
+    async def run_ingestion():
         db = SessionLocal()
         try:
             agent = IngestionAgent(db)
-            return agent.ingest_with_retry(
+            return await agent.ingest_with_retry(
                 material_id=str(material.id),
                 file_path=file_path,
                 file_type=file_type,

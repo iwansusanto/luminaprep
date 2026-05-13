@@ -45,8 +45,11 @@ class MCQQuizAgent:
 
         return [topic.strip() for topic in topics.split("\n") if topic.strip()]
 
-    def get_related_chunks(self, topic: str) -> list[str]:
-        results = self.collection.query(query_texts=[topic], n_results=5)
+    def get_related_chunks(self, topic: str, material_id: str = None) -> list[str]:
+        where_filter = {"material_id": material_id} if material_id else None
+        results = self.collection.query(
+            query_texts=[topic], n_results=5, where=where_filter
+        )
         return [item for sublist in results["documents"] for item in sublist]
 
     def build_complete_summary(self, chunks: list[str]) -> str:
@@ -131,7 +134,7 @@ class MCQQuizAgent:
         return None
 
     def generate_quiz(
-        self, num_questions: int, summary: str, difficulty: str
+        self, num_questions: int, summary: str, difficulty: str, material_id: str = None
     ) -> list[MCQQuestion]:
         topics = self.generate_topics(num_questions, summary, difficulty)
 
@@ -142,7 +145,7 @@ class MCQQuizAgent:
 
         for topic in topics:
             try:
-                chunks = self.get_related_chunks(topic)
+                chunks = self.get_related_chunks(topic, material_id=material_id)
 
                 if not chunks:
                     continue

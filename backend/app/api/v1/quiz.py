@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def _run_quiz_generation(quiz_id: str, material_summary: str, question_count: int, difficulty_level: str, db: Session):
+def _run_quiz_generation(quiz_id: str, material_id: str, material_summary: str, question_count: int, difficulty_level: str, db: Session):
     """Background task: generate AI questions and save them to the database."""
     from app.agents import MCQQuizAgent
     from app.crud.question import create_question
@@ -47,6 +47,7 @@ def _run_quiz_generation(quiz_id: str, material_summary: str, question_count: in
             num_questions=question_count,
             summary=summary,
             difficulty=difficulty_level,
+            material_id=material_id,
         )
         logger.info("[QuizGen] generate_quiz returned %d questions for quiz_id=%s", len(ai_questions), quiz_id)
 
@@ -117,6 +118,7 @@ def create_quiz_from_material(
     background_tasks.add_task(
         _run_quiz_generation,
         quiz_id=quiz.id,
+        material_id=material_id,
         material_summary=material.summary or "",
         question_count=quiz_request.question_count,
         difficulty_level=quiz_request.difficulty_level,
