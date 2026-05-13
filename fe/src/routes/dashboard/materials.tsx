@@ -47,6 +47,8 @@ interface Material {
   file_type: string;
   file_size: number | null;
   citations: string | null;
+  status: string;
+  summary: string | null;
   project_id: string;
   user_id: string;
   created_at: string;
