@@ -302,7 +302,7 @@ function DashboardIndexPage() {
                     <Select
                       className="w-full"
                       placeholder="Choose a material..."
-                      options={materials.map(m => ({ value: m.id, label: m.file_name }))}
+                      options={materials.filter(m => m.status === 'completed').map(m => ({ value: m.id, label: m.file_name }))}
                       onChange={(val) => setSelectedMaterial(val)}
                       suffixIcon={<BookOpen className="w-4 h-4 opacity-40" />}
                     />
