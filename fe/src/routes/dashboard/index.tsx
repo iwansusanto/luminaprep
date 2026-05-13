@@ -10,7 +10,8 @@ import {
   Loader2
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
-import { Segmented, Select, ConfigProvider, theme, Modal, message } from 'antd'
+import { Segmented, Select, ConfigProvider, theme, Modal, message, notification } from 'antd'
+import { useRef } from 'react'
 import { KnowledgeVault } from '../../components/dashboard/KnowledgeVault'
 import { MaterialUploader } from '../../components/dashboard/MaterialUploader'
 import { OnboardingModal } from '../../components/dashboard/OnboardingModal'
@@ -27,6 +28,8 @@ interface Material {
   file_type: string;
   file_size: number | null;
   citations: string | null;
+  status: string;
+  summary: string | null;
   project_id: string;
   user_id: string;
   created_at: string;
@@ -66,6 +69,7 @@ function DashboardIndexPage() {
   })
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const prevMaterialsRef = useRef<Material[]>([])
 
   const projectId = auth?.user?.projects?.[0]?.id
 
@@ -97,9 +101,9 @@ function DashboardIndexPage() {
     })
   }
 
-  const fetchMaterials = useCallback(async () => {
+  const fetchMaterials = useCallback(async (silent = false) => {
     if (!projectId) return;
-    setLoading(true)
+    if (!silent) setLoading(true)
     try {
       const response = await fetch(`/api/v1/materials/project/${projectId}`)
       if (response.ok) {
@@ -108,15 +112,40 @@ function DashboardIndexPage() {
       }
     } catch (error) {
       console.error('Failed to fetch materials:', error)
-      setMaterials([])
+      if (!silent) setMaterials([])
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [projectId])
 
   useEffect(() => {
     fetchMaterials()
   }, [fetchMaterials])
+
+  useEffect(() => {
+    const hasProcessing = materials.some(m => m.status === 'processing');
+    
+    // Check for transitions from processing to completed
+    materials.forEach(material => {
+      const prevMaterial = prevMaterialsRef.current.find(m => m.id === material.id);
+      if (prevMaterial && prevMaterial.status === 'processing' && material.status === 'completed') {
+        notification.success({
+          message: 'Analysis Complete',
+          description: `"${material.file_name}" has been successfully processed and summarized.`,
+          placement: 'bottomRight',
+          icon: <Sparkles className="text-indigo-500" />,
+          className: 'premium-notification'
+        });
+      }
+    });
+    
+    prevMaterialsRef.current = materials;
+
+    if (hasProcessing) {
+      const interval = setInterval(() => fetchMaterials(true), 3000);
+      return () => clearInterval(interval);
+    }
+  }, [fetchMaterials, materials])
 
   const handleGenerateQuiz = async () => {
     if (!selectedMaterial) {
