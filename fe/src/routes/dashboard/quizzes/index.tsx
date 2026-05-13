@@ -233,13 +233,13 @@ function QuizzesPage() {
                     : '/dashboard/quizzes/start/$uuid'
               }
               params={{ uuid: info.row.original.id }}
-              disabled={info.row.original.status === 'failed'}
-              className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 ${info.row.original.status === 'failed'
+              disabled={info.row.original.status === 'failed' || info.row.original.status === 'processing'}
+              className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 ${info.row.original.status === 'failed' || info.row.original.status === 'processing'
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
                 : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-slate-900/10'
                 }`}
             >
-              {info.row.original.status === 'completed' ? 'Review' : info.row.original.status === 'failed' ? 'Failed' : 'Start'}
+              {info.row.original.status === 'completed' ? 'Start' : info.row.original.status === 'failed' ? 'Failed' : 'Not Ready'}
             </Link>
             <button className="p-2 text-slate-400 hover:text-slate-600 rounded-xl transition-all">
               <MoreVertical className="w-4 h-4" />
