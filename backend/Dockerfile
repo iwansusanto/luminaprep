@@ -14,22 +14,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy dependency files
 COPY pyproject.toml uv.lock README.md ./
 
-# Install dependencies including celery extra for task processing
-# Use --no-install-project to avoid failure when app/ source is not yet copied
-RUN uv sync --frozen --no-dev --extra celery --no-install-project
+# Install dependencies using uv pip
+# Using --system installs directly into the container's Python environment
+RUN uv pip install --system --no-cache -r pyproject.toml --extra celery
 
 # Copy the rest of the application
 COPY . .
 
-# Final sync to install the project package itself
-RUN uv sync --frozen --no-dev --extra celery
+# Install the project itself in editable mode or just its dependencies
+RUN uv pip install --system --no-cache -e .
 
 # Expose the port for FastAPI
 EXPOSE 8000
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
-ENV PATH="/app/.venv/bin:$PATH"
 
 # Run the application
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
