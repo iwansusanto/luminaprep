@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, Search, Plus, ChevronDown, Settings, Calendar } from 'lucide-react';
+import { Plus, ChevronDown, Calendar } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import { Modal } from 'antd';
