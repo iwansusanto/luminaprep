@@ -19,47 +19,65 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.alter_column('materials', 'summary',
-               existing_type=sa.String(length=2000),
-               type_=sa.Text(),
-               existing_comment='Material summary')
-    op.alter_column('materials', 'citations',
-               existing_type=sa.String(length=2000),
-               type_=sa.Text(),
-               existing_comment='Material citations')
-    op.alter_column('questions', 'question_text',
-               existing_type=sa.String(length=2000),
-               type_=sa.Text(),
-               existing_comment='Question text')
-    op.alter_column('questions', 'explanation',
-               existing_type=sa.String(length=2000),
-               type_=sa.Text(),
-               existing_comment='Question explanation')
-    op.alter_column('user_attempts', 'feedback_text',
-               existing_type=sa.String(length=2000),
-               type_=sa.Text(),
-               existing_comment='Feedback text')
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    tables = inspector.get_table_names()
+
+    if 'materials' in tables:
+        op.alter_column('materials', 'summary',
+                   existing_type=sa.String(length=2000),
+                   type_=sa.Text(),
+                   existing_comment='Material summary')
+        op.alter_column('materials', 'citations',
+                   existing_type=sa.String(length=2000),
+                   type_=sa.Text(),
+                   existing_comment='Material citations')
+    
+    if 'questions' in tables:
+        op.alter_column('questions', 'question_text',
+                   existing_type=sa.String(length=2000),
+                   type_=sa.Text(),
+                   existing_comment='Question text')
+        op.alter_column('questions', 'explanation',
+                   existing_type=sa.String(length=2000),
+                   type_=sa.Text(),
+                   existing_comment='Question explanation')
+    
+    if 'user_attempts' in tables:
+        op.alter_column('user_attempts', 'feedback_text',
+                   existing_type=sa.String(length=2000),
+                   type_=sa.Text(),
+                   existing_comment='Feedback text')
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.alter_column('user_attempts', 'feedback_text',
-               existing_type=sa.Text(),
-               type_=sa.String(length=2000),
-               existing_comment='Feedback text')
-    op.alter_column('questions', 'explanation',
-               existing_type=sa.Text(),
-               type_=sa.String(length=2000),
-               existing_comment='Question explanation')
-    op.alter_column('questions', 'question_text',
-               existing_type=sa.Text(),
-               type_=sa.String(length=2000),
-               existing_comment='Question text')
-    op.alter_column('materials', 'citations',
-               existing_type=sa.Text(),
-               type_=sa.String(length=2000),
-               existing_comment='Material citations')
-    op.alter_column('materials', 'summary',
-               existing_type=sa.Text(),
-               type_=sa.String(length=2000),
-               existing_comment='Material summary')
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    tables = inspector.get_table_names()
+
+    if 'user_attempts' in tables:
+        op.alter_column('user_attempts', 'feedback_text',
+                   existing_type=sa.Text(),
+                   type_=sa.String(length=2000),
+                   existing_comment='Feedback text')
+    
+    if 'questions' in tables:
+        op.alter_column('questions', 'explanation',
+                   existing_type=sa.Text(),
+                   type_=sa.String(length=2000),
+                   existing_comment='Question explanation')
+        op.alter_column('questions', 'question_text',
+                   existing_type=sa.Text(),
+                   type_=sa.String(length=2000),
+                   existing_comment='Question text')
+    
+    if 'materials' in tables:
+        op.alter_column('materials', 'citations',
+                   existing_type=sa.Text(),
+                   type_=sa.String(length=2000),
+                   existing_comment='Material citations')
+        op.alter_column('materials', 'summary',
+                   existing_type=sa.Text(),
+                   type_=sa.String(length=2000),
+                   existing_comment='Material summary')
