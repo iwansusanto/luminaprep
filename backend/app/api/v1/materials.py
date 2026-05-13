@@ -10,7 +10,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 from typing import List
 import os
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.core.config import settings
 from app.crud.material import (
     create_material,
