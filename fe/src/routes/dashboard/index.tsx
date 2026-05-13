@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useAuth } from '../../context/AuthContext'
 import { useState, useEffect, useCallback } from 'react'
 import {
@@ -60,6 +60,7 @@ const item: Variants = {
 
 function DashboardIndexPage() {
   const auth = useAuth()
+  const navigate = useNavigate()
   const [materials, setMaterials] = useState<Material[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null)
@@ -168,7 +169,7 @@ function DashboardIndexPage() {
 
       if (response.ok) {
         message.success('Quiz generation started successfully! You can view it in the Quizzes section.')
-        // Optional: Reset selection or navigate
+        navigate({ to: '/dashboard/quizzes' })
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.detail || errorData.message || 'Failed to generate quiz')
