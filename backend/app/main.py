@@ -1,5 +1,6 @@
-from contextlib import asynccontextmanager
-from fastapi import FastAPI
+import logging
+import sys
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 from app.core.config import settings
@@ -18,6 +19,15 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown: nothing needed
 
+# Configure root logger to output to stdout (same stream uvicorn uses)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)-8s [%(name)s] %(message)s",
+    stream=sys.stdout,
+)
+
+# Create database tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.app_name,
@@ -64,7 +74,8 @@ async def health_check():
     return {"status": "healthy", "database": db_status}
 
 
-from app.api.v1.api import api_router  # noqa: E402
+# Import routers
+from app.api.v1.api import api_router
 app.include_router(api_router, prefix="/api/v1")
 
 

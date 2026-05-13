@@ -1,4 +1,5 @@
 from sqlmodel import SQLModel, Field, Relationship
+import sqlalchemy as sa
 from sqlalchemy import JSON
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -6,9 +7,9 @@ import uuid
 
 
 class QuestionBase(SQLModel):
-    question_text: str
+    question_text: str = Field(sa_type=sa.TEXT)
     correct_answer: str
-    explanation: Optional[str] = None
+    explanation: Optional[str] = Field(default=None, sa_type=sa.TEXT)
 
 
 class Question(QuestionBase, table=True):
@@ -43,8 +44,8 @@ class QuestionRead(QuestionBase):
 
 
 class QuestionUpdate(SQLModel):
-    question_text: Optional[str] = None
+    question_text: Optional[str] = Field(default=None, sa_type=sa.TEXT)
     options: Optional[Dict[str, Any]] = None
     correct_answer: Optional[str] = None
-    explanation: Optional[str] = None
+    explanation: Optional[str] = Field(default=None, sa_type=sa.TEXT)
     question_metadata: Optional[Dict[str, Any]] = None

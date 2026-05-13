@@ -11,7 +11,8 @@ import {
   MoreVertical,
   History,
   BarChart3,
-  Sparkles
+  Sparkles,
+  Loader2
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
 import {
@@ -30,6 +31,8 @@ interface Material {
   file_type: string;
   file_size: number | null;
   citations: string | null;
+  status: string;
+  summary: string | null;
   project_id: string;
   user_id: string;
   created_at: string;
@@ -65,11 +68,12 @@ type Quiz = {
   project_id: string
 }
 
-const statusMap: Record<string, 'Completed' | 'Draft' | 'Generated' | 'Failed'> = {
+const statusMap: Record<string, 'Completed' | 'Draft' | 'Generated' | 'Failed' | 'Processing'> = {
   'draft': 'Draft',
   'generated': 'Generated',
   'completed': 'Completed',
-  'failed': 'Failed'
+  'failed': 'Failed',
+  'processing': 'Processing'
 }
 
 const complexityMap: Record<string, 'Beginner' | 'Intermediate' | 'Mastery'> = {
@@ -90,9 +94,9 @@ function QuizzesPage() {
 
   const projectId = auth?.user?.projects?.[0]?.id
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!projectId) return;
-    setLoading(true)
+    if (!silent) setLoading(true)
     try {
       const [quizzesData, materialsData] = await Promise.all([
         api.get<Quiz[]>(`/quizzes/projects/${projectId}/quizzes`),
@@ -102,15 +106,23 @@ function QuizzesPage() {
       setMaterials(Array.isArray(materialsData.materials) ? materialsData.materials : [])
     } catch (error) {
       console.error('Failed to fetch data:', error)
-      message.error('Failed to load dashboard data')
+      if (!silent) message.error('Failed to load dashboard data')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [projectId])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  useEffect(() => {
+    const hasProcessing = quizzes.some(q => q.status === 'processing');
+    if (hasProcessing) {
+      const interval = setInterval(() => fetchData(true), 5000);
+      return () => clearInterval(interval);
+    }
+  }, [fetchData, quizzes])
 
   const handleGenerateQuiz = () => {
     fetchData()
@@ -188,17 +200,20 @@ function QuizzesPage() {
           Generated: 'text-emerald-600 bg-emerald-50 border-emerald-100',
           Draft: 'text-slate-400 bg-slate-50 border-slate-100',
           Failed: 'text-rose-600 bg-rose-50 border-rose-100',
+          Processing: 'text-amber-600 bg-amber-50 border-amber-100',
         }
         return (
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${val === 'Completed' ? 'bg-indigo-500' :
               val === 'Generated' ? 'bg-emerald-500' :
                 val === 'Failed' ? 'bg-rose-500' :
-                  'bg-slate-300'
+                  val === 'Processing' ? 'bg-amber-500 animate-pulse' :
+                    'bg-slate-300'
               }`} />
             <span className={`text-[10px] font-black uppercase tracking-widest ${colors[val]}`}>
               {val}
             </span>
+            {val === 'Processing' && <Loader2 className="w-3 h-3 text-amber-500 animate-spin" />}
           </div>
         )
       },
@@ -218,13 +233,13 @@ function QuizzesPage() {
                     : '/dashboard/quizzes/start/$uuid'
               }
               params={{ uuid: info.row.original.id }}
-              disabled={info.row.original.status === 'failed'}
-              className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 ${info.row.original.status === 'failed'
+              disabled={info.row.original.status === 'failed' || info.row.original.status === 'processing'}
+              className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 ${info.row.original.status === 'failed' || info.row.original.status === 'processing'
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
                 : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-slate-900/10'
                 }`}
             >
-              {info.row.original.status === 'completed' ? 'Review' : info.row.original.status === 'failed' ? 'Failed' : 'Start'}
+              {info.row.original.status === 'completed' ? 'Start' : info.row.original.status === 'failed' ? 'Failed' : 'Not Ready'}
             </Link>
             <button className="p-2 text-slate-400 hover:text-slate-600 rounded-xl transition-all">
               <MoreVertical className="w-4 h-4" />
@@ -242,7 +257,7 @@ function QuizzesPage() {
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
-        pageSize: 5,
+        pageSize: 50,
       },
     },
   })

@@ -1,14 +1,17 @@
 import json
 import random
+import logging
 from app.utils.oa_client import oa_client
 from pydantic import BaseModel
 from app.vector_db.collections import chromadb_collections
+
+logger = logging.getLogger(__name__)
 
 
 class MCQQuestion(BaseModel):
     question: str
     correct_answer: str
-    options: dict
+    options: list
     explanation: str
 
 
@@ -16,10 +19,16 @@ class MCQQuizAgent:
     def __init__(self):
         self.client = oa_client
         self.collection = chromadb_collections()
+        try:
+            count = self.collection.count()
+            logger.info("[MCQAgent] Initialized with collection count: %d", count)
+        except Exception as e:
+            logger.error("[MCQAgent] Failed to get collection count: %s", e)
 
     def generate_topics(
         self, num_questions: int, summary: str, difficulty: str
     ) -> list[str]:
+        logger.info("[MCQAgent] Generating topics for summary (len: %d)", len(summary))
         user_prompt = f"""
         Berikut adalah ringkasan materi yang telah dibuat:
         {summary}
@@ -31,23 +40,34 @@ class MCQQuizAgent:
             messages=[
                 {
                     "role": "system",
-                    "content": "Tuliskan topik sesuai dengan ringkasan berikut untuk membuat soal pilihan ganda. Topik harus relevan dengan isi ringkasan dan mencakup aspek-aspek penting yang dapat dijadikan dasar untuk pertanyaan. Pastikan topik yang dihasilkan dapat digunakan untuk membuat soal pilihan ganda yang menantang dan sesuai dengan tingkat kesulitan yang ditentukan.",
+                    "content": "Tuliskan topik sesuai dengan ringkasan berikut untuk membuat soal pilihan ganda. Topik harus relevan dengan isi ringkasan dan mencakup aspek-aspek penting yang dapat dijadikan dasar untuk pertanyaan. Pastikan topik yang dihasilkan dapat digunakan untuk membuat soal pilihan ganda yang menantang dan sesuai dengan tingkat kesulitan yang ditentukan. JANGAN gunakan penomoran, berikan satu topik per baris.",
                 },
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0.5,
         )
 
-        topics = response.choices[0].message.content
-
-        if topics is None:
+        content = response.choices[0].message.content
+        if content is None:
+            logger.warning("[MCQAgent] generate_topics returned None")
             return []
 
-        return [topic.strip() for topic in topics.split("\n") if topic.strip()]
+        topics = [topic.strip() for topic in content.split("\n") if topic.strip()]
+        logger.info("[MCQAgent] Generated %d topics: %s", len(topics), topics)
+        return topics
 
-    def get_related_chunks(self, topic: str) -> list[str]:
-        results = self.collection.query(query_texts=[topic], n_results=5)
-        return [item for sublist in results["documents"] for item in sublist]
+    def get_related_chunks(self, topic: str, material_id: str = None) -> list[str]:
+        # Temporarily removing where_filter to diagnose if filtering is the issue
+        # where_filter = {"material_id": material_id} if material_id else None
+        logger.debug("[MCQAgent] Querying ChromaDB for topic: %s (Filter disabled for diagnosis)", topic)
+        
+        results = self.collection.query(
+            query_texts=[topic], n_results=5
+        )
+        
+        chunks = [item for sublist in results["documents"] for item in sublist]
+        logger.info("[MCQAgent] Found %d chunks for topic: %s", len(chunks), topic)
+        return chunks
 
     def build_complete_summary(self, chunks: list[str]) -> str:
         combined_chunks = "\n\n".join(chunks)
@@ -123,7 +143,8 @@ class MCQQuizAgent:
                     options=options,
                     explanation=data["explanation"],
                 )
-            except (json.JSONDecodeError, KeyError, TypeError):
+            except Exception as e:
+                logger.warning("[MCQAgent] Question generation attempt %d failed: %s", attempt + 1, e)
                 if attempt == max_retries - 1:
                     return None
                 continue
@@ -131,32 +152,40 @@ class MCQQuizAgent:
         return None
 
     def generate_quiz(
-        self, num_questions: int, summary: str, difficulty: str
+        self, num_questions: int, summary: str, difficulty: str, material_id: str = None
     ) -> list[MCQQuestion]:
+        logger.info("[MCQAgent] Starting quiz generation for material_id: %s | summary_len: %d", material_id, len(summary))
         topics = self.generate_topics(num_questions, summary, difficulty)
 
         if not topics:
+            logger.warning("[MCQAgent] No topics generated")
             return []
 
         questions = []
 
         for topic in topics:
             try:
-                chunks = self.get_related_chunks(topic)
+                chunks = self.get_related_chunks(topic, material_id=material_id)
 
                 if not chunks:
+                    logger.warning("[MCQAgent] No chunks found for topic: %s", topic)
                     continue
 
                 complete_summary = self.build_complete_summary(chunks)
 
                 if not complete_summary:
+                    logger.warning("[MCQAgent] Could not build summary for topic: %s", topic)
                     continue
 
                 question = self.generate_question(complete_summary, difficulty)
 
                 if question:
                     questions.append(question)
-            except Exception:
+                else:
+                    logger.warning("[MCQAgent] Failed to generate question for topic: %s", topic)
+            except Exception as e:
+                logger.error("[MCQAgent] Unexpected error for topic %s: %s", topic, e)
                 continue
 
+        logger.info("[MCQAgent] Finished quiz generation. Total questions: %d", len(questions))
         return questions

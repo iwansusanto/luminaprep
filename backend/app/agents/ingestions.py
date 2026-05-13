@@ -5,6 +5,7 @@ from app.agents.chunking import DocumentChunker
 from app.agents.embedding_pipeline import EmbeddingPipelineAgent
 from app.models.material import Material
 from app.crud.material import update_material
+from app.agents.summarization import SummarizationAgent
 from app.agents.exceptions import IngestionError
 
 
@@ -14,6 +15,7 @@ class IngestionAgent:
         self.parser = ParserAgent()
         self.chunker = DocumentChunker()
         self.embedding_pipeline = EmbeddingPipelineAgent()
+        self.summarizer = SummarizationAgent()
 
     async def ingest(
         self, material_id: str, file_path: str, file_type: Literal["pdf", "txt"]
@@ -29,7 +31,8 @@ class IngestionAgent:
                 self.db, material_id=material_id, user_id=user_id, status="processing"
             )
 
-            pages = self.parser.parse(file_path, file_type)
+            import asyncio
+            pages = await asyncio.to_thread(self.parser.parse, file_path, file_type)
 
             all_chunks = []
             for page in pages:
@@ -38,8 +41,16 @@ class IngestionAgent:
 
             self.embedding_pipeline.store_chunks(all_chunks, material_id)
 
+            # Generate summary for the material
+            full_text = " ".join(pages)
+            summary = await self.summarizer.generate(full_text)
+
             update_material(
-                self.db, material_id=material_id, user_id=user_id, status="completed"
+                self.db,
+                material_id=material_id,
+                user_id=user_id,
+                status="completed",
+                summary=summary,
             )
 
             return {

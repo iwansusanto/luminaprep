@@ -6,9 +6,7 @@ import uuid
 
 class ProjectBase(SQLModel):
     title: str = Field(max_length=255)
-    description: Optional[str] = Field(default=None, max_length=1000)
-    vector_collection_name: Optional[str] = Field(default=None, max_length=255)
-    status: str = Field(default="active", max_length=50)
+    description: Optional[str] = Field(default=None)
 
 
 class Project(ProjectBase, table=True):
@@ -16,9 +14,11 @@ class Project(ProjectBase, table=True):
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     user_id: str = Field(foreign_key="users.id")
+    vector_collection_name: Optional[str] = Field(default=None, max_length=255)
+    status: str = Field(default="active", max_length=50)
+    deleted_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    deleted_at: Optional[datetime] = Field(default=None)
 
     # Relationships
     user: Optional["User"] = Relationship(back_populates="projects")
@@ -34,12 +34,12 @@ class ProjectCreate(ProjectBase):
 class ProjectRead(ProjectBase):
     id: str
     user_id: str
+    status: str
     created_at: datetime
     updated_at: datetime
 
 
 class ProjectUpdate(SQLModel):
-    title: Optional[str] = Field(default=None, max_length=255)
-    description: Optional[str] = Field(default=None, max_length=1000)
-    vector_collection_name: Optional[str] = Field(default=None, max_length=255)
-    status: Optional[str] = Field(default=None, max_length=50)
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None

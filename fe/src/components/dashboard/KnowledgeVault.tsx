@@ -25,6 +25,8 @@ interface Material {
   file_type: string;
   file_size: number | null;
   citations: string | null;
+  status: string;
+  summary: string | null;
   project_id: string;
   user_id: string;
   created_at: string;
@@ -134,7 +136,18 @@ export const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({
                       <div className="flex items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                         <span className="flex items-center gap-1 whitespace-nowrap"><Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {new Date(material.created_at).toLocaleDateString()}</span>
                         <span className="w-0.5 h-0.5 bg-slate-300 rounded-full" />
-                        <span className="truncate">PDF</span>
+                        <span className="truncate">{material.file_type.toUpperCase()}</span>
+                        <span className="w-0.5 h-0.5 bg-slate-300 rounded-full" />
+                        <span className={`flex items-center gap-1 ${
+                          material.status === 'completed' ? 'text-emerald-500' : 
+                          material.status === 'failed' ? 'text-rose-500' : 
+                          'text-amber-500'
+                        }`}>
+                          {material.status === 'processing' && <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}><Clock className="w-2.5 h-2.5" /></motion.div>}
+                          {material.status === 'completed' && <Sparkles className="w-2.5 h-2.5" />}
+                          {material.status === 'failed' && <AlertCircle className="w-2.5 h-2.5" />}
+                          {material.status}
+                        </span>
                       </div>
                     </div>
                   </div>

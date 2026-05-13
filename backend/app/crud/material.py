@@ -53,6 +53,7 @@ def get_materials_by_project(
             Material.user_id == user_id,
             Material.deleted_at.is_(None),
         )
+        .order_by(Material.created_at.desc())
         .all()
     )
 
@@ -130,7 +131,7 @@ def delete_material(db: Session, material_id: str, user_id: str) -> Optional[Mat
     return material
 
 
-def save_uploaded_file(file, filename: str) -> str:
+async def save_uploaded_file(file, filename: str) -> str:
     """Save uploaded file to storage."""
     # Create upload directory if it doesn't exist
     upload_dir = settings.upload_dir
@@ -142,8 +143,9 @@ def save_uploaded_file(file, filename: str) -> str:
     file_path = os.path.join(upload_dir, unique_filename)
 
     # Save file
+    # We read the file content asynchronously
+    content = await file.read()
     with open(file_path, "wb") as buffer:
-        content = file.file.read()
         buffer.write(content)
 
     return file_path
