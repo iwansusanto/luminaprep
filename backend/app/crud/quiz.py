@@ -1,9 +1,12 @@
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.quiz import Quiz
 from app.models.project import Project
 from typing import List, Optional
-import uuid
-from datetime import datetime
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 def create_quiz(db: Session, project_id: str, difficulty_level: str, question_count: int, user_id: str) -> Optional[Quiz]:
     """Create a new quiz."""
@@ -71,7 +74,7 @@ def delete_quiz(db: Session, quiz_id: str, user_id: str) -> Optional[Quiz]:
     if not quiz:
         return None
     
-    quiz.deleted_at = datetime.utcnow()
+    quiz.deleted_at = _now()
     db.commit()
     db.refresh(quiz)
     return quiz

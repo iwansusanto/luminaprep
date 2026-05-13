@@ -18,8 +18,60 @@ from app.models.quiz_session import QuizSessionCreate, QuizSessionRead, QuizSess
 from app.models.user_attempt import UserAttemptRead
 from app.api.deps import get_current_active_user
 from app.models.user import User
+
 router = APIRouter()
 
+
+# ── Static routes FIRST to avoid being shadowed by /{session_id} ──────────────
+
+@router.get("/sessions", response_model=List[QuizSessionRead])
+def get_user_quiz_sessions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Get all quiz sessions for the current user."""
+    sessions = get_quiz_sessions_by_user(db, current_user.id)
+    return sessions
+
+
+@router.get("/sessions/{session_id}", response_model=dict)
+def get_quiz_session_details(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Get quiz session details."""
+    try:
+        quiz_session = get_quiz_session_by_id(db, session_id, current_user.id)
+
+        if not quiz_session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Quiz session not found"
+            )
+
+        return {
+            "session_id": quiz_session.id,
+            "quiz_id": quiz_session.quiz_id,
+            "user_id": quiz_session.user_id,
+            "status": quiz_session.status,
+            "total_questions": quiz_session.total_questions,
+            "correct_answers": quiz_session.correct_answers,
+            "score": quiz_session.score,
+            "started_at": str(quiz_session.started_at) if quiz_session.started_at else None,
+            "completed_at": str(quiz_session.completed_at) if quiz_session.completed_at else None
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in get_quiz_session_details: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get session details"
+        )
+
+
+# ── Parameterised routes ───────────────────────────────────────────────────────
 
 @router.post("/{quiz_id}/sessions", response_model=QuizSessionRead)
 def start_quiz_session(
@@ -28,22 +80,20 @@ def start_quiz_session(
     current_user: User = Depends(get_current_active_user),
 ):
     """Start a new quiz session."""
-    # Verify quiz exists and belongs to user's project
     quiz = get_quiz_by_id(db, quiz_id, current_user.id)
     if not quiz:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Quiz not found"
         )
-    
-    # Create quiz session
+
     quiz_session = create_quiz_session(db, current_user.id, quiz_id)
     if not quiz_session:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to create quiz session"
         )
-    
+
     return quiz_session
 
 
@@ -57,27 +107,25 @@ def submit_quiz_answer(
     """Submit an answer for a question in the quiz session."""
     question_id = answer_data.get("question_id")
     user_answer = answer_data.get("user_answer")
-    
+
     if not question_id or not user_answer:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="question_id and user_answer are required"
         )
-    
-    # Submit answer
+
     user_attempt = submit_answer(
         db, session_id, current_user.id, question_id, user_answer
     )
-    
+
     if not user_attempt:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to submit answer. Check if session is active and question exists."
         )
-    
-    # Get updated session stats
+
     updated_session = get_quiz_session_by_id(db, session_id, current_user.id)
-    
+
     return {
         "success": True,
         "attempt": {
@@ -105,59 +153,14 @@ def complete_quiz_session_endpoint(
 ):
     """Complete a quiz session and calculate final score."""
     quiz_session = complete_quiz_session(db, session_id, current_user.id)
-    
+
     if not quiz_session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Quiz session not found"
         )
-    
+
     return quiz_session
-
-
-@router.get("/sessions/{session_id}", response_model=dict)
-def get_quiz_session_details(
-    session_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-):
-    """Get quiz session details."""
-    try:
-        quiz_session = get_quiz_session_by_id(db, session_id, current_user.id)
-        
-        if not quiz_session:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Quiz session not found"
-            )
-        
-        return {
-            "session_id": quiz_session.id,
-            "quiz_id": quiz_session.quiz_id,
-            "user_id": quiz_session.user_id,
-            "status": quiz_session.status,
-            "total_questions": quiz_session.total_questions,
-            "correct_answers": quiz_session.correct_answers,
-            "score": quiz_session.score,
-            "started_at": str(quiz_session.started_at) if quiz_session.started_at else None,
-            "completed_at": str(quiz_session.completed_at) if quiz_session.completed_at else None
-        }
-    except Exception as e:
-        print(f"Error in get_quiz_session_details: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get session details"
-        )
-
-
-@router.get("/sessions", response_model=List[QuizSessionRead])
-def get_user_quiz_sessions(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-):
-    """Get all quiz sessions for the current user."""
-    sessions = get_quiz_sessions_by_user(db, current_user.id)
-    return sessions
 
 
 @router.get("/{session_id}/questions", response_model=dict)
@@ -168,27 +171,25 @@ def get_quiz_session_questions(
 ):
     """Get questions for a quiz session (for taking the quiz)."""
     quiz_session = get_quiz_session_by_id(db, session_id, current_user.id)
-    
+
     if not quiz_session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Quiz session not found"
         )
-    
+
     if quiz_session.status != "active":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Quiz session is not active"
         )
-    
-    # Get quiz questions
+
     try:
         questions = get_questions_by_quiz(db, quiz_session.quiz_id, current_user.id)
     except Exception as e:
         print(f"Error getting questions: {e}")
         questions = []
-    
-    # Format questions without correct answers for quiz taking
+
     questions_data = []
     for question in questions:
         questions_data.append({
@@ -197,7 +198,7 @@ def get_quiz_session_questions(
             "options": question.options,
             "question_metadata": question.question_metadata
         })
-    
+
     return {
         "session_id": session_id,
         "quiz_id": quiz_session.quiz_id,

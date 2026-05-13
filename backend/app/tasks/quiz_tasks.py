@@ -13,7 +13,7 @@ from pydantic import BaseModel
 class MCQQuestion(BaseModel):
     question: str
     correct_answer: str
-    options: dict
+    options: dict  # {"A": "...", "B": "...", ...}
     explanation: str
 
 
@@ -114,13 +114,16 @@ def generate_question(
 
             data = json.loads(content)
 
-            options = data["distractors"] + [data["correct_answer"]]
-            random.shuffle(options)
+            options_list = data["distractors"] + [data["correct_answer"]]
+            random.shuffle(options_list)
+            # Convert to labeled dict: {"A": "...", "B": "...", ...}
+            labels = ["A", "B", "C", "D", "E"]
+            options_dict = {labels[i]: opt for i, opt in enumerate(options_list)}
 
             return MCQQuestion(
                 question=data["question"],
                 correct_answer=data["correct_answer"],
-                options=options,
+                options=options_dict,
                 explanation=data["explanation"],
             )
         except (json.JSONDecodeError, KeyError, TypeError):
@@ -154,6 +157,22 @@ def generate_quiz_task(
 ):
     db = SessionLocal()
     collection = chromadb_collections()
+    return _run_task_body(quiz_id, summary, num_questions, difficulty, db=db, collection=collection)
+
+
+def _run_task_body(
+    quiz_id: str,
+    summary: str,
+    num_questions: int,
+    difficulty: str,
+    db=None,
+    collection=None,
+):
+    """Core task logic, separated so it can be tested without Celery."""
+    if db is None:
+        db = SessionLocal()
+    if collection is None:
+        collection = chromadb_collections()
 
     try:
         update_quiz_status(db, quiz_id, "processing")

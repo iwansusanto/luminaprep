@@ -31,7 +31,7 @@ class QuestionBase(SQLModel):
     options: dict
     correct_answer: str
     explanation: Optional[str] = None
-    metadata: Optional[dict] = None
+    question_metadata: Optional[dict] = None
 
 
 class QuestionRead(QuestionBase):
@@ -54,3 +54,4 @@ class QuizGenerationResponse(SQLModel):
     task_id: str
     status: str
     message: str
+    questions_count: int = 0

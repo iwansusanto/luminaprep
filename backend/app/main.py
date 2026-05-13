@@ -1,23 +1,34 @@
-from fastapi import FastAPI, Depends, HTTPException
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlmodel import SQLModel
 from app.core.config import settings
-from app.db.database import engine, Base
-from app.models import User, Project
+import app.db.database as _db
+from app.models import (  # noqa: F401 – register all SQLModel tables
+    User, Project, Material, Quiz, Question,
+    QuizSession, UserAttempt, AgentMetric,
+)
+from scalar_fastapi import get_scalar_api_reference
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
 
-# Create FastAPI application
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: create tables
+    SQLModel.metadata.create_all(bind=_db.engine)
+    yield
+    # Shutdown: nothing needed
+
+
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description="AI-powered learning platform backend API",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url="/api/openapi.json" if settings.debug else None,
+    lifespan=lifespan,
 )
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
@@ -27,28 +38,34 @@ app.add_middleware(
 )
 
 
+@app.get("/scalar", include_in_schema=False)
+def get_scalar():
+    return get_scalar_api_reference(openapi_url="/api/openapi.json", title=app.title)
+
+
 @app.get("/")
 async def root():
-    """Root endpoint to check API health."""
     return {
         "message": f"Welcome to {settings.app_name}",
         "version": settings.app_version,
-        "status": "running"
+        "status": "running",
     }
 
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "database": "connected" if engine else "disconnected"
-    }
+    """Health check — actually pings the DB."""
+    try:
+        with _db.engine.connect() as conn:
+            conn.execute(_db.text("SELECT 1"))
+        db_status = "connected"
+    except Exception:
+        db_status = "disconnected"
+    return {"status": "healthy", "database": db_status}
 
 
-# Import routers (will be created later)
-# from app.api.v1.api import api_router
-# app.include_router(api_router, prefix="/api/v1")
+from app.api.v1.api import api_router  # noqa: E402
+app.include_router(api_router, prefix="/api/v1")
 
 
 if __name__ == "__main__":
