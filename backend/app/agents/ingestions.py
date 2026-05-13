@@ -31,7 +31,8 @@ class IngestionAgent:
                 self.db, material_id=material_id, user_id=user_id, status="processing"
             )
 
-            pages = self.parser.parse(file_path, file_type)
+            import asyncio
+            pages = await asyncio.to_thread(self.parser.parse, file_path, file_type)
 
             all_chunks = []
             for page in pages:

@@ -51,7 +51,13 @@ async def upload_material(
         )
 
     # Save file to storage
-    file_path = save_uploaded_file(file, file.filename or "unknown")
+    import time
+    start_time = time.time()
+    file_path = await save_uploaded_file(file, file.filename or "unknown")
+    duration = time.time() - start_time
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"File saved to {file_path} in {duration:.2f}s")
 
     # Determine file type
     file_type = (
