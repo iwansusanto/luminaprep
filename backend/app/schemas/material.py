@@ -8,7 +8,9 @@ class MaterialBase(SQLModel):
     storage_path: str = Field(max_length=500)
     file_type: str = Field(max_length=100)
     file_size: Optional[int] = None
-    citations: Optional[str] = Field(default=None, max_length=1000)
+    status: str = Field(default="uploaded", max_length=50)
+    summary: Optional[str] = None
+    citations: Optional[str] = None
 
 
 class MaterialCreate(MaterialBase):
@@ -29,7 +31,9 @@ class MaterialUpdate(SQLModel):
     storage_path: Optional[str] = Field(default=None, max_length=500)
     file_type: Optional[str] = Field(default=None, max_length=100)
     file_size: Optional[int] = None
-    citations: Optional[str] = Field(default=None, max_length=1000)
+    status: Optional[str] = Field(default=None, max_length=50)
+    summary: Optional[str] = None
+    citations: Optional[str] = None
 
 
 class MaterialListResponse(SQLModel):
