@@ -11,7 +11,6 @@ import {
   MoreVertical,
   History,
   BarChart3,
-  Award,
   Sparkles
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
@@ -22,6 +21,20 @@ import {
   getPaginationRowModel,
 } from '@tanstack/react-table'
 import { DataTable } from '../../../components/dashboard/DataTable'
+import { QuizGenerationDrawer } from '../../../components/dashboard/QuizGenerationDrawer'
+
+interface Material {
+  id: string;
+  file_name: string;
+  storage_path: string;
+  file_type: string;
+  file_size: number | null;
+  citations: string | null;
+  project_id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export const Route = createFileRoute('/dashboard/quizzes/')({
   component: QuizzesPage,
@@ -70,27 +83,48 @@ const columnHelper = createColumnHelper<Quiz>()
 function QuizzesPage() {
   const auth = useAuth()
   const [quizzes, setQuizzes] = useState<Quiz[]>([])
+  const [materials, setMaterials] = useState<Material[]>([])
   const [loading, setLoading] = useState(true)
+  const [quizDrawerVisible, setQuizDrawerVisible] = useState(false)
+  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null)
 
   const projectId = auth?.user?.projects?.[0]?.id
 
-  const fetchQuizzes = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     if (!projectId) return;
     setLoading(true)
     try {
-      const data = await api.get<Quiz[]>(`/quizzes/projects/${projectId}/quizzes`)
-      setQuizzes(Array.isArray(data) ? data : [])
+      const [quizzesData, materialsData] = await Promise.all([
+        api.get<Quiz[]>(`/quizzes/projects/${projectId}/quizzes`),
+        api.get<{ materials: Material[] }>(`/materials/project/${projectId}`)
+      ])
+      setQuizzes(Array.isArray(quizzesData) ? quizzesData : [])
+      setMaterials(Array.isArray(materialsData.materials) ? materialsData.materials : [])
     } catch (error) {
-      console.error('Failed to fetch quizzes:', error)
-      message.error('Failed to load quizzes')
+      console.error('Failed to fetch data:', error)
+      message.error('Failed to load dashboard data')
     } finally {
       setLoading(false)
     }
   }, [projectId])
 
   useEffect(() => {
-    fetchQuizzes()
-  }, [fetchQuizzes])
+    fetchData()
+  }, [fetchData])
+
+  const handleGenerateQuiz = () => {
+    fetchData()
+    setQuizDrawerVisible(false)
+  }
+
+  const handleOpenDrawer = () => {
+    if (materials.length === 0) {
+      message.info('Please upload some materials first to generate a quiz.')
+      return
+    }
+    setSelectedMaterial(materials[0]) // Default to first material for now
+    setQuizDrawerVisible(true)
+  }
 
   const data = quizzes;
 
@@ -233,11 +267,14 @@ function QuizzesPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-3 bg-white border border-slate-200 rounded-2xl">
+          {/* <div className="flex items-center gap-2 px-4 py-3 bg-white border border-slate-200 rounded-2xl">
             <Award className="w-4 h-4 text-amber-500" />
             <span className="text-xs font-black text-slate-700">Level 12</span>
-          </div>
-          <button className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-wider hover:bg-indigo-600 transition-all shadow-lg shadow-slate-900/10 active:scale-95">
+          </div> */}
+          <button
+            onClick={handleOpenDrawer}
+            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-wider hover:bg-indigo-600 transition-all shadow-lg shadow-slate-900/10 active:scale-95"
+          >
             <Plus className="w-4 h-4" />
             Generate New
           </button>
@@ -308,6 +345,13 @@ function QuizzesPage() {
           </div>
         )}
       </motion.div>
+
+      <QuizGenerationDrawer
+        isVisible={quizDrawerVisible}
+        onClose={() => setQuizDrawerVisible(false)}
+        material={selectedMaterial}
+        onGenerate={handleGenerateQuiz}
+      />
     </motion.div>
   )
 }
