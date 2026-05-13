@@ -45,7 +45,7 @@ def get_quizzes_by_project(db: Session, project_id: str, user_id: str) -> List[Q
         Project.user_id == user_id,
         Quiz.deleted_at.is_(None),
         Project.deleted_at.is_(None)
-    ).all()
+    ).order_by(Quiz.created_at.desc()).all()
     return quizzes
 
 def update_quiz(db: Session, quiz_id: str, status: Optional[str] = None, difficulty_level: Optional[str] = None, question_count: Optional[int] = None) -> Optional[Quiz]:

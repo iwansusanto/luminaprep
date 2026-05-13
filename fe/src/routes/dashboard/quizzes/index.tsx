@@ -257,7 +257,7 @@ function QuizzesPage() {
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
-        pageSize: 5,
+        pageSize: 50,
       },
     },
   })

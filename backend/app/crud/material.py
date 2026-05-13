@@ -48,6 +48,7 @@ def get_materials_by_project(
             Material.user_id == user_id,
             Material.deleted_at.is_(None),
         )
+        .order_by(Material.created_at.desc())
         .all()
     )
 

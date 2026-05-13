@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { Drawer, Segmented, Select, ConfigProvider, message } from 'antd'
 import { Sparkles as SparklesIcon, Zap, Loader2, Clock, AlertCircle } from 'lucide-react'
 import { setting_quiz } from '../../lib/utils'
@@ -31,6 +32,7 @@ export const QuizGenerationDrawer: React.FC<QuizGenerationDrawerProps> = ({
   material,
   onGenerate
 }) => {
+  const navigate = useNavigate()
   const [quizSettings, setQuizSettings] = useState({
     questions: 20,
     complexity: 'intermediate'
@@ -56,6 +58,7 @@ export const QuizGenerationDrawer: React.FC<QuizGenerationDrawerProps> = ({
       if (response.ok) {
         message.success('Quiz generation started successfully!')
         onGenerate(material.id, quizSettings)
+        navigate({ to: '/dashboard/quizzes' })
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.detail || errorData.message || 'Failed to generate quiz')
