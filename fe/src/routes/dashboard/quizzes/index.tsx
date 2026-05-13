@@ -52,10 +52,10 @@ type Quiz = {
   project_id: string
 }
 
-const statusMap: Record<string, 'Ready' | 'Draft' | 'Generated' | 'Failed'> = {
+const statusMap: Record<string, 'Completed' | 'Draft' | 'Generated' | 'Failed'> = {
   'draft': 'Draft',
   'generated': 'Generated',
-  'completed': 'Ready',
+  'completed': 'Completed',
   'failed': 'Failed'
 }
 
@@ -150,14 +150,14 @@ function QuizzesPage() {
       cell: info => {
         const val = statusMap[info.getValue() as keyof typeof statusMap] || 'Generated'
         const colors = {
-          Ready: 'text-indigo-600 bg-indigo-50 border-indigo-100',
+          Completed: 'text-indigo-600 bg-indigo-50 border-indigo-100',
           Generated: 'text-emerald-600 bg-emerald-50 border-emerald-100',
           Draft: 'text-slate-400 bg-slate-50 border-slate-100',
           Failed: 'text-rose-600 bg-rose-50 border-rose-100',
         }
         return (
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${val === 'Ready' ? 'bg-indigo-500' :
+            <div className={`w-2 h-2 rounded-full ${val === 'Completed' ? 'bg-indigo-500' :
               val === 'Generated' ? 'bg-emerald-500' :
                 val === 'Failed' ? 'bg-rose-500' :
                   'bg-slate-300'
