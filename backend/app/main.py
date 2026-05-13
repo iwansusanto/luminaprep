@@ -1,9 +1,18 @@
+import logging
+import sys
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.database import engine, Base
 from app.models import User, Project
+
+# Configure root logger to output to stdout (same stream uvicorn uses)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)-8s [%(name)s] %(message)s",
+    stream=sys.stdout,
+)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
