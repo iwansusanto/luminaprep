@@ -46,6 +46,8 @@ services:
     restart: unless-stopped
     networks:
       - luminaprep-net
+    volumes:
+      - ./backend/chroma_db:/app/chroma_db
 
   db:
     image: mysql:8.4
