@@ -14,11 +14,6 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
-    # Google OAuth
-    google_client_id: str = ""
-    google_client_secret: str = ""
-    google_redirect_uri: str = ""
-
     # Application
     app_name: str = "LuminaPrep Backend"
     app_version: str = "0.1.0"
@@ -31,11 +26,12 @@ class Settings(BaseSettings):
     upload_dir: str = "uploads"
     max_file_size: int = 10 * 1024 * 1024  # 10MB
 
-    # OpenAI
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = "https://openrouter.ai/api/v1"
 
-    model_config = {"env_file": ".env", "case_sensitive": False}
+    class Config:
+        env_file = ".env"
+        case_sensitive = False
 
 
 settings = Settings()
