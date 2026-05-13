@@ -1,16 +1,19 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { 
-  Search, 
-  Filter, 
-  Plus, 
-  BrainCircuit, 
-  MoreVertical, 
-  Play, 
-  History, 
-  BarChart3, 
-  Award, 
-  Sparkles 
+import { useAuth } from '../../../context/AuthContext'
+import { api } from '../../../lib/api'
+import { Skeleton, message } from 'antd'
+import {
+  Search,
+  Filter,
+  Plus,
+  BrainCircuit,
+  MoreVertical,
+  Play,
+  History,
+  BarChart3,
+  Award,
+  Sparkles
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
 import {
@@ -41,29 +44,59 @@ const item: Variants = {
 }
 
 type Quiz = {
-  id: number
-  uuid: string
-  name: string
-  score: number | null
-  date: string
-  complexity: 'Beginner' | 'Intermediate' | 'Mastery'
-  questions: number
-  status: 'Completed' | 'Draft' | 'Ready'
+  id: string
+  difficulty_level: string
+  question_count: number
+  status: string
+  created_at: string
+  updated_at: string
+  project_id: string
+}
+
+const statusMap: Record<string, 'Completed' | 'Draft' | 'Ready'> = {
+  'draft': 'Draft',
+  'generated': 'Ready',
+  'completed': 'Completed'
+}
+
+const complexityMap: Record<string, 'Beginner' | 'Intermediate' | 'Mastery'> = {
+  'beginner': 'Beginner',
+  'intermediate': 'Intermediate',
+  'expert': 'Mastery'
 }
 
 const columnHelper = createColumnHelper<Quiz>()
 
 function QuizzesPage() {
-  const data = useMemo<Quiz[]>(() => [
-    { id: 1, uuid: 'a1b2c3d4-e5f6-4a5b-b6c7-d8e9f0a1b2c3', name: 'Organic Chemistry Basics', score: 85, date: '2h ago', complexity: 'Intermediate', questions: 20, status: 'Completed' },
-    { id: 2, uuid: 'b2c3d4e5-f6a7-4b6c-c7d8-e9f0a1b2c3d4', name: 'Linear Algebra: Matrices', score: 92, date: 'Yesterday', complexity: 'Mastery', questions: 15, status: 'Completed' },
-    { id: 3, uuid: 'c3d4e5f6-a7b8-4c7d-d8e9-f0a1b2c3d4e5', name: 'European History 1800s', score: null, date: 'Ready to start', complexity: 'Beginner', questions: 30, status: 'Ready' },
-    { id: 4, uuid: 'd4e5f6a7-b8c9-4d8e-e9f0-a1b2c3d4e5f6', name: 'Quantum Physics Intro', score: 78, date: '3 days ago', complexity: 'Mastery', questions: 10, status: 'Completed' },
-    { id: 5, uuid: 'e5f6a7b8-c9d0-4e9f-f0a1-b2c3d4e5f6a7', name: 'Microeconomics Principles', score: null, date: 'Draft', complexity: 'Intermediate', questions: 25, status: 'Draft' },
-  ], [])
+  const auth = useAuth()
+  const [quizzes, setQuizzes] = useState<Quiz[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const projectId = auth?.user?.projects?.[0]?.id
+
+  const fetchQuizzes = useCallback(async () => {
+    if (!projectId) return;
+    setLoading(true)
+    try {
+      const data = await api.get<Quiz[]>(`/quizzes/projects/${projectId}/quizzes`)
+      setQuizzes(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Failed to fetch quizzes:', error)
+      message.error('Failed to load quizzes')
+    } finally {
+      setLoading(false)
+    }
+  }, [projectId])
+
+  useEffect(() => {
+    fetchQuizzes()
+  }, [fetchQuizzes])
+
+  const data = quizzes;
 
   const columns = useMemo(() => [
-    columnHelper.accessor('name', {
+    columnHelper.display({
+      id: 'name',
       header: 'Quiz Name',
       cell: info => (
         <div className="flex items-center gap-4">
@@ -71,16 +104,16 @@ function QuizzesPage() {
             <BrainCircuit className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-black text-slate-800 leading-none mb-1.5">{info.getValue()}</p>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{info.row.original.questions} Questions</p>
+            <p className="text-sm font-black text-slate-800 leading-none mb-1.5">Quiz #{info.row.index + 1}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{info.row.original.question_count} Questions</p>
           </div>
         </div>
       ),
     }),
-    columnHelper.accessor('complexity', {
+    columnHelper.accessor('difficulty_level', {
       header: 'Complexity',
       cell: info => {
-        const val = info.getValue()
+        const val = complexityMap[info.getValue() as keyof typeof complexityMap] || 'Intermediate'
         const colors = {
           Beginner: 'bg-emerald-50 text-emerald-600 border-emerald-100',
           Intermediate: 'bg-amber-50 text-amber-600 border-amber-100',
@@ -93,60 +126,62 @@ function QuizzesPage() {
         )
       },
     }),
-    columnHelper.accessor('score', {
+    columnHelper.display({
+      id: 'score',
       header: 'Best Score',
+      cell: () => {
+        return <span className="text-sm font-medium text-slate-300">—</span>
+      },
+    }),
+    columnHelper.accessor('created_at', {
+      header: 'Created At',
       cell: info => {
-        const val = info.getValue()
-        if (val === null) return <span className="text-sm font-medium text-slate-300">—</span>
+        const date = new Date(info.getValue())
         return (
-          <div className="flex items-center gap-2">
-            <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-indigo-500" style={{ width: `${val}%` }} />
-            </div>
-            <span className="text-sm font-black text-slate-700">{val}%</span>
+          <div className="flex flex-col">
+            <span className="text-sm font-bold text-slate-700">{date.toLocaleDateString()}</span>
+            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">{date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
         )
       },
     }),
-    columnHelper.accessor('date', {
-      header: 'Status / Date',
-      cell: info => (
-        <div className="flex flex-col">
-          <span className="text-sm font-medium text-slate-500">{info.getValue()}</span>
-        </div>
-      ),
+    columnHelper.accessor('status', {
+      header: 'Status',
+      cell: info => {
+        const val = statusMap[info.getValue() as keyof typeof statusMap] || 'Ready'
+        const colors = {
+          Completed: 'text-indigo-600 bg-indigo-50 border-indigo-100',
+          Ready: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+          Draft: 'text-slate-400 bg-slate-50 border-slate-100',
+        }
+        return (
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${val === 'Completed' ? 'bg-indigo-500' : val === 'Ready' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+            <span className={`text-[10px] font-black uppercase tracking-widest ${colors[val]}`}>
+              {val}
+            </span>
+          </div>
+        )
+      },
     }),
     columnHelper.display({
       id: 'actions',
       header: () => <span className="text-right block">Actions</span>,
       cell: info => {
-        const quiz = info.row.original
-        if (quiz.status === 'Completed' || quiz.status === 'Ready') {
-          return (
-            <div className="flex items-center justify-end gap-2">
-              <Link 
-                to={quiz.status === 'Completed' ? "/dashboard/quizzes/retake/$uuid" : "/dashboard/quizzes/start/$uuid"}
-                params={{ uuid: quiz.uuid }}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md shadow-indigo-100 active:scale-95"
-              >
-                <Play className="w-3 h-3 fill-current" />
-                {quiz.status === 'Completed' ? 'Retake' : 'Start'}
-              </Link>
-              <button className="p-2 text-slate-400 hover:text-slate-600 rounded-xl transition-all">
-                <MoreVertical className="w-4 h-4" />
-              </button>
-            </div>
-          )
-        }
-
         return (
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-end gap-3 pr-4">
             <Link
-              to="/dashboard/quizzes/continue/$uuid"
-              params={{ uuid: quiz.uuid }}
-              className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+              to={
+                info.row.original.status === 'completed'
+                  ? '/dashboard/quizzes/retake/$uuid'
+                  : info.row.original.status === 'draft'
+                    ? '/dashboard/quizzes/continue/$uuid'
+                    : '/dashboard/quizzes/start/$uuid'
+              }
+              params={{ uuid: info.row.original.id }}
+              className="px-5 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg shadow-slate-900/10 active:scale-95"
             >
-              Continue
+              {info.row.original.status === 'completed' ? 'Review' : 'Start'}
             </Link>
             <button className="p-2 text-slate-400 hover:text-slate-600 rounded-xl transition-all">
               <MoreVertical className="w-4 h-4" />
@@ -227,7 +262,7 @@ function QuizzesPage() {
             <Search strokeWidth={1.5} className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
             <input
               type="text"
-              placeholder="Filter by quiz name..."
+              placeholder="Filter quizzes..."
               className="w-full pl-11 pr-6 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all text-sm font-medium"
             />
           </div>
@@ -237,7 +272,32 @@ function QuizzesPage() {
             </button>
           </div>
         </div>
-        <DataTable table={table} totalItems={data.length} />
+
+        {loading ? (
+          <div className="p-8 space-y-4">
+            <Skeleton active />
+            <Skeleton active />
+            <Skeleton active />
+          </div>
+        ) : quizzes.length > 0 ? (
+          <DataTable table={table} totalItems={data.length} />
+        ) : (
+          <div className="py-24 px-8 flex flex-col items-center justify-center text-center">
+            <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6 border border-slate-100">
+              <BrainCircuit className="w-10 h-10 text-slate-300" />
+            </div>
+            <h3 className="text-2xl font-black text-slate-800 mb-2">No quizzes found</h3>
+            <p className="text-slate-500 font-medium max-w-xs mx-auto mb-8">
+              Generate your first quiz from a study material to start tracking your mastery.
+            </p>
+            <Link
+              to="/dashboard/materials"
+              className="px-8 py-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-100 active:scale-95"
+            >
+              Go to Materials
+            </Link>
+          </div>
+        )}
       </motion.div>
     </motion.div>
   )
