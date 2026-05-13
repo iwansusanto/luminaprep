@@ -14,7 +14,7 @@ class Quiz(QuizBase, table=True):
     __tablename__ = "quizzes"
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    project_id: str = Field(foreign_key="project.id")
+    project_id: str = Field(foreign_key="projects.id")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     deleted_at: Optional[datetime] = Field(default=None, sa_column_kwargs={"comment": "Soft delete timestamp"})
