@@ -142,7 +142,7 @@ function DashboardIndexPage() {
     prevMaterialsRef.current = materials;
 
     if (hasProcessing) {
-      const interval = setInterval(() => fetchMaterials(true), 3000);
+      const interval = setInterval(() => fetchMaterials(true), 10000);
       return () => clearInterval(interval);
     }
   }, [fetchMaterials, materials])
