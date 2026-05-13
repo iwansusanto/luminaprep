@@ -46,9 +46,9 @@ async def health_check():
     }
 
 
-# Import routers (will be created later)
-# from app.api.v1.api import api_router
-# app.include_router(api_router, prefix="/api/v1")
+# Import routers
+from app.api.v1.api import api_router
+app.include_router(api_router, prefix="/api/v1")
 
 
 if __name__ == "__main__":
