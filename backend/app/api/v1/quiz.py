@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
@@ -22,6 +23,8 @@ from app.models.quiz_session import QuizSessionRead
 from app.api.deps import get_current_active_user
 from app.models.user import User
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 
@@ -31,18 +34,25 @@ def _run_quiz_generation(quiz_id: str, material_summary: str, question_count: in
     from app.crud.question import create_question
     from app.crud.quiz import update_quiz_status
 
+    logger.info("[QuizGen] START quiz_id=%s | questions=%d | difficulty=%s", quiz_id, question_count, difficulty_level)
+
     try:
         summary = material_summary or "Material content for quiz generation"
 
+        logger.info("[QuizGen] Initializing MCQQuizAgent for quiz_id=%s", quiz_id)
         mcq_agent = MCQQuizAgent()
+
+        logger.info("[QuizGen] Calling generate_quiz for quiz_id=%s (this may take 30-120s)...", quiz_id)
         ai_questions = mcq_agent.generate_quiz(
             num_questions=question_count,
             summary=summary,
             difficulty=difficulty_level,
         )
+        logger.info("[QuizGen] generate_quiz returned %d questions for quiz_id=%s", len(ai_questions), quiz_id)
 
         created_count = 0
-        for ai_q in ai_questions:
+        for i, ai_q in enumerate(ai_questions, start=1):
+            logger.debug("[QuizGen] Saving question %d/%d for quiz_id=%s: %s", i, len(ai_questions), quiz_id, ai_q.question[:60])
             question = create_question(
                 db=db,
                 quiz_id=quiz_id,
@@ -56,13 +66,15 @@ def _run_quiz_generation(quiz_id: str, material_summary: str, question_count: in
                 created_count += 1
 
         update_quiz_status(db, quiz_id, "completed")
+        logger.info("[QuizGen] DONE quiz_id=%s | saved %d/%d questions | status=completed", quiz_id, created_count, len(ai_questions))
 
     except Exception as e:
         from app.crud.quiz import update_quiz_status
         update_quiz_status(db, quiz_id, "failed")
-        print(f"[QuizGeneration] Failed for quiz {quiz_id}: {e}")
+        logger.exception("[QuizGen] FAILED quiz_id=%s | error: %s", quiz_id, e)
     finally:
         db.close()
+        logger.debug("[QuizGen] DB session closed for quiz_id=%s", quiz_id)
 
 
 @router.post("/materials/{material_id}/quizzes", response_model=QuizGenerationResponse, status_code=202)
