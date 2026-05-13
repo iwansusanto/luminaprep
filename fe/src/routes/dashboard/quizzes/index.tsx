@@ -52,10 +52,11 @@ type Quiz = {
   project_id: string
 }
 
-const statusMap: Record<string, 'Completed' | 'Draft' | 'Ready'> = {
+const statusMap: Record<string, 'Ready' | 'Draft' | 'Generated' | 'Failed'> = {
   'draft': 'Draft',
-  'generated': 'Ready',
-  'completed': 'Completed'
+  'generated': 'Generated',
+  'completed': 'Ready',
+  'failed': 'Failed'
 }
 
 const complexityMap: Record<string, 'Beginner' | 'Intermediate' | 'Mastery'> = {
@@ -147,15 +148,20 @@ function QuizzesPage() {
     columnHelper.accessor('status', {
       header: 'Status',
       cell: info => {
-        const val = statusMap[info.getValue() as keyof typeof statusMap] || 'Ready'
+        const val = statusMap[info.getValue() as keyof typeof statusMap] || 'Generated'
         const colors = {
-          Completed: 'text-indigo-600 bg-indigo-50 border-indigo-100',
-          Ready: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+          Ready: 'text-indigo-600 bg-indigo-50 border-indigo-100',
+          Generated: 'text-emerald-600 bg-emerald-50 border-emerald-100',
           Draft: 'text-slate-400 bg-slate-50 border-slate-100',
+          Failed: 'text-rose-600 bg-rose-50 border-rose-100',
         }
         return (
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${val === 'Completed' ? 'bg-indigo-500' : val === 'Ready' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+            <div className={`w-2 h-2 rounded-full ${val === 'Ready' ? 'bg-indigo-500' :
+              val === 'Generated' ? 'bg-emerald-500' :
+                val === 'Failed' ? 'bg-rose-500' :
+                  'bg-slate-300'
+              }`} />
             <span className={`text-[10px] font-black uppercase tracking-widest ${colors[val]}`}>
               {val}
             </span>
@@ -178,9 +184,13 @@ function QuizzesPage() {
                     : '/dashboard/quizzes/start/$uuid'
               }
               params={{ uuid: info.row.original.id }}
-              className="px-5 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg shadow-slate-900/10 active:scale-95"
+              disabled={info.row.original.status === 'failed'}
+              className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 ${info.row.original.status === 'failed'
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-slate-900/10'
+                }`}
             >
-              {info.row.original.status === 'completed' ? 'Review' : 'Start'}
+              {info.row.original.status === 'completed' ? 'Review' : info.row.original.status === 'failed' ? 'Failed' : 'Start'}
             </Link>
             <button className="p-2 text-slate-400 hover:text-slate-600 rounded-xl transition-all">
               <MoreVertical className="w-4 h-4" />
