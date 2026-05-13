@@ -24,12 +24,31 @@ export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, cl
 
   const isLimitReached = currentCount !== undefined && currentCount >= setting_material.maximal;
 
+  const parseSize = (sizeStr: string) => {
+    const num = parseInt(sizeStr);
+    if (sizeStr.includes('GB')) return num * 1024 * 1024 * 1024;
+    if (sizeStr.includes('MB')) return num * 1024 * 1024;
+    if (sizeStr.includes('KB')) return num * 1024;
+    return num;
+  };
+
+  const maxSizeBytes = parseSize(setting_material.maxSize);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !projectId) return;
 
     if (file.type !== 'application/pdf') {
       message.error('Only PDF files are allowed for this MVP.');
+      return;
+    }
+
+    if (file.size > maxSizeBytes) {
+      notification.warning({
+        message: 'File Too Large',
+        description: `Your file exceeds the maximum allowed size of ${setting_material.maxSize}.`,
+        placement: 'topRight',
+      });
       return;
     }
 
@@ -106,8 +125,8 @@ export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, cl
 
         <div
           onClick={() => !isUploading && !isLimitReached && fileInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-[2.5rem] p-16 flex flex-col items-center justify-center gap-6 transition-all relative overflow-hidden ${isUploading ? 'cursor-wait border-slate-200 bg-slate-50/30' : 
-              isLimitReached ? 'cursor-not-allowed border-rose-100 bg-rose-50/30' : 
+          className={`border-2 border-dashed rounded-[2.5rem] p-16 flex flex-col items-center justify-center gap-6 transition-all relative overflow-hidden ${isUploading ? 'cursor-wait border-slate-200 bg-slate-50/30' :
+            isLimitReached ? 'cursor-not-allowed border-rose-100 bg-rose-50/30' :
               'border-slate-200 bg-slate-50/30 hover:border-indigo-400 hover:bg-indigo-50/20 cursor-pointer group/upload'
             }`}
         >
@@ -151,9 +170,8 @@ export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, cl
             </>
           )}
 
-          <div className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-[10px] font-bold uppercase tracking-wider ${
-            isLimitReached ? 'bg-rose-100 border-rose-200 text-rose-700' : 'bg-amber-50 border-amber-100 text-amber-700'
-          }`}>
+          <div className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-[10px] font-bold uppercase tracking-wider ${isLimitReached ? 'bg-rose-100 border-rose-200 text-rose-700' : 'bg-amber-50 border-amber-100 text-amber-700'
+            }`}>
             <AlertCircle className="w-3.5 h-3.5" />
             {isLimitReached ? 'Maximum Capacity Reached' : 'PDF Only for MVP'}
           </div>
@@ -161,7 +179,7 @@ export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, cl
 
         <div className="mt-8 flex items-center justify-center gap-8">
           <div className="flex flex-col items-center gap-1">
-            <span className="text-xl font-black text-slate-800">100MB</span>
+            <span className="text-xl font-black text-slate-800">{setting_material.maxSize}</span>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Max Size</span>
           </div>
           <div className="w-px h-8 bg-slate-200" />
