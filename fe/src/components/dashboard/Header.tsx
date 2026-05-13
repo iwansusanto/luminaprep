@@ -1,14 +1,37 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Bell, Search, Plus, ChevronDown, Settings, Calendar } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import { Modal } from 'antd';
 import { MaterialUploader } from './MaterialUploader';
+import { setting_material } from '../../lib/utils';
 
 const Header = () => {
   const auth = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [materialsCount, setMaterialsCount] = useState(0);
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  const projectId = auth?.user?.projects?.[0]?.id;
+
+  const fetchMaterialsCount = useCallback(async () => {
+    if (!projectId) return;
+    try {
+      const response = await fetch(`/api/v1/materials/project/${projectId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setMaterialsCount(Array.isArray(data.materials) ? data.materials.length : 0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch materials count for header:', error);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    if (isModalOpen) {
+      fetchMaterialsCount();
+    }
+  }, [isModalOpen, fetchMaterialsCount]);
 
   return (
     <header className="h-20 bg-white/60 backdrop-blur-xl border-b border-slate-200/50 fixed top-4 right-4 left-[18rem] z-30 px-8 flex items-center justify-between rounded-3xl shadow-sm">
@@ -51,10 +74,11 @@ const Header = () => {
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-slate-900 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-slate-900/10 active:scale-95 group"
+          disabled={materialsCount >= setting_material.maximal}
+          className="flex items-center gap-2 bg-slate-900 hover:bg-indigo-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-slate-900/10 active:scale-95 group"
         >
           <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
-          <span>New Material</span>
+          <span>{materialsCount >= setting_material.maximal ? 'Limit Reached' : 'New Material'}</span>
         </button>
 
         <Modal
@@ -70,7 +94,15 @@ const Header = () => {
           }}
           closeIcon={null}
         >
-          <MaterialUploader className="bg-white p-10 relative overflow-hidden" />
+          <MaterialUploader 
+            className="bg-white p-10 relative overflow-hidden" 
+            projectId={projectId}
+            currentCount={materialsCount}
+            onUploadSuccess={() => {
+              fetchMaterialsCount();
+              setIsModalOpen(false);
+            }}
+          />
         </Modal>
 
         <div className="w-[1px] h-8 bg-slate-200 ml-2" />
@@ -81,12 +113,12 @@ const Header = () => {
           className="flex items-center gap-3 pl-2 group cursor-pointer"
         >
           <div className="text-right hidden sm:block">
-            <p className="text-xs font-black text-slate-800 leading-none">{auth?.user?.name || 'Alex Putra'}</p>
+            <p className="text-xs font-black text-slate-800 leading-none">{auth?.user?.full_name || 'Alex Putra'}</p>
             <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter mt-1">Student Plan</p>
           </div>
           <div className="relative">
             <img
-              src={auth?.user?.picture || 'https://ui-avatars.com/api/?name=' + (auth?.user?.name || 'User')}
+              src={auth?.user?.avatar_url || 'https://ui-avatars.com/api/?name=' + (auth?.user?.full_name || 'User')}
               alt="Profile"
               className="w-10 h-10 rounded-2xl border-2 border-white shadow-md group-hover:shadow-indigo-200 transition-all object-cover"
               referrerPolicy="no-referrer"

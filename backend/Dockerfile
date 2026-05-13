@@ -6,6 +6,11 @@ RUN pip install uv
 # Set working directory
 WORKDIR /app
 
+# Install system dependencies (libgomp1 is required by many ML libraries like torch/sentence-transformers)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy dependency files
 COPY pyproject.toml uv.lock README.md ./
 

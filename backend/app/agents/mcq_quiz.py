@@ -26,9 +26,8 @@ class MCQQuizAgent:
 
         Buatlah {num_questions} topik yang relevan dengan ringkasan tersebut untuk membuat soal pilihan ganda dengan tingkat kesulitan {difficulty}. Topik-topik tersebut harus mencakup aspek-aspek penting dari ringkasan yang dapat dijadikan dasar untuk pertanyaan pilihan ganda. Pastikan topik yang dihasilkan dapat digunakan untuk membuat soal pilihan ganda yang menantang dan sesuai dengan tingkat kesulitan yang ditentukan.
         """
-
-        response = self.client.chat.completions.create(
-            model="deepseek/deepseek-v4-flash",
+        response = oa_client.chat.completions.create(
+            model="gpt-4o-mini",
             messages=[
                 {
                     "role": "system",
@@ -60,8 +59,8 @@ class MCQQuizAgent:
         Buatlah ringkasan lengkap dan komprehensif dari potongan-potongan informasi di atas. Ringkasan harus mencakup semua informasi penting dan detail yang dapat digunakan untuk membuat soal pilihan ganda.
         """
 
-        response = self.client.chat.completions.create(
-            model="deepseek/deepseek-v4-flash",
+        response = oa_client.chat.completions.create(
+            model="gpt-4o-mini",
             messages=[
                 {
                     "role": "system",
@@ -97,8 +96,8 @@ class MCQQuizAgent:
 
         for attempt in range(max_retries):
             try:
-                response = self.client.chat.completions.create(
-                    model="deepseek/deepseek-v4-flash",
+                response = oa_client.chat.completions.create(
+                    model="gpt-4o-mini",
                     messages=[
                         {
                             "role": "system",
@@ -112,15 +111,6 @@ class MCQQuizAgent:
                 content = response.choices[0].message.content
                 if content is None:
                     continue
-
-                content = content.strip()
-                if content.startswith("```json"):
-                    content = content[7:]
-                if content.startswith("```"):
-                    content = content[3:]
-                if content.endswith("```"):
-                    content = content[:-3]
-                content = content.strip()
 
                 data = json.loads(content)
 

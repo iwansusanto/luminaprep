@@ -12,8 +12,8 @@ class SummarizationAgent:
         {text}
         """
 
-        response = self.client.chat.completions.create(
-            model="deepseek/deepseek-v4-flash",
+        response = oa_client.chat.completions.create(
+            model="gpt-4o-mini",
             messages=[
                 {
                     "role": "system",

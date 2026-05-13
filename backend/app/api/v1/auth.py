@@ -95,6 +95,14 @@ async def signin(
             expires_delta=access_token_expires
         )
         
+        # Fetch active projects
+        from app.models.project import Project
+        projects = db.query(Project).filter(
+            Project.user_id == user.id,
+            Project.status == "active",
+            Project.deleted_at.is_(None)
+        ).all()
+        
         # Step 3: Return response with token and user data
         return {
             "access_token": access_token,
@@ -105,7 +113,11 @@ async def signin(
                 "full_name": user.full_name,
                 "avatar_url": user.avatar_url,
                 "created_at": user.created_at.isoformat(),
-                "updated_at": user.updated_at.isoformat()
+                "updated_at": user.updated_at.isoformat(),
+                "projects": [
+                    {"id": p.id, "title": p.title, "description": p.description}
+                    for p in projects
+                ]
             }
         }
         
@@ -118,14 +130,26 @@ async def signin(
 
 @router.get("/me", response_model=UserResponse)
 def get_current_user_info(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """Get current user information."""
+    from app.models.project import Project
+    projects = db.query(Project).filter(
+        Project.user_id == current_user.id,
+        Project.status == "active",
+        Project.deleted_at.is_(None)
+    ).all()
+
     return {
         "id": current_user.id,
         "email": current_user.email,
         "full_name": current_user.full_name,
         "avatar_url": current_user.avatar_url,
         "created_at": current_user.created_at.isoformat(),
-        "updated_at": current_user.updated_at.isoformat()
+        "updated_at": current_user.updated_at.isoformat(),
+        "projects": [
+            {"id": p.id, "title": p.title, "description": p.description}
+            for p in projects
+        ]
     }

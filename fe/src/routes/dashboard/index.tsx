@@ -1,22 +1,37 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useAuth } from '../../context/AuthContext'
+import { useState, useEffect, useCallback } from 'react'
 import {
   FileText,
   CheckCircle2,
-  Trophy,
-  MoreVertical,
   Sparkles,
-  ArrowUpRight,
-  Clock,
-  Zap
+  Zap,
+  BookOpen,
+  Loader2
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
-import { Segmented, Select, ConfigProvider, theme } from 'antd'
+import { Segmented, Select, ConfigProvider, theme, Modal, message } from 'antd'
+import { KnowledgeVault } from '../../components/dashboard/KnowledgeVault'
 import { MaterialUploader } from '../../components/dashboard/MaterialUploader'
+import { OnboardingModal } from '../../components/dashboard/OnboardingModal'
+import { setting_quiz, setting_material } from '../../lib/utils'
 
 export const Route = createFileRoute('/dashboard/')({
   component: DashboardIndexPage,
 })
+
+interface Material {
+  id: string;
+  file_name: string;
+  storage_path: string;
+  file_type: string;
+  file_size: number | null;
+  citations: string | null;
+  project_id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
 
 const container: Variants = {
   hidden: { opacity: 0 },
@@ -42,215 +57,311 @@ const item: Variants = {
 
 function DashboardIndexPage() {
   const auth = useAuth()
+  const [materials, setMaterials] = useState<Material[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null)
+  const [quizSettings, setQuizSettings] = useState({
+    questions: 20,
+    complexity: 'intermediate'
+  })
+  const [isUploadModalVisible, setIsUploadModalVisible] = useState(false)
+  const [generating, setGenerating] = useState(false)
+
+  const projectId = auth?.user?.projects?.[0]?.id
+
+  const handleRemoveMaterial = async (id: string) => {
+    Modal.confirm({
+      title: 'Remove Material',
+      content: 'Are you sure you want to remove this material? This action cannot be undone.',
+      okText: 'Remove',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      centered: true,
+      onOk: async () => {
+        try {
+          const response = await fetch(`/api/v1/materials/${id}`, {
+            method: 'DELETE',
+          })
+          if (response.ok) {
+            setMaterials(prev => prev.filter(m => m.id !== id))
+            message.success('Material removed successfully')
+          } else {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || errorData.message || 'Failed to remove material')
+          }
+        } catch (error: any) {
+          console.error('Failed to remove material:', error)
+          message.error(error.message || 'Failed to remove material')
+        }
+      },
+    })
+  }
+
+  const fetchMaterials = useCallback(async () => {
+    if (!projectId) return;
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/v1/materials/project/${projectId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setMaterials(Array.isArray(data.materials) ? data.materials : [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch materials:', error)
+      setMaterials([])
+    } finally {
+      setLoading(false)
+    }
+  }, [projectId])
+
+  useEffect(() => {
+    fetchMaterials()
+  }, [fetchMaterials])
+
+  const handleGenerateQuiz = async () => {
+    if (!selectedMaterial) {
+      message.warning('Please select a material first.')
+      return
+    }
+
+    setGenerating(true)
+    try {
+      const response = await fetch(`/api/v1/quizzes/materials/${selectedMaterial}/quizzes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question_count: quizSettings.questions,
+          difficulty_level: quizSettings.complexity
+        }),
+      })
+
+      if (response.ok) {
+        message.success('Quiz generation started successfully! You can view it in the Quizzes section.')
+        // Optional: Reset selection or navigate
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || errorData.message || 'Failed to generate quiz')
+      }
+    } catch (error: any) {
+      console.error('Failed to generate quiz:', error)
+      message.error(error.message || 'Failed to generate quiz. Please check your connection.')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const showOnboarding = !!(auth?.user && auth.user.projects?.length === 0);
+
+  const materialsThisWeek = materials.filter(m => {
+    const createdAt = new Date(m.created_at);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return createdAt >= sevenDaysAgo;
+  }).length;
 
   const stats = [
-    { label: 'Materials', value: '12', sub: 'Total items', icon: FileText, color: 'bg-indigo-50 text-indigo-600', trend: '+2 this week' },
+    { label: 'Materials', value: (materials?.length || 0).toString(), sub: 'Total items', icon: FileText, color: 'bg-indigo-50 text-indigo-600', trend: `+${materialsThisWeek} this week` },
+    { label: 'Slots Left', value: Math.max(0, setting_material.maximal - (materials?.length || 0)).toString(), sub: 'Remaining quota', icon: Sparkles, color: 'bg-amber-50 text-amber-600', trend: `${setting_material.maximal} limit` },
     { label: 'Quizzes', value: '24', sub: 'Completed', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600', trend: '92% avg score' },
-    { label: 'Learning Streak', value: '7', sub: 'Days active', icon: Trophy, color: 'bg-amber-50 text-amber-600', trend: 'Personal best' },
-  ]
-
-  const recentMaterials = [
-    { name: 'Advanced Organic Chemistry.pdf', date: '2h ago', pages: '42 pages', category: 'Chemistry', iconColor: 'text-indigo-500', bgColor: 'bg-indigo-50' },
-    { name: 'Linear Algebra Concepts.docx', date: 'Yesterday', pages: '12 pages', category: 'Math', iconColor: 'text-blue-500', bgColor: 'bg-blue-50' },
-    { name: 'World History: Part II.pptx', date: '2 days ago', pages: '64 slides', category: 'History', iconColor: 'text-orange-500', bgColor: 'bg-orange-50' },
   ]
 
   return (
-    <motion.div
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="space-y-10 pb-20"
-    >
-      {/* Welcome & Stats Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
-        <motion.div variants={item} className="lg:col-span-5">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 text-[10px] font-black uppercase tracking-widest mb-4">
-            <Sparkles className="w-3 h-3" />
-            Learning Synchronized
-          </div>
-          <h2 className="text-4xl font-black text-slate-800 tracking-tight leading-none mb-4">
-            Keep growing, <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">
-              {auth?.user?.name?.split(' ')[0] || 'Explorer'}.
-            </span>
-          </h2>
-          <p className="text-slate-500 text-sm font-medium max-w-sm leading-relaxed">
-            Your personalized study path is ready. You've completed 65% of your weekly goal.
-          </p>
-        </motion.div>
-
-        <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-3 gap-4">
-          {stats.map((stat) => (
-            <motion.div
-              key={stat.label}
-              variants={item}
-              className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all group relative overflow-hidden"
-            >
-              <div className="flex flex-col gap-4">
-                <div className={`w-12 h-12 ${stat.color} rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-6`}>
-                  <stat.icon className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-slate-800">{stat.value}</span>
-                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md">{stat.trend}</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Grid: Upload & Generator */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <MaterialUploader variants={item} />
-
-        <motion.div variants={item} className="bg-slate-900 rounded-[2.5rem] p-10 shadow-2xl shadow-indigo-900/40 flex flex-col relative overflow-hidden group border border-white/5">
-          <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-indigo-500/20 rounded-full blur-[100px] pointer-events-none group-hover:scale-110 transition-transform duration-1000" />
-          <div className="absolute -top-20 -left-20 w-48 h-48 bg-purple-500/10 rounded-full blur-[80px] pointer-events-none" />
-
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <Zap className="w-6 h-6 text-white fill-current" />
-              </div>
-              <div>
-                <h3 className="text-xl font-black text-white leading-none mb-1">Quiz Architect</h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">AI Generation Engine</p>
-              </div>
+    <>
+      <OnboardingModal isVisible={showOnboarding} />
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="space-y-8 sm:space-y-12 pb-10 sm:pb-20"
+      >
+        {/* Hero & Quick Actions */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+          <motion.div variants={item} className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 text-[10px] font-black uppercase tracking-widest mb-6">
+              <Sparkles className="w-3.5 h-3.5" />
+              Intelligence Synchronized
             </div>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.1] sm:leading-[0.9] mb-4 sm:mb-6">
+              Elevate your <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600">
+                Lumina Experience.
+              </span>
+            </h1>
+            <p className="text-slate-500 text-sm sm:text-lg font-medium leading-relaxed max-w-lg">
+              Welcome back, {auth?.user?.full_name?.split(' ')[0] || 'Explorer'}. Your personal knowledge vault is ready for new insights.
+            </p>
+          </motion.div>
 
-            <p className="text-sm text-slate-400 font-medium mb-10 leading-relaxed max-w-[240px]">Design your assessment with precision using our latest model.</p>
-
-            <ConfigProvider
-              theme={{
-                algorithm: theme.darkAlgorithm,
-                token: {
-                  colorPrimary: '#6366f1', // Vibrant Electric Indigo
-                  borderRadius: 18,
-                  colorBgContainer: 'rgba(15, 23, 42, 0.6)', // Deep Slate Glass
-                  colorBorder: 'rgba(255, 255, 255, 0.08)',
-                },
-                components: {
-                  Segmented: {
-                    itemSelectedBg: '#6366f1',
-                    itemSelectedColor: '#ffffff',
-                    trackBg: 'rgba(255, 255, 255, 0.03)',
-                    itemColor: '#94a3b8',
-                    itemHoverColor: '#ffffff',
-                  },
-                  Select: {
-                    controlHeight: 56,
-                    optionSelectedBg: 'rgba(99, 102, 241, 0.15)',
-                    optionSelectedColor: '#818cf8',
-                    colorBgElevated: '#0f172a',
-                  }
-                }
-              }}
-            >
-              <div className="space-y-8">
-                <div className="space-y-4">
-                  <label className="text-[10px] font-bold text-indigo-300/60 uppercase tracking-[0.2em] block px-1">Number of Questions</label>
-                  <Segmented
-                    block
-                    size="large"
-                    options={[10, 20, 50, 100]}
-                    defaultValue={20}
-                    className="p-1.5 rounded-[1.25rem] border border-white/5 backdrop-blur-md"
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <label className="text-[10px] font-bold text-indigo-300/60 uppercase tracking-[0.2em] block px-1">Target Complexity</label>
-                  <Select
-                    defaultValue="intermediate"
-                    className="w-full h-14"
-                    popupClassName="rounded-2xl border border-white/10 shadow-2xl"
-                    options={[
-                      { value: 'foundational', label: 'Foundational' },
-                      { value: 'intermediate', label: 'Intermediate' },
-                      { value: 'mastery', label: 'Mastery' },
-                    ]}
-                  />
-                </div>
-              </div>
-            </ConfigProvider>
-
-            <button className="w-full mt-10 py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/30 active:scale-95 group/gen">
-              <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-              Generate Assessment
-            </button>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Lists Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <motion.div variants={item} className="bg-white rounded-[2.5rem] border border-slate-200/60 p-10 shadow-sm">
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <h3 className="text-xl font-black text-slate-800">Recent Materials</h3>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Processed by AI</p>
-            </div>
-            <button className="px-4 py-2 bg-slate-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-50 transition-colors border border-slate-200/50">
-              View Collection
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {recentMaterials.map((item, i) => (
-              <div key={i} className="flex items-center justify-between p-4 hover:bg-slate-50/80 border border-transparent hover:border-slate-200/50 rounded-[1.5rem] transition-all group cursor-pointer">
-                <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 ${item.bgColor} ${item.iconColor} rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500`}>
-                    <FileText className="w-6 h-6" />
+          <motion.div variants={item} className="flex flex-wrap gap-4 lg:justify-end">
+            {stats.map((stat) => (
+              <div key={stat.label} className="bg-white/50 backdrop-blur-md p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-200/60 shadow-sm min-w-[200px] sm:min-w-[240px] flex-1 lg:flex-none">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className={`w-10 h-10 sm:w-14 sm:h-14 ${stat.color} rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm shrink-0`}>
+                    <stat.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
-                    <p className="text-sm font-black text-slate-800 leading-none mb-1.5">{item.name}</p>
-                    <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {item.date}</span>
-                      <span className="w-1 h-1 bg-slate-300 rounded-full" />
-                      <span>{item.pages}</span>
+                    <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5 sm:mb-1">{stat.label}</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xl sm:text-3xl font-black text-slate-800">{stat.value}</span>
+                      <span className="text-[9px] sm:text-[10px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md">{stat.trend}</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="px-3 py-1.5 bg-slate-100 text-slate-500 text-[9px] font-black uppercase tracking-widest rounded-lg">{item.category}</span>
-                  <button className="p-2 text-slate-400 hover:text-slate-600 rounded-full transition-colors">
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
-                </div>
               </div>
             ))}
+          </motion.div>
+        </div>
+
+        {/* Main Grid: Upload & Generator */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-7 space-y-8">
+            <KnowledgeVault
+              materials={materials}
+              loading={loading}
+              onAddMaterial={() => setIsUploadModalVisible(true)}
+              onRemoveMaterial={handleRemoveMaterial}
+              variants={item}
+            />
           </div>
-        </motion.div>
 
-        <motion.div variants={item} className="bg-gradient-to-br from-indigo-600 to-violet-800 rounded-[2.5rem] p-12 shadow-2xl shadow-indigo-600/20 text-white flex flex-col items-center justify-center text-center relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none" />
-          <div className="absolute -top-24 -left-24 w-64 h-64 bg-white/10 rounded-full blur-[80px] group-hover:scale-125 transition-transform duration-1000" />
+          <motion.div variants={item} className="lg:col-span-5 bg-slate-900 rounded-[2.5rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-2xl shadow-indigo-900/40 flex flex-col relative overflow-hidden group border border-white/10 noise-bg">
+            <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-indigo-500/20 rounded-full blur-[100px] pointer-events-none group-hover:scale-110 transition-transform duration-1000" />
+            <div className="absolute -top-20 -left-20 w-64 h-64 bg-purple-500/10 rounded-full blur-[80px] pointer-events-none" />
 
-          <div className="w-24 h-24 bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl relative z-10">
-            <Trophy className="w-12 h-12 text-white" />
-          </div>
+            <div className="relative z-10">
+              <div className="flex items-center gap-4 mb-10">
+                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-indigo-500/40 rotate-3 group-hover:rotate-6 transition-transform">
+                  <Zap className="w-8 h-8 text-white fill-current" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-white leading-none mb-2">Quiz Architect</h3>
+                  <p className="text-[10px] font-bold text-indigo-300 uppercase tracking-[0.3em]">AI Engine v{setting_quiz.ai_version}</p>
+                </div>
+              </div>
 
-          <div className="relative z-10">
-            <h3 className="text-3xl font-black mb-4 leading-tight">Mastery Challenge</h3>
-            <p className="text-indigo-100 text-sm font-medium mb-10 max-w-xs mx-auto leading-relaxed opacity-80">
-              Ready to push your limits? Start a composite quiz based on your entire material library.
-            </p>
-            <Link
-              to="/dashboard/quizzes/start/$uuid"
-              params={{ uuid: 'final-challenge-mastery-uuid' }}
-              className="bg-white text-indigo-600 px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-indigo-50 transition-all shadow-2xl active:scale-95 group/btn"
+              <p className="text-slate-400 font-medium mb-10 leading-relaxed text-sm">
+                Transform your static materials into dynamic assessments using our neural processing engine.
+              </p>
+
+              <ConfigProvider
+                theme={{
+                  algorithm: theme.darkAlgorithm,
+                  token: {
+                    colorPrimary: '#818cf8',
+                    borderRadius: 20,
+                    colorBgContainer: 'rgba(30, 41, 59, 0.5)',
+                    colorBorder: 'rgba(255, 255, 255, 0.1)',
+                  },
+                  components: {
+                    Select: {
+                      controlHeight: 64,
+                      optionSelectedBg: 'rgba(129, 140, 248, 0.2)',
+                      colorBgElevated: '#0f172a',
+                    },
+                    Segmented: {
+                      controlHeight: 56,
+                      itemSelectedBg: '#6366f1',
+                    }
+                  }
+                }}
+              >
+                <div className="space-y-10">
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-indigo-300/60 uppercase tracking-[0.25em] block px-1">Select Source Material</label>
+                    <Select
+                      className="w-full"
+                      placeholder="Choose a material..."
+                      options={materials.map(m => ({ value: m.id, label: m.file_name }))}
+                      onChange={(val) => setSelectedMaterial(val)}
+                      suffixIcon={<BookOpen className="w-4 h-4 opacity-40" />}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black text-indigo-300/60 uppercase tracking-[0.25em] block px-1">Count</label>
+                      <Segmented
+                        block
+                        options={setting_quiz.count}
+                        value={quizSettings.questions}
+                        onChange={(val) => setQuizSettings(prev => ({ ...prev, questions: val as number }))}
+                      />
+                    </div>
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black text-indigo-300/60 uppercase tracking-[0.25em] block px-1">Level</label>
+                      <Select
+                        className="w-full"
+                        value={quizSettings.complexity}
+                        onChange={(val) => setQuizSettings(prev => ({ ...prev, complexity: val }))}
+                        options={setting_quiz.level}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </ConfigProvider>
+
+              <button
+                onClick={handleGenerateQuiz}
+                disabled={!selectedMaterial || generating}
+                className="w-full mt-12 py-6 bg-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-3 hover:bg-indigo-500 transition-all shadow-2xl shadow-indigo-600/30 active:scale-[0.97] group/gen disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {generating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                )}
+                {generating ? 'Processing Neural Patterns...' : 'Initialize Generation'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+
+      </motion.div>
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: '#6366f1',
+            borderRadius: 24,
+          },
+        }}
+      >
+        <Modal
+          open={isUploadModalVisible}
+          onCancel={() => setIsUploadModalVisible(false)}
+          footer={null}
+          width={800}
+          centered
+          styles={{
+            mask: {
+              backdropFilter: 'blur(12px)',
+              background: 'rgba(15, 23, 42, 0.4)',
+            },
+          }}
+          modalRender={(node) => (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="relative overflow-hidden rounded-[3rem] bg-white border border-white/50 shadow-2xl"
             >
-              Start Final Quiz
-              <ArrowUpRight className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-            </Link>
+              {node}
+            </motion.div>
+          )}
+        >
+          <div className="p-2">
+            <MaterialUploader
+              projectId={projectId}
+              currentCount={materials.length}
+              onUploadSuccess={() => {
+                fetchMaterials()
+                setIsUploadModalVisible(false)
+              }}
+              className="bg-transparent border-none shadow-none p-0"
+            />
           </div>
-        </motion.div>
-      </div>
-    </motion.div>
+        </Modal>
+      </ConfigProvider>
+    </>
   )
 }

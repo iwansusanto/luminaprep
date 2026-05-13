@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     max_file_size: int = 10 * 1024 * 1024  # 10MB
 
     OPENAI_API_KEY: str = ""
-    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    OPENAI_BASE_URL: str = "https://openrouter.ai/api/v1"
 
     class Config:
         env_file = ".env"
