@@ -16,7 +16,7 @@ def create_quiz(db: Session, project_id: str, difficulty_level: str, question_co
         project_id=project_id,
         difficulty_level=difficulty_level,
         question_count=question_count,
-        status="draft"
+        status="processing"
     )
     
     db.add(quiz)
