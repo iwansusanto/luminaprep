@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { Drawer, Segmented, Select, ConfigProvider, message, Input } from 'antd'
 import { Sparkles as SparklesIcon, Zap, Loader2, Clock, AlertCircle } from 'lucide-react'
 import { setting_quiz } from '../../lib/utils'
+import { authFetch } from '../../lib/api'
 
 const { TextArea } = Input
 
@@ -55,7 +56,7 @@ export const QuizGenerationDrawer: React.FC<QuizGenerationDrawerProps> = ({
       if (topic.trim()) body.topic = topic.trim()
       if (customRequest.trim()) body.custom_request = customRequest.trim()
 
-      const response = await fetch(`/api/v1/quizzes/materials/${material.id}/quizzes`, {
+      const response = await authFetch(`/api/v1/quizzes/materials/${material.id}/quizzes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

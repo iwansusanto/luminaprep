@@ -83,7 +83,7 @@ def update_quiz_session(
         return None
     
     # Update fields
-    for field, value in update_data.dict(exclude_unset=True).items():
+    for field, value in update_data.model_dump(exclude_unset=True).items():
         if hasattr(quiz_session, field):
             setattr(quiz_session, field, value)
     

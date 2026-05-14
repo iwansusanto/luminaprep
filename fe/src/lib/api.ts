@@ -1,5 +1,5 @@
-
 const BASE_URL = '/api';
+export const TOKEN_KEY = 'lumina_token';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
@@ -11,8 +11,27 @@ export interface RequestOptions {
   token?: string;
 }
 
+/** Get auth headers from localStorage */
+export function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem(TOKEN_KEY);
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 /**
- * Generic API request handler that supports versioning.
+ * Drop-in replacement for fetch() that auto-injects Bearer token.
+ * Use this instead of raw fetch() for all API calls.
+ */
+export async function authFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const headers = {
+    ...getAuthHeaders(),
+    ...(init.headers as Record<string, string> || {}),
+  };
+  return fetch(url, { ...init, headers });
+}
+
+/**
+ * Generic typed API request handler.
+ * Auto-injects Bearer token from localStorage.
  */
 export const apiRequest = async <T>(path: string, options: RequestOptions = {}): Promise<T> => {
   const { method = 'GET', body, headers = {}, version = 'v1', token } = options;
@@ -20,30 +39,31 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}):
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   const url = `${BASE_URL}/${version}${cleanPath}`;
 
+  const storedToken = token || localStorage.getItem(TOKEN_KEY);
+
   const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
     ...headers,
   };
 
-  if (token) {
-    requestHeaders['Authorization'] = `Bearer ${token}`;
+  if (storedToken) {
+    requestHeaders['Authorization'] = `Bearer ${storedToken}`;
   }
 
   const response = await fetch(url, {
     method,
     headers: requestHeaders,
     body: body ? JSON.stringify(body) : undefined,
-    credentials: 'include',
   });
 
   if (!response.ok) {
     let errorData;
     try {
       errorData = await response.json();
-    } catch (e) {
+    } catch {
       errorData = { message: `Request failed with status ${response.status}` };
     }
-    throw new Error(errorData.message || errorData.error || `API request failed with status ${response.status}`);
+    throw new Error(errorData.detail || errorData.message || errorData.error || `API request failed with status ${response.status}`);
   }
 
   return response.json();

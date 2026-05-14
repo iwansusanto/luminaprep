@@ -21,7 +21,7 @@ class IngestionAgent:
         self, material_id: str, file_path: str, file_type: Literal["pdf", "txt"]
     ) -> dict:
         try:
-            material = self.db.query(Material).get(material_id)
+            material = self.db.get(Material, material_id)
             if not material:
                 raise IngestionError(f"Material {material_id} not found")
 
@@ -59,7 +59,7 @@ class IngestionAgent:
 
         except Exception as e:
             try:
-                mat = self.db.query(Material).get(material_id)
+                mat = self.db.get(Material, material_id)
                 if mat:
                     update_material(self.db, material_id=material_id, user_id=mat.user_id, status="failed")
             except Exception:

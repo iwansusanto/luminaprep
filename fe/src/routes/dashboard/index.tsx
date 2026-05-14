@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useAuth } from '../../context/AuthContext'
 import { useState, useEffect, useCallback } from 'react'
+import { authFetch } from '../../lib/api'
 import {
   FileText,
   CheckCircle2,
@@ -86,7 +87,7 @@ function DashboardIndexPage() {
       centered: true,
       onOk: async () => {
         try {
-          const response = await fetch(`/api/v1/materials/${id}`, {
+          const response = await authFetch(`/api/v1/materials/${id}`, {
             method: 'DELETE',
           })
           if (response.ok) {
@@ -108,7 +109,7 @@ function DashboardIndexPage() {
     if (!projectId) return;
     if (!silent) setLoading(true)
     try {
-      const response = await fetch(`/api/v1/materials/project/${projectId}`)
+      const response = await authFetch(`/api/v1/materials/project/${projectId}`)
       if (response.ok) {
         const data = await response.json()
         setMaterials(Array.isArray(data.materials) ? data.materials : [])
@@ -165,7 +166,7 @@ function DashboardIndexPage() {
       if (quizTopic.trim()) body.topic = quizTopic.trim()
       if (quizCustomRequest.trim()) body.custom_request = quizCustomRequest.trim()
 
-      const response = await fetch(`/api/v1/quizzes/materials/${selectedMaterial}/quizzes`, {
+      const response = await authFetch(`/api/v1/quizzes/materials/${selectedMaterial}/quizzes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

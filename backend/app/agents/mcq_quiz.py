@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class MCQQuestion(BaseModel):
     question: str
     correct_answer: str
-    options: list
+    options: dict  # {"A": "...", "B": "...", "C": "...", "D": "..."}
     explanation: str
 
 
@@ -136,11 +136,13 @@ class MCQQuizAgent:
 
                 options = data["distractors"] + [data["correct_answer"]]
                 random.shuffle(options)
+                labels = ["A", "B", "C", "D", "E"]
+                options_dict = {labels[i]: opt for i, opt in enumerate(options)}
 
                 return MCQQuestion(
                     question=data["question"],
                     correct_answer=data["correct_answer"],
-                    options=options,
+                    options=options_dict,
                     explanation=data["explanation"],
                 )
             except Exception as e:

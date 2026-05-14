@@ -40,7 +40,7 @@ def get_quiz_session_details(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Get quiz session details."""
+    """Get quiz session details including per-question attempt breakdown."""
     try:
         quiz_session = get_quiz_session_by_id(db, session_id, current_user.id)
 
@@ -49,6 +49,37 @@ def get_quiz_session_details(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Quiz session not found"
             )
+
+        # Fetch attempts with question details for breakdown
+        from app.models.user_attempt import UserAttempt
+        from app.models.question import Question as QuestionModel
+
+        attempts_with_questions = (
+            db.query(UserAttempt, QuestionModel)
+            .join(QuestionModel, UserAttempt.question_id == QuestionModel.id)
+            .filter(
+                UserAttempt.quiz_session_id == session_id,
+                UserAttempt.user_id == current_user.id,
+                UserAttempt.deleted_at.is_(None),
+                QuestionModel.deleted_at.is_(None),
+            )
+            .all()
+        )
+
+        breakdown = [
+            {
+                "question_id": q.id,
+                "question_text": q.question_text,
+                "options": q.options,
+                "correct_answer": q.correct_answer,
+                "explanation": q.explanation,
+                "user_answer": a.user_answer,
+                "is_correct": a.is_correct,
+                "score_earned": a.score_earned,
+                "feedback_text": a.feedback_text,
+            }
+            for a, q in attempts_with_questions
+        ]
 
         return {
             "session_id": quiz_session.id,
@@ -59,7 +90,8 @@ def get_quiz_session_details(
             "correct_answers": quiz_session.correct_answers,
             "score": quiz_session.score,
             "started_at": str(quiz_session.started_at) if quiz_session.started_at else None,
-            "completed_at": str(quiz_session.completed_at) if quiz_session.completed_at else None
+            "completed_at": str(quiz_session.completed_at) if quiz_session.completed_at else None,
+            "breakdown": breakdown,
         }
     except HTTPException:
         raise
@@ -72,30 +104,6 @@ def get_quiz_session_details(
 
 
 # ── Parameterised routes ───────────────────────────────────────────────────────
-
-@router.post("/{quiz_id}/sessions", response_model=QuizSessionRead)
-def start_quiz_session(
-    quiz_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-):
-    """Start a new quiz session."""
-    quiz = get_quiz_by_id(db, quiz_id, current_user.id)
-    if not quiz:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Quiz not found"
-        )
-
-    quiz_session = create_quiz_session(db, current_user.id, quiz_id)
-    if not quiz_session:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to create quiz session"
-        )
-
-    return quiz_session
-
 
 @router.post("/{session_id}/submit_answer", response_model=dict)
 def submit_quiz_answer(

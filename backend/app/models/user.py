@@ -15,7 +15,6 @@ class User(UserBase, table=True):
     full_name: Optional[str] = Field(default=None, max_length=255)
     avatar_url: Optional[str] = Field(default=None)
     hashed_password: Optional[str] = Field(default=None, max_length=255)
-    deleted_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     deleted_at: Optional[datetime] = Field(default=None)

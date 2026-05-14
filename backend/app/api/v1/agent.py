@@ -87,6 +87,17 @@ def chat(
             history.append({"role": m.role, "content": m.content})
 
     # Run agent with full context
+    # If user attached specific materials, prepend them to the message
+    user_message = body.message
+    if body.attached_material_ids:
+        material_ids_str = ", ".join(body.attached_material_ids)
+        user_message = (
+            f"[Materi yang dilampirkan: {material_ids_str}]\n\n{body.message}"
+        )
+        # Also set material_id on session if only one attached
+        if len(body.attached_material_ids) == 1 and not session.material_id:
+            session.material_id = body.attached_material_ids[0]
+
     agent = ChatbotAgent(
         db=db,
         user_id=current_user.id,
@@ -96,7 +107,7 @@ def chat(
     )
 
     try:
-        reply, tool_calls = agent.chat(history=history, user_message=body.message)
+        reply, tool_calls = agent.chat(history=history, user_message=user_message)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -166,8 +177,8 @@ def get_session(
     )
 
     return ChatSessionWithMessages(
-        **session.dict(),
-        messages=[ChatMessageRead(**m.dict()) for m in messages],
+        **session.model_dump(),
+        messages=[ChatMessageRead(**m.model_dump()) for m in messages],
     )
 
 

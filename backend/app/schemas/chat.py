@@ -43,6 +43,11 @@ class ChatRequest(SQLModel):
         default=None,
         description="Scope to a specific quiz — enables quiz assistant mode",
     )
+    # Attach multiple materials for this message
+    attached_material_ids: Optional[list[str]] = Field(
+        default=None,
+        description="List of material IDs to attach as context for this message",
+    )
 
 
 class ChatResponse(SQLModel):

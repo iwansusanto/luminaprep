@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useAuth } from '../../context/AuthContext'
-import { Skeleton, message, Modal, ConfigProvider } from 'antd'
+import { Skeleton, message, Modal, ConfigProvider, Drawer } from 'antd'
+import { authFetch } from '../../lib/api'
 import {
   Plus,
   FileText,
@@ -9,7 +10,9 @@ import {
   Clock,
   Sparkles,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  BookOpen,
+  X,
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
 import {
@@ -85,6 +88,11 @@ function MaterialsPage() {
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false)
   const [quizDrawerVisible, setQuizDrawerVisible] = useState(false)
   const [selectedMaterialForQuiz, setSelectedMaterialForQuiz] = useState<Material | null>(null)
+  const [summaryDrawerVisible, setSummaryDrawerVisible] = useState(false)
+  const [summaryMaterial, setSummaryMaterial] = useState<Material | null>(null)
+  const [summaryText, setSummaryText] = useState('')
+  const [summaryStreaming, setSummaryStreaming] = useState(false)
+  const summaryEsRef = useRef<EventSource | null>(null)
 
   const projectId = auth?.user?.projects?.[0]?.id
 
@@ -92,7 +100,7 @@ function MaterialsPage() {
     if (!projectId) return;
     if (!silent) setLoading(true)
     try {
-      const response = await fetch(`/api/v1/materials/project/${projectId}`)
+      const response = await authFetch(`/api/v1/materials/project/${projectId}`)
       if (response.ok) {
         const data = await response.json()
         setMaterials(Array.isArray(data.materials) ? data.materials : [])
@@ -127,7 +135,7 @@ function MaterialsPage() {
       centered: true,
       onOk: async () => {
         try {
-          const response = await fetch(`/api/v1/materials/${id}`, {
+          const response = await authFetch(`/api/v1/materials/${id}`, {
             method: 'DELETE',
           })
           if (response.ok) {
@@ -148,6 +156,40 @@ function MaterialsPage() {
   const handleOpenQuizDrawer = (material: Material) => {
     setSelectedMaterialForQuiz(material)
     setQuizDrawerVisible(true)
+  }
+
+  const handleOpenSummary = (material: Material) => {
+    if (!material.summary) {
+      message.info('Summary not available yet. Material may still be processing.')
+      return
+    }
+    setSummaryMaterial(material)
+    setSummaryText('')
+    setSummaryDrawerVisible(true)
+    setSummaryStreaming(true)
+
+    if (summaryEsRef.current) summaryEsRef.current.close()
+    const token = localStorage.getItem('lumina_token')
+    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : ''
+    const es = new EventSource(`/api/v1/stream/summary/${material.id}${tokenParam}`)
+    summaryEsRef.current = es
+
+    es.onmessage = (e) => {
+      if (e.data === '[DONE]') { setSummaryStreaming(false); es.close(); return }
+      try {
+        const p = JSON.parse(e.data)
+        if (p.type === 'token') setSummaryText((prev) => prev + p.content)
+        else if (p.type === 'done' || p.type === 'error') { setSummaryStreaming(false); es.close() }
+      } catch { /* ignore */ }
+    }
+    es.onerror = () => { setSummaryStreaming(false); es.close() }
+  }
+
+  const handleCloseSummary = () => {
+    summaryEsRef.current?.close()
+    setSummaryDrawerVisible(false)
+    setSummaryText('')
+    setSummaryStreaming(false)
   }
 
   const handleGenerateQuiz = (_materialId: string) => {
@@ -207,6 +249,15 @@ function MaterialsPage() {
       header: () => <span className="text-right block pr-8">Actions</span>,
       cell: (info) => (
         <div className="flex items-center justify-end gap-2 pr-4 transition-all duration-300">
+          <button
+            onClick={() => handleOpenSummary(info.row.original)}
+            disabled={info.row.original.status !== 'completed' || !info.row.original.summary}
+            className="group/btn flex items-center gap-2 px-4 py-2 bg-white disabled:bg-slate-50 disabled:text-slate-300 disabled:border-slate-100 disabled:cursor-not-allowed text-violet-600 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] hover:bg-violet-600 hover:text-white transition-all duration-500 shadow-sm border border-slate-100 hover:border-violet-600 hover:shadow-lg hover:shadow-violet-200 active:scale-95"
+            title="View AI Summary"
+          >
+            <BookOpen className="w-3 h-3 group-hover/btn:scale-110 transition-transform" />
+            Summary
+          </button>
           <button
             onClick={() => handleOpenQuizDrawer(info.row.original)}
             disabled={info.row.original.status !== 'completed'}
@@ -420,6 +471,75 @@ function MaterialsPage() {
         material={selectedMaterialForQuiz}
         onGenerate={handleGenerateQuiz}
       />
+
+      {/* Stream Summary Drawer */}
+      <Drawer
+        title={null}
+        placement="right"
+        onClose={handleCloseSummary}
+        open={summaryDrawerVisible}
+        width={typeof window !== 'undefined' && window.innerWidth < 640 ? '100%' : 560}
+        closeIcon={null}
+        styles={{
+          body: { padding: 0 },
+          mask: { backdropFilter: 'blur(4px)', background: 'rgba(15, 23, 42, 0.2)' },
+        }}
+      >
+        <div className="h-full flex flex-col bg-slate-50">
+          {/* Header */}
+          <div className="p-8 bg-white border-b border-slate-100 flex items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/20">
+                <BookOpen className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-800 tracking-tight">AI Summary</h3>
+                <p className="text-xs text-slate-400 font-medium truncate max-w-[260px]">{summaryMaterial?.file_name}</p>
+              </div>
+            </div>
+            <button onClick={handleCloseSummary} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-8">
+            {summaryStreaming && summaryText === '' ? (
+              <div className="flex items-center gap-3 text-slate-400">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm font-medium">Generating summary...</span>
+              </div>
+            ) : (
+              <div className="prose prose-slate max-w-none">
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  {summaryText}
+                  {summaryStreaming && (
+                    <span className="inline-block w-1 h-4 bg-violet-500 animate-pulse ml-0.5 align-middle" />
+                  )}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="p-6 bg-white border-t border-slate-100">
+            <button
+              onClick={() => {
+                handleCloseSummary()
+                if (summaryMaterial) {
+                  setSelectedMaterialForQuiz(summaryMaterial)
+                  setQuizDrawerVisible(true)
+                }
+              }}
+              disabled={summaryMaterial?.status !== 'completed'}
+              className="w-full py-4 bg-indigo-600 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:bg-indigo-500 transition-all"
+            >
+              <Sparkles className="w-4 h-4" />
+              Generate Quiz from This Material
+            </button>
+          </div>
+        </div>
+      </Drawer>
     </motion.div>
   )
 }

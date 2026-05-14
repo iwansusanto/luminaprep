@@ -1,8 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
-import sys
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 from app.core.config import settings

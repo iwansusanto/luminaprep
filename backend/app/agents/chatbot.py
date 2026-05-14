@@ -1,17 +1,13 @@
-<<<<<<< HEAD
 """
 ChatbotAgent — conversational AI tutor for LuminaPrep.
 
 Tools:
-  1. get_context       — projects, quizzes, materials milik user
-  2. update_quiz       — update field quiz (status, difficulty, topic, custom_request)
-  3. search_material   — semantic search ke ChromaDB dari pertanyaan user
+  1. get_context        — projects, quizzes, materials milik user
+  2. update_quiz        — update field quiz
+  3. search_material    — semantic search ke ChromaDB dari materi yang diupload
   4. get_quiz_questions — ambil soal-soal dari quiz tertentu
-
-Mode:
-  - General assistant  : project_id saja (atau kosong)
-  - Tutor mode         : material_id diberikan → bisa jawab pertanyaan dari konten materi
-  - Quiz assistant     : quiz_id diberikan → bisa jelaskan soal, jawaban, dll
+  5. get_quiz_results   — ambil hasil/skor quiz sessions user
+  6. web_search         — cari informasi dari internet (jika tidak ada di materi)
 """
 
 import json
@@ -127,6 +123,52 @@ TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_quiz_results",
+            "description": (
+                "Ambil hasil dan skor quiz sessions pengguna. "
+                "Gunakan ketika pengguna bertanya tentang performa, skor, atau riwayat quiz mereka."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "quiz_id": {
+                        "type": "string",
+                        "description": "Filter ke quiz tertentu (opsional).",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Jumlah hasil terbaru (default 5).",
+                        "default": 5,
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "web_search",
+            "description": (
+                "Cari informasi dari internet. Gunakan HANYA jika pertanyaan tidak bisa dijawab "
+                "dari materi yang diupload atau data pengguna. "
+                "Selalu cantumkan sumber URL dalam jawaban."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Query pencarian dalam bahasa Inggris untuk hasil terbaik.",
+                    }
+                },
+                "required": ["query"],
+            },
+        },
+    },
 ]
 
 
@@ -164,7 +206,9 @@ def _build_system_prompt(
         "- Jika pengguna bertanya tentang data mereka → gunakan get_context\n"
         "- Jika pengguna bertanya tentang isi materi/konsep → gunakan search_material\n"
         "- Jika pengguna bertanya tentang soal quiz → gunakan get_quiz_questions\n"
+        "- Jika pengguna bertanya tentang skor/hasil quiz → gunakan get_quiz_results\n"
         "- Jika pengguna minta update quiz → gunakan update_quiz\n"
+        "- Jika pertanyaan tidak bisa dijawab dari materi/data → gunakan web_search, cantumkan sumber\n"
         "- Jangan gunakan tool jika tidak diperlukan"
     )
     return base
@@ -395,6 +439,105 @@ class ChatbotAgent:
             "total": len(questions),
         }
 
+    # ── Tool: get_quiz_results ────────────────────────────────────────────────
+
+    def _tool_get_quiz_results(self, quiz_id: Optional[str] = None, limit: int = 5) -> dict:
+        from app.models.quiz_session import QuizSession
+        limit = min(max(1, limit), 20)
+        q = (
+            self.db.query(QuizSession)
+            .filter(
+                QuizSession.user_id == self.user_id,
+                QuizSession.deleted_at.is_(None),
+            )
+            .order_by(QuizSession.started_at.desc())
+        )
+        if quiz_id:
+            q = q.filter(QuizSession.quiz_id == quiz_id)
+        sessions = q.limit(limit).all()
+
+        results = []
+        for s in sessions:
+            score_pct = (
+                round((s.correct_answers / s.total_questions) * 100, 1)
+                if s.total_questions and s.total_questions > 0
+                else 0
+            )
+            results.append({
+                "session_id": s.id,
+                "quiz_id": s.quiz_id,
+                "status": s.status,
+                "total_questions": s.total_questions,
+                "correct_answers": s.correct_answers,
+                "score": s.score,
+                "score_percentage": score_pct,
+                "started_at": str(s.started_at) if s.started_at else None,
+                "completed_at": str(s.completed_at) if s.completed_at else None,
+            })
+
+        return {
+            "total_sessions": len(results),
+            "sessions": results,
+            "average_score": (
+                round(sum(r["score_percentage"] for r in results) / len(results), 1)
+                if results else 0
+            ),
+        }
+
+    # ── Tool: web_search ──────────────────────────────────────────────────────
+
+    def _tool_web_search(self, query: str) -> dict:
+        """Search the web using DuckDuckGo (no API key needed)."""
+        try:
+            import urllib.request
+            import urllib.parse
+
+            # Use DuckDuckGo Instant Answer API (free, no key)
+            encoded = urllib.parse.quote(query)
+            url = f"https://api.duckduckgo.com/?q={encoded}&format=json&no_html=1&skip_disambig=1"
+
+            req = urllib.request.Request(url, headers={"User-Agent": "LuminaPrep/1.0"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode())
+
+            results = []
+
+            # Abstract (main answer)
+            if data.get("AbstractText"):
+                results.append({
+                    "title": data.get("Heading", ""),
+                    "snippet": data["AbstractText"][:500],
+                    "url": data.get("AbstractURL", ""),
+                    "source": data.get("AbstractSource", ""),
+                })
+
+            # Related topics
+            for topic in data.get("RelatedTopics", [])[:3]:
+                if isinstance(topic, dict) and topic.get("Text"):
+                    results.append({
+                        "title": topic.get("Text", "")[:100],
+                        "snippet": topic.get("Text", "")[:300],
+                        "url": topic.get("FirstURL", ""),
+                        "source": "DuckDuckGo",
+                    })
+
+            if not results:
+                return {
+                    "found": False,
+                    "message": "Tidak ada hasil ditemukan. Coba reformulasi pertanyaan.",
+                    "query": query,
+                }
+
+            return {
+                "found": True,
+                "query": query,
+                "results": results,
+                "note": "Selalu cantumkan URL sumber dalam jawaban.",
+            }
+
+        except Exception as e:
+            return {"found": False, "error": str(e), "query": query}
+
     # ── Tool dispatcher ───────────────────────────────────────────────────────
 
     def _execute_tool(self, name: str, arguments: dict) -> str:
@@ -413,6 +556,13 @@ class ChatbotAgent:
                 result = self._tool_get_quiz_questions(
                     quiz_id=arguments.get("quiz_id", "")
                 )
+            elif name == "get_quiz_results":
+                result = self._tool_get_quiz_results(
+                    quiz_id=arguments.get("quiz_id"),
+                    limit=arguments.get("limit", 5),
+                )
+            elif name == "web_search":
+                result = self._tool_web_search(query=arguments.get("query", ""))
             else:
                 result = {"error": f"Unknown tool: {name}"}
         except Exception as e:
@@ -505,5 +655,3 @@ class ChatbotAgent:
                 metadata={"tool_calls": tool_calls_made},
             )
         return "Maaf, terjadi kesalahan dalam memproses permintaan.", tool_calls_made
-=======
->>>>>>> 3b17d1e (Remove tracked Python bytecode files)

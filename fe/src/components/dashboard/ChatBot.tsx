@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MessageCircle, X, Send, Loader2, Bot, User, Trash2, ChevronDown } from 'lucide-react'
+import { authFetch } from '../../lib/api'
 
 interface Message {
   id: string
@@ -32,10 +33,9 @@ async function sendMessage(params: {
   materialId?: string
   quizId?: string
 }): Promise<{ session_id: string; reply: string; tool_calls: unknown[] }> {
-  const res = await fetch(`${API_BASE}/chat`, {
+  const res = await authFetch(`${API_BASE}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
     body: JSON.stringify({
       message: params.message,
       session_id: params.sessionId,
@@ -52,23 +52,20 @@ async function sendMessage(params: {
 }
 
 async function fetchSessions(): Promise<ChatSession[]> {
-  const res = await fetch(`${API_BASE}/sessions`, { credentials: 'include' })
+  const res = await authFetch(`${API_BASE}/sessions`)
   if (!res.ok) return []
   return res.json()
 }
 
 async function fetchSessionMessages(sessionId: string): Promise<Message[]> {
-  const res = await fetch(`${API_BASE}/sessions/${sessionId}`, { credentials: 'include' })
+  const res = await authFetch(`${API_BASE}/sessions/${sessionId}`)
   if (!res.ok) return []
   const data = await res.json()
   return data.messages || []
 }
 
 async function deleteSession(sessionId: string): Promise<void> {
-  await fetch(`${API_BASE}/sessions/${sessionId}`, {
-    method: 'DELETE',
-    credentials: 'include',
-  })
+  await authFetch(`${API_BASE}/sessions/${sessionId}`, { method: 'DELETE' })
 }
 
 function MessageBubble({ msg }: { msg: Message }) {
