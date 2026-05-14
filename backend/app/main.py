@@ -1,5 +1,4 @@
 import logging
-from contextlib import asynccontextmanager
 import sys
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
@@ -36,7 +35,6 @@ logging.basicConfig(
     format="%(levelname)-8s [%(name)s] %(message)s",
     stream=sys.stdout,
 )
-
 
 app = FastAPI(
     title=settings.app_name,
