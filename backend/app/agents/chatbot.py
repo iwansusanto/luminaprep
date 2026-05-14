@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """
 ChatbotAgent — conversational AI tutor for LuminaPrep.
 
@@ -13,7 +12,6 @@ Mode:
   - Tutor mode         : material_id diberikan → bisa jawab pertanyaan dari konten materi
   - Quiz assistant     : quiz_id diberikan → bisa jelaskan soal, jawaban, dll
 """
-
 import json
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -457,7 +455,7 @@ class ChatbotAgent:
         messages.append({"role": "user", "content": user_message})
 
         tool_calls_made = []
-        max_iterations = 5
+        max_iterations = 5  # prevent infinite loops
 
         for _ in range(max_iterations):
             response = oa_client.chat.completions.create(
@@ -505,5 +503,3 @@ class ChatbotAgent:
                 metadata={"tool_calls": tool_calls_made},
             )
         return "Maaf, terjadi kesalahan dalam memproses permintaan.", tool_calls_made
-=======
->>>>>>> 3b17d1e (Remove tracked Python bytecode files)
