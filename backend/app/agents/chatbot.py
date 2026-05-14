@@ -556,7 +556,6 @@ class ChatbotAgent:
                 result = self._tool_get_quiz_questions(
                     quiz_id=arguments.get("quiz_id", "")
                 )
-<<<<<<< HEAD
             elif name == "get_quiz_results":
                 result = self._tool_get_quiz_results(
                     quiz_id=arguments.get("quiz_id"),
@@ -564,8 +563,6 @@ class ChatbotAgent:
                 )
             elif name == "web_search":
                 result = self._tool_web_search(query=arguments.get("query", ""))
-=======
->>>>>>> origin/backend
             else:
                 result = {"error": f"Unknown tool: {name}"}
         except Exception as e:
@@ -589,7 +586,6 @@ class ChatbotAgent:
         Returns:
             (reply_text, tool_calls_made)
         """
-<<<<<<< HEAD
         trace = None
         if settings.langfuse_enabled:
             trace = langfuse.trace(
@@ -602,8 +598,6 @@ class ChatbotAgent:
                 },
             )
 
-=======
->>>>>>> origin/backend
         system_prompt = _build_system_prompt(
             self.project_id, self.material_id, self.quiz_id
         )
@@ -613,11 +607,7 @@ class ChatbotAgent:
         messages.append({"role": "user", "content": user_message})
 
         tool_calls_made = []
-<<<<<<< HEAD
-        max_iterations = 5
-=======
         max_iterations = 5  # prevent infinite loops
->>>>>>> origin/backend
 
         for _ in range(max_iterations):
             response = oa_client.chat.completions.create(
