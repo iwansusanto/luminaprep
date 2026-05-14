@@ -35,6 +35,11 @@ class MaterialUpdate(SQLModel):
     citations: Optional[str] = None
 
 
+class MaterialWithQuizStatus(MaterialRead):
+    quiz_status: Optional[str] = None
+    quiz_count: int = 0
+
+
 class MaterialListResponse(SQLModel):
     materials: List[MaterialWithQuizStatus]
 
