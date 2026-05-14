@@ -2,7 +2,7 @@
 FROM python:3.11-slim-bookworm AS builder
 
 # Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+RUN pip install --no-cache-dir uv
 
 WORKDIR /app
 
@@ -30,5 +30,6 @@ COPY . .
 ENV PYTHONUNBUFFERED=1
 ENV UV_SYSTEM_PYTHON=1
 
-RUN chmod +x scripts/start.sh
+# Run the application using the startup script
+RUN chmod +x scripts/start.sh scripts/worker.sh
 CMD ["./scripts/start.sh"]
