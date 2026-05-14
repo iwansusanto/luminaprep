@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 import sys
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,8 +27,6 @@ logging.basicConfig(
     stream=sys.stdout,
 )
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.app_name,
