@@ -4,6 +4,7 @@ from typing import Optional
 from datetime import datetime
 import uuid
 
+
 class MaterialBase(SQLModel):
     file_name: str = Field(max_length=255)
     file_type: str = Field(max_length=50)
@@ -12,9 +13,10 @@ class MaterialBase(SQLModel):
     summary: Optional[str] = Field(default=None, sa_type=sa.TEXT)
     citations: Optional[str] = Field(default=None, sa_type=sa.TEXT)
 
+
 class MaterialCreate(MaterialBase):
     project_id: str
-    pass
+
 
 class MaterialRead(MaterialBase):
     id: str
@@ -23,24 +25,27 @@ class MaterialRead(MaterialBase):
     created_at: datetime
     updated_at: datetime
 
+
 class MaterialUpdate(SQLModel):
     file_name: Optional[str] = Field(default=None, max_length=255)
     file_type: Optional[str] = Field(default=None, max_length=50)
     storage_path: Optional[str] = Field(default=None, max_length=512)
     status: Optional[str] = Field(default=None, max_length=50)
-    summary: Optional[str] = Field(default=None)
-    citations: Optional[str] = Field(default=None)
+    file_size: Optional[int] = None
+    summary: Optional[str] = None
+    citations: Optional[str] = None
+
 
 class Material(MaterialBase, table=True):
     __tablename__ = "materials"
-    
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     project_id: str = Field(foreign_key="projects.id")
     user_id: str = Field(foreign_key="users.id")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    deleted_at: Optional[datetime] = Field(default=None, sa_column_kwargs={"comment": "Soft delete timestamp"})
-    
+    deleted_at: Optional[datetime] = Field(default=None)
+
     # Relationships
     project: "Project" = Relationship(back_populates="materials")
     user: "User" = Relationship(back_populates="materials")

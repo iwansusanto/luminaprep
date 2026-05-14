@@ -4,6 +4,7 @@
 # ============ CORE FRAMEWORK ============
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
+scalar-fastapi>=0.0.121
 
 # ============ DATABASE & ORM ============
 sqlmodel>=0.0.14

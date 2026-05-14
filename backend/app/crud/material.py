@@ -1,9 +1,14 @@
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.material import Material
 from typing import List, Optional
 import os
 from app.core.config import settings
 import uuid
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def create_material(
@@ -118,10 +123,8 @@ def delete_material(db: Session, material_id: str, user_id: str) -> Optional[Mat
         except Exception:
             pass  # Ignore file deletion errors
 
-    # Soft delete - set deleted_at timestamp
-    from datetime import datetime
-
-    material.deleted_at = datetime.utcnow()
+    # Soft delete
+    material.deleted_at = _now()
 
     db.commit()
     db.refresh(material)
