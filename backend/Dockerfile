@@ -29,7 +29,8 @@ EXPOSE 8000
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
+ENV UV_SYSTEM_PYTHON=1
 
 # Run the application using the startup script
-RUN chmod +x scripts/start.sh
+RUN chmod +x scripts/start.sh scripts/worker.sh
 CMD ["./scripts/start.sh"]
