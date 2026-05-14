@@ -1419,7 +1419,6 @@ requires-dist = [
     { name = "bcrypt", specifier = "==4.0.1" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.0.0" },
     { name = "celery", marker = "extra == 'celery'", specifier = ">=5.3.0" },
-    { name = "chonkie", specifier = ">=1.6.5" },
     { name = "chonkie", extras = ["st", "catsu"], specifier = ">=1.6.5" },
     { name = "chromadb", specifier = ">=1.5.9" },
     { name = "fastapi", specifier = ">=0.104.0" },
