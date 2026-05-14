@@ -2,21 +2,22 @@
 Pytest configuration and shared fixtures.
 Uses SQLite in-memory — no real MySQL/Redis/OpenAI needed.
 
-Key insight: we must redirect BOTH the engine used by CRUD code AND the engine
-used by Base.metadata.create_all (startup event) to our test SQLite engine.
-We do this by monkey-patching the module-level `engine` attribute in both
-app.database and app.db.database BEFORE the app is imported.
+Critical order:
+1. Patch config.settings.database_url BEFORE any db module is imported
+   (so create_engine never tries to connect to MySQL)
+2. Patch all external deps (OpenAI, ChromaDB, Celery)
+3. Import app modules
+4. Redirect engine references to test_engine
 """
-import sys
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, PropertyMock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-# ── Build the test engine ─────────────────────────────────────────────────────
 SQLITE_URL = "sqlite://"
 
+# ── Build test engine FIRST ───────────────────────────────────────────────────
 test_engine = create_engine(
     SQLITE_URL,
     connect_args={"check_same_thread": False},
@@ -24,7 +25,13 @@ test_engine = create_engine(
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
-# ── Patch heavy external deps BEFORE any app import ──────────────────────────
+# ── Patch config BEFORE any app import so create_engine uses SQLite ───────────
+# Set env var so pydantic-settings picks up SQLite URL when Settings is instantiated
+import os
+os.environ.setdefault("DATABASE_URL", SQLITE_URL)
+os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing-only-not-production")
+
+# ── Patch all external deps ───────────────────────────────────────────────────
 patch("app.utils.oa_client.OpenAI", MagicMock()).start()
 patch("app.vector_db.client.chromadb_client", MagicMock()).start()
 patch("app.vector_db.collections.chromadb_collections", MagicMock()).start()
@@ -34,25 +41,24 @@ _mock_celery_task = MagicMock()
 _mock_celery_task.delay = MagicMock(return_value=MagicMock(id="mock-task-id"))
 patch("app.tasks.quiz_tasks.generate_quiz_task", _mock_celery_task).start()
 
-# ── Import app db modules and redirect their engines ─────────────────────────
-import app.db.database as _db1
-import app.database as _db2
+# ── Now safe to import app modules ────────────────────────────────────────────
+import app.db.database as _db1  # noqa: E402
+import app.database as _db2     # noqa: E402
 
+# Redirect engine references to our test engine
 _db1.engine = test_engine
 _db1.SessionLocal = TestingSessionLocal
 _db2.engine = test_engine
 _db2.SessionLocal = TestingSessionLocal
 
-# ── Import Base and all models to register tables ────────────────────────────
-from sqlmodel import SQLModel  # noqa: E402
-import app.models  # noqa: F401, E402
+from sqlmodel import SQLModel   # noqa: E402
+import app.models               # noqa: F401, E402
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture(autouse=True)
 def reset_db():
-    """Create all tables before each test, drop after."""
     SQLModel.metadata.create_all(bind=test_engine)
     yield
     SQLModel.metadata.drop_all(bind=test_engine)
@@ -79,11 +85,6 @@ def client(db):
 
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_db2] = override_get_db
-
-    # Prevent startup event from running create_all on wrong engine
-    # by patching the engine in main's scope too
-    import app.main as _main_module
-    original_engine = getattr(_main_module, 'engine', None)
 
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
