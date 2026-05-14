@@ -31,6 +31,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: luminaprep-backend:latest
     container_name: luminaprep-api
     ports:
       - "8000:8000"
@@ -55,9 +56,7 @@ services:
       - ./backend/chroma_db:/app/chroma_db
 
   celery_worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: luminaprep-backend:latest
     container_name: luminaprep-celery-worker
     command: uv run celery -A app.celery_app worker --loglevel=info
     environment:
