@@ -2,12 +2,17 @@ import React from 'react';
 import { ConfigProvider } from 'antd';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import { ChatBot } from './ChatBot';
+import { useAuth } from '../../context/AuthContext';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+  const { user } = useAuth();
+  const projectId = user?.projects?.[0]?.id;
+
   return (
     <ConfigProvider
       theme={{
@@ -38,6 +43,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </div>
           </main>
         </div>
+        <ChatBot projectId={projectId} />
       </div>
     </ConfigProvider>
   );

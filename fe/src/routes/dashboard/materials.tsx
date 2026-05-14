@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useAuth } from '../../context/AuthContext'
 import { Skeleton, message, Modal, ConfigProvider } from 'antd'
 import {
@@ -79,6 +79,7 @@ const columnHelper = createColumnHelper<Material>()
 
 function MaterialsPage() {
   const auth = useAuth()
+  const navigate = useNavigate()
   const [materials, setMaterials] = useState<Material[]>([])
   const [loading, setLoading] = useState(true)
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false)
@@ -149,11 +150,9 @@ function MaterialsPage() {
     setQuizDrawerVisible(true)
   }
 
-  const handleGenerateQuiz = (materialId: string) => {
-    // This could trigger a refresh or navigate to the quiz page
-    console.log('Generating quiz for material:', materialId)
+  const handleGenerateQuiz = (_materialId: string) => {
     setQuizDrawerVisible(false)
-    message.success('Quiz generation initialized')
+    navigate({ to: '/dashboard/quizzes' })
   }
 
   const data = materials;

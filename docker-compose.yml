@@ -53,7 +53,7 @@ services:
   celery_worker:
     image: luminaprep-backend:latest
     container_name: luminaprep-celery-worker
-    command: uv run celery -A app.celery_app worker --loglevel=info --concurrency=2
+    command: uv run celery -A app.celery_app worker --loglevel=info
     env_file:
       - ./backend/.env
     environment:

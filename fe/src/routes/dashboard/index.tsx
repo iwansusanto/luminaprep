@@ -68,6 +68,8 @@ function DashboardIndexPage() {
     questions: 20,
     complexity: 'intermediate'
   })
+  const [quizTopic, setQuizTopic] = useState('')
+  const [quizCustomRequest, setQuizCustomRequest] = useState('')
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false)
   const [generating, setGenerating] = useState(false)
   const prevMaterialsRef = useRef<Material[]>([])
@@ -156,15 +158,19 @@ function DashboardIndexPage() {
 
     setGenerating(true)
     try {
+      const body: Record<string, unknown> = {
+        question_count: quizSettings.questions,
+        difficulty_level: quizSettings.complexity,
+      }
+      if (quizTopic.trim()) body.topic = quizTopic.trim()
+      if (quizCustomRequest.trim()) body.custom_request = quizCustomRequest.trim()
+
       const response = await fetch(`/api/v1/quizzes/materials/${selectedMaterial}/quizzes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          question_count: quizSettings.questions,
-          difficulty_level: quizSettings.complexity
-        }),
+        body: JSON.stringify(body),
       })
 
       if (response.ok) {
@@ -328,6 +334,30 @@ function DashboardIndexPage() {
                         options={setting_quiz.level}
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-indigo-300/60 uppercase tracking-[0.25em] block px-1">Topic Focus <span className="normal-case tracking-normal font-medium opacity-50">(optional)</span></label>
+                    <input
+                      type="text"
+                      placeholder='e.g. "pecahan", "fotosintesis"'
+                      value={quizTopic}
+                      onChange={(e) => setQuizTopic(e.target.value)}
+                      maxLength={255}
+                      className="w-full px-4 py-3 bg-slate-800/50 border border-white/10 rounded-2xl text-sm text-white placeholder-slate-500 outline-none focus:border-indigo-500/50 transition-colors"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-indigo-300/60 uppercase tracking-[0.25em] block px-1">Custom Instructions <span className="normal-case tracking-normal font-medium opacity-50">(optional)</span></label>
+                    <textarea
+                      placeholder='e.g. "use English for grade 5 SD"'
+                      value={quizCustomRequest}
+                      onChange={(e) => setQuizCustomRequest(e.target.value)}
+                      maxLength={500}
+                      rows={2}
+                      className="w-full px-4 py-3 bg-slate-800/50 border border-white/10 rounded-2xl text-sm text-white placeholder-slate-500 outline-none focus:border-indigo-500/50 transition-colors resize-none"
+                    />
                   </div>
                 </div>
               </ConfigProvider>
