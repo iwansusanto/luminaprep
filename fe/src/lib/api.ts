@@ -19,14 +19,23 @@ export function getAuthHeaders(): Record<string, string> {
 
 /**
  * Drop-in replacement for fetch() that auto-injects Bearer token.
- * Use this instead of raw fetch() for all API calls.
+ * Auto-clears token and reloads on 401.
  */
 export async function authFetch(url: string, init: RequestInit = {}): Promise<Response> {
   const headers = {
     ...getAuthHeaders(),
     ...(init.headers as Record<string, string> || {}),
   };
-  return fetch(url, { ...init, headers });
+  const res = await fetch(url, { ...init, headers });
+
+  // Auto-logout on 401 — token expired or invalid
+  if (res.status === 401) {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem('lumina_user');
+    window.location.href = '/login';
+  }
+
+  return res;
 }
 
 /**
@@ -57,6 +66,12 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}):
   });
 
   if (!response.ok) {
+    // Auto-logout on 401
+    if (response.status === 401) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('lumina_user');
+      window.location.href = '/login';
+    }
     let errorData;
     try {
       errorData = await response.json();
