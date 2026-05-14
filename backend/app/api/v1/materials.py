@@ -10,7 +10,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 from typing import List
 import os
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.core.config import settings
 from app.crud.material import (
     create_material,
@@ -51,7 +51,13 @@ async def upload_material(
         )
 
     # Save file to storage
-    file_path = save_uploaded_file(file, file.filename or "unknown")
+    import time
+    start_time = time.time()
+    file_path = await save_uploaded_file(file, file.filename or "unknown")
+    duration = time.time() - start_time
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"File saved to {file_path} in {duration:.2f}s")
 
     # Determine file type
     file_type = (
@@ -68,14 +74,11 @@ async def upload_material(
         file_type=file_type,
     )
 
-    # Run ingestion in background
-    from app.database import SessionLocal
-
-    def run_ingestion():
+    async def run_ingestion():
         db = SessionLocal()
         try:
             agent = IngestionAgent(db)
-            return agent.ingest_with_retry(
+            return await agent.ingest_with_retry(
                 material_id=str(material.id),
                 file_path=file_path,
                 file_type=file_type,

@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useAuth } from '../../context/AuthContext'
 import { useState, useEffect, useCallback } from 'react'
 import {
@@ -10,7 +10,8 @@ import {
   Loader2
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
-import { Segmented, Select, ConfigProvider, theme, Modal, message } from 'antd'
+import { Segmented, Select, ConfigProvider, theme, Modal, message, notification } from 'antd'
+import { useRef } from 'react'
 import { KnowledgeVault } from '../../components/dashboard/KnowledgeVault'
 import { MaterialUploader } from '../../components/dashboard/MaterialUploader'
 import { OnboardingModal } from '../../components/dashboard/OnboardingModal'
@@ -27,6 +28,8 @@ interface Material {
   file_type: string;
   file_size: number | null;
   citations: string | null;
+  status: string;
+  summary: string | null;
   project_id: string;
   user_id: string;
   created_at: string;
@@ -57,6 +60,7 @@ const item: Variants = {
 
 function DashboardIndexPage() {
   const auth = useAuth()
+  const navigate = useNavigate()
   const [materials, setMaterials] = useState<Material[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null)
@@ -66,6 +70,7 @@ function DashboardIndexPage() {
   })
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const prevMaterialsRef = useRef<Material[]>([])
 
   const projectId = auth?.user?.projects?.[0]?.id
 
@@ -97,9 +102,9 @@ function DashboardIndexPage() {
     })
   }
 
-  const fetchMaterials = useCallback(async () => {
+  const fetchMaterials = useCallback(async (silent = false) => {
     if (!projectId) return;
-    setLoading(true)
+    if (!silent) setLoading(true)
     try {
       const response = await fetch(`/api/v1/materials/project/${projectId}`)
       if (response.ok) {
@@ -108,15 +113,40 @@ function DashboardIndexPage() {
       }
     } catch (error) {
       console.error('Failed to fetch materials:', error)
-      setMaterials([])
+      if (!silent) setMaterials([])
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [projectId])
 
   useEffect(() => {
     fetchMaterials()
   }, [fetchMaterials])
+
+  useEffect(() => {
+    const hasProcessing = materials.some(m => m.status === 'processing');
+    
+    // Check for transitions from processing to completed
+    materials.forEach(material => {
+      const prevMaterial = prevMaterialsRef.current.find(m => m.id === material.id);
+      if (prevMaterial && prevMaterial.status === 'processing' && material.status === 'completed') {
+        notification.success({
+          message: 'Analysis Complete',
+          description: `"${material.file_name}" has been successfully processed and summarized.`,
+          placement: 'bottomRight',
+          icon: <Sparkles className="text-indigo-500" />,
+          className: 'premium-notification'
+        });
+      }
+    });
+    
+    prevMaterialsRef.current = materials;
+
+    if (hasProcessing) {
+      const interval = setInterval(() => fetchMaterials(true), 10000);
+      return () => clearInterval(interval);
+    }
+  }, [fetchMaterials, materials])
 
   const handleGenerateQuiz = async () => {
     if (!selectedMaterial) {
@@ -139,7 +169,7 @@ function DashboardIndexPage() {
 
       if (response.ok) {
         message.success('Quiz generation started successfully! You can view it in the Quizzes section.')
-        // Optional: Reset selection or navigate
+        navigate({ to: '/dashboard/quizzes' })
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.detail || errorData.message || 'Failed to generate quiz')
@@ -273,7 +303,7 @@ function DashboardIndexPage() {
                     <Select
                       className="w-full"
                       placeholder="Choose a material..."
-                      options={materials.map(m => ({ value: m.id, label: m.file_name }))}
+                      options={materials.filter(m => m.status === 'completed').map(m => ({ value: m.id, label: m.file_name }))}
                       onChange={(val) => setSelectedMaterial(val)}
                       suffixIcon={<BookOpen className="w-4 h-4 opacity-40" />}
                     />

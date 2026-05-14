@@ -6,7 +6,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const setting_material = {
-  maximal: 5
+  maximal: 5,
+  maxSize: "10MB"
 }
 
 export const setting_quiz = {

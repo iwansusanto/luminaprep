@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { Drawer, Segmented, Select, ConfigProvider, message } from 'antd'
-import { Sparkles as SparklesIcon, Zap, Loader2 } from 'lucide-react'
+import { Sparkles as SparklesIcon, Zap, Loader2, Clock, AlertCircle } from 'lucide-react'
 import { setting_quiz } from '../../lib/utils'
 
 interface Material {
@@ -10,6 +11,8 @@ interface Material {
   file_type: string;
   file_size: number | null;
   citations: string | null;
+  status: string;
+  summary: string | null;
   project_id: string;
   user_id: string;
   created_at: string;
@@ -29,6 +32,7 @@ export const QuizGenerationDrawer: React.FC<QuizGenerationDrawerProps> = ({
   material,
   onGenerate
 }) => {
+  const navigate = useNavigate()
   const [quizSettings, setQuizSettings] = useState({
     questions: 20,
     complexity: 'intermediate'
@@ -54,6 +58,7 @@ export const QuizGenerationDrawer: React.FC<QuizGenerationDrawerProps> = ({
       if (response.ok) {
         message.success('Quiz generation started successfully!')
         onGenerate(material.id, quizSettings)
+        navigate({ to: '/dashboard/quizzes' })
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.detail || errorData.message || 'Failed to generate quiz')
@@ -90,6 +95,13 @@ export const QuizGenerationDrawer: React.FC<QuizGenerationDrawerProps> = ({
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
               Generating for: <span className="text-indigo-600 truncate max-w-[200px]">{material?.file_name}</span>
             </p>
+            {material?.status !== 'completed' && (
+              <div className={`mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${material?.status === 'failed' ? 'bg-rose-50 text-rose-500' : 'bg-amber-50 text-amber-500'
+                }`}>
+                {material?.status === 'processing' ? <Loader2 className="w-3 h-3 animate-spin" /> : <AlertCircle className="w-3 h-3" />}
+                {material?.status === 'failed' ? 'Analysis Failed' : 'Document Analysis in Progress'}
+              </div>
+            )}
           </div>
         </div>
 
@@ -146,15 +158,23 @@ export const QuizGenerationDrawer: React.FC<QuizGenerationDrawerProps> = ({
         <div className="p-6 sm:p-10 bg-white border-t border-slate-100">
           <button
             onClick={handleGenerate}
-            disabled={generating || !material}
-            className="w-full py-5 bg-indigo-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 active:scale-[0.98] group"
+            disabled={generating || !material || material.status !== 'completed'}
+            className="w-full py-5 bg-indigo-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 active:scale-[0.98] group"
           >
             {generating ? (
               <Loader2 className="w-4 h-4 animate-spin" />
+            ) : material?.status !== 'completed' ? (
+              <Clock className="w-4 h-4" />
             ) : (
               <Zap className="w-4 h-4 group-hover:rotate-12 transition-transform" />
             )}
-            {generating ? 'Architecting Quiz...' : 'Initialize Generation'}
+            {generating
+              ? 'Architecting Quiz...'
+              : material?.status === 'failed'
+                ? 'Analysis Failed'
+                : material?.status !== 'completed'
+                  ? 'Processing Document...'
+                  : 'Initialize Generation'}
           </button>
           <button
             onClick={onClose}

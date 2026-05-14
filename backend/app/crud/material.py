@@ -1,9 +1,14 @@
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.material import Material
 from typing import List, Optional
 import os
 from app.core.config import settings
 import uuid
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def create_material(
@@ -48,6 +53,7 @@ def get_materials_by_project(
             Material.user_id == user_id,
             Material.deleted_at.is_(None),
         )
+        .order_by(Material.created_at.desc())
         .all()
     )
 
@@ -117,17 +123,15 @@ def delete_material(db: Session, material_id: str, user_id: str) -> Optional[Mat
         except Exception:
             pass  # Ignore file deletion errors
 
-    # Soft delete - set deleted_at timestamp
-    from datetime import datetime
-
-    material.deleted_at = datetime.utcnow()
+    # Soft delete
+    material.deleted_at = _now()
 
     db.commit()
     db.refresh(material)
     return material
 
 
-def save_uploaded_file(file, filename: str) -> str:
+async def save_uploaded_file(file, filename: str) -> str:
     """Save uploaded file to storage."""
     # Create upload directory if it doesn't exist
     upload_dir = settings.upload_dir
@@ -139,8 +143,9 @@ def save_uploaded_file(file, filename: str) -> str:
     file_path = os.path.join(upload_dir, unique_filename)
 
     # Save file
+    # We read the file content asynchronously
+    content = await file.read()
     with open(file_path, "wb") as buffer:
-        content = file.file.read()
         buffer.write(content)
 
     return file_path

@@ -4,14 +4,16 @@ from app.models.quiz import Quiz
 from app.models.project import Project
 from typing import List, Optional
 
-def get_questions_by_quiz(db: Session, quiz_id: str, user_id: str) -> List[Question]:
-    """Get all questions for a quiz with user verification."""
+def get_questions_by_quiz(db: Session, quiz_id: str, user_id: Optional[str] = None) -> List[Question]:
+    """Get all questions for a quiz, optionally verifying user ownership."""
     try:
-        questions = db.query(Question).join(Quiz).join(Project).filter(
+        query = db.query(Question).filter(
             Question.quiz_id == quiz_id,
-            Project.user_id == user_id
-        ).all()
-        return questions
+            Question.deleted_at.is_(None),
+        )
+        if user_id is not None:
+            query = query.join(Quiz).join(Project).filter(Project.user_id == user_id)
+        return query.all()
     except Exception as e:
         print(f"Error in get_questions_by_quiz: {e}")
         return []

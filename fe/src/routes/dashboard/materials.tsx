@@ -8,6 +8,8 @@ import {
   Trash2,
   Clock,
   Sparkles,
+  Loader2,
+  AlertCircle
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
 import {
@@ -47,6 +49,8 @@ interface Material {
   file_type: string;
   file_size: number | null;
   citations: string | null;
+  status: string;
+  summary: string | null;
   project_id: string;
   user_id: string;
   created_at: string;
@@ -83,9 +87,9 @@ function MaterialsPage() {
 
   const projectId = auth?.user?.projects?.[0]?.id
 
-  const fetchMaterials = useCallback(async () => {
+  const fetchMaterials = useCallback(async (silent = false) => {
     if (!projectId) return;
-    setLoading(true)
+    if (!silent) setLoading(true)
     try {
       const response = await fetch(`/api/v1/materials/project/${projectId}`)
       if (response.ok) {
@@ -94,15 +98,23 @@ function MaterialsPage() {
       }
     } catch (error) {
       console.error('Failed to fetch materials:', error)
-      message.error('Failed to load materials')
+      if (!silent) setMaterials([])
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [projectId])
 
   useEffect(() => {
     fetchMaterials()
   }, [fetchMaterials])
+
+  useEffect(() => {
+    const hasProcessing = materials.some(m => m.status === 'processing');
+    if (hasProcessing) {
+      const interval = setInterval(() => fetchMaterials(true), 5000);
+      return () => clearInterval(interval);
+    }
+  }, [fetchMaterials, materials])
 
   const handleRemoveMaterial = async (id: string) => {
     Modal.confirm({
@@ -172,6 +184,25 @@ function MaterialsPage() {
       header: 'Size',
       cell: info => <span className="text-sm font-medium text-slate-500">{info.getValue() ? formatBytes(info.getValue() as number) : 'N/A'}</span>,
     }),
+    columnHelper.accessor('status', {
+      header: 'Status',
+      cell: info => {
+        const status = info.getValue();
+        return (
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
+              status === 'failed' ? 'bg-rose-50 text-rose-600' :
+                'bg-amber-50 text-amber-600'
+              }`}>
+              {status === 'processing' && <Loader2 className="w-3 h-3 animate-spin" />}
+              {status === 'completed' && <Sparkles className="w-3 h-3" />}
+              {status === 'failed' && <AlertCircle className="w-3 h-3" />}
+              {status}
+            </span>
+          </div>
+        );
+      },
+    }),
     columnHelper.display({
       id: 'actions',
       header: () => <span className="text-right block pr-8">Actions</span>,
@@ -179,10 +210,11 @@ function MaterialsPage() {
         <div className="flex items-center justify-end gap-2 pr-4 transition-all duration-300">
           <button
             onClick={() => handleOpenQuizDrawer(info.row.original)}
-            className="group/btn flex items-center gap-2 px-4 py-2 bg-white text-indigo-600 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] hover:bg-indigo-600 hover:text-white transition-all duration-500 shadow-sm border border-slate-100 hover:border-indigo-600 hover:shadow-lg hover:shadow-indigo-200 active:scale-95"
+            disabled={info.row.original.status !== 'completed'}
+            className="group/btn flex items-center gap-2 px-4 py-2 bg-white disabled:bg-slate-50 disabled:text-slate-300 disabled:border-slate-100 disabled:cursor-not-allowed text-indigo-600 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] hover:bg-indigo-600 hover:text-white transition-all duration-500 shadow-sm border border-slate-100 hover:border-indigo-600 hover:shadow-lg hover:shadow-indigo-200 active:scale-95"
           >
-            <Sparkles className="w-3 h-3 group-hover/btn:rotate-12 transition-transform" />
-            Generate Quiz
+            {info.row.original.status === 'processing' ? <Clock className="w-3 h-3" /> : <Sparkles className="w-3 h-3 group-hover/btn:rotate-12 transition-transform" />}
+            {info.row.original.status === 'processing' ? 'Processing' : 'Generate Quiz'}
           </button>
           <button
             onClick={() => handleRemoveMaterial(info.row.original.id)}
@@ -203,7 +235,7 @@ function MaterialsPage() {
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
-        pageSize: 5,
+        pageSize: 50,
       },
     },
   })
