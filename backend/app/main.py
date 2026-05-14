@@ -1,5 +1,4 @@
 import logging
-from contextlib import asynccontextmanager
 import sys
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
@@ -31,6 +30,11 @@ async def lifespan(app: FastAPI):
 
 
 # Configure root logger to output to stdout (same stream uvicorn uses)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)-8s [%(name)s] %(message)s",
+    stream=sys.stdout,
+)
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
