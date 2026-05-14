@@ -1,29 +1,33 @@
 # Build stage
 FROM python:3.11-slim-bookworm AS builder
 
-WORKDIR /app
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-RUN pip install uv
+WORKDIR /app
 
 COPY pyproject.toml uv.lock README.md ./
 
-RUN uv sync --no-dev --extra celery
+RUN uv pip install --system --no-cache -r pyproject.toml --extra celery
 
 # Production stage
 FROM python:3.11-slim-bookworm
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app/pyproject.toml /app/pyproject.toml
-COPY --from=builder /app/uv.lock /app/uv.lock
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY . .
 
 ENV PYTHONUNBUFFERED=1
 
-# Run the application using the startup script
 RUN chmod +x scripts/start.sh
 CMD ["./scripts/start.sh"]

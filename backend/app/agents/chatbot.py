@@ -12,12 +12,15 @@ Mode:
   - Tutor mode         : material_id diberikan → bisa jawab pertanyaan dari konten materi
   - Quiz assistant     : quiz_id diberikan → bisa jelaskan soal, jawaban, dll
 """
+
 import json
 from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.utils.oa_client import oa_client
 from app.utils.sanitize import sanitize_prompt_field
+from app.utils.langfuse_client import langfuse
+from app.core.config import settings
 from app.models.quiz import Quiz
 from app.models.project import Project
 from app.models.material import Material
@@ -57,7 +60,10 @@ TOOLS = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "quiz_id": {"type": "string", "description": "ID quiz yang diupdate."},
+                    "quiz_id": {
+                        "type": "string",
+                        "description": "ID quiz yang diupdate.",
+                    },
                     "status": {
                         "type": "string",
                         "enum": ["draft", "processing", "completed", "failed"],
@@ -213,7 +219,9 @@ class ChatbotAgent:
         materials = materials_q.all()
 
         return {
-            "projects": [{"id": p.id, "title": p.title, "status": p.status} for p in projects],
+            "projects": [
+                {"id": p.id, "title": p.title, "status": p.status} for p in projects
+            ],
             "quizzes": [
                 {
                     "id": q.id,
@@ -227,7 +235,12 @@ class ChatbotAgent:
                 for q in quizzes
             ],
             "materials": [
-                {"id": m.id, "file_name": m.file_name, "status": m.status, "project_id": m.project_id}
+                {
+                    "id": m.id,
+                    "file_name": m.file_name,
+                    "status": m.status,
+                    "project_id": m.project_id,
+                }
                 for m in materials
             ],
         }
@@ -322,7 +335,11 @@ class ChatbotAgent:
 
             docs = results.get("documents", [[]])[0]
             if not docs:
-                return {"found": False, "results": [], "message": "Tidak ada konten yang relevan ditemukan."}
+                return {
+                    "found": False,
+                    "results": [],
+                    "message": "Tidak ada konten yang relevan ditemukan.",
+                }
 
             return {
                 "found": True,
@@ -392,7 +409,9 @@ class ChatbotAgent:
                     n_results=arguments.get("n_results", 5),
                 )
             elif name == "get_quiz_questions":
-                result = self._tool_get_quiz_questions(quiz_id=arguments.get("quiz_id", ""))
+                result = self._tool_get_quiz_questions(
+                    quiz_id=arguments.get("quiz_id", "")
+                )
             else:
                 result = {"error": f"Unknown tool: {name}"}
         except Exception as e:
@@ -416,6 +435,18 @@ class ChatbotAgent:
         Returns:
             (reply_text, tool_calls_made)
         """
+        trace = None
+        if settings.langfuse_enabled:
+            trace = langfuse.trace(
+                name="chatbot_chat",
+                metadata={
+                    "user_id": self.user_id,
+                    "project_id": self.project_id,
+                    "material_id": self.material_id,
+                    "quiz_id": self.quiz_id,
+                },
+            )
+
         system_prompt = _build_system_prompt(
             self.project_id, self.material_id, self.quiz_id
         )
@@ -425,7 +456,7 @@ class ChatbotAgent:
         messages.append({"role": "user", "content": user_message})
 
         tool_calls_made = []
-        max_iterations = 5  # prevent infinite loops
+        max_iterations = 5
 
         for _ in range(max_iterations):
             response = oa_client.chat.completions.create(
@@ -452,15 +483,24 @@ class ChatbotAgent:
                     tool_result = self._execute_tool(fn_name, fn_args)
                     tool_calls_made.append({"tool": fn_name, "args": fn_args})
 
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tc.id,
-                        "content": tool_result,
-                    })
-                continue  # let model respond after seeing tool results
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": tc.id,
+                            "content": tool_result,
+                        }
+                    )
+                continue
 
-            # Done — return final reply
+            if trace:
+                trace.update(
+                    output=msg.content, metadata={"tool_calls": tool_calls_made}
+                )
             return msg.content or "", tool_calls_made
 
-        # Fallback if max iterations hit
+        if trace:
+            trace.update(
+                output="Max iterations reached",
+                metadata={"tool_calls": tool_calls_made},
+            )
         return "Maaf, terjadi kesalahan dalam memproses permintaan.", tool_calls_made
