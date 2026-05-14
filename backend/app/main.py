@@ -9,6 +9,7 @@ import app.db.database as _db
 from app.models import (  # noqa: F401 – register all SQLModel tables
     User, Project, Material, Quiz, Question,
     QuizSession, UserAttempt, AgentMetric,
+    ChatSession, ChatMessage,
 )
 from scalar_fastapi import get_scalar_api_reference
 
