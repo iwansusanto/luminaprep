@@ -1,15 +1,22 @@
 import logging
-from contextlib import asynccontextmanager
 import sys
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 from app.core.config import settings
 import app.db.database as _db
 from app.models import (  # noqa: F401 – register all SQLModel tables
-    User, Project, Material, Quiz, Question,
-    QuizSession, UserAttempt, AgentMetric,
-    ChatSession, ChatMessage,
+    User,
+    Project,
+    Material,
+    Quiz,
+    Question,
+    QuizSession,
+    UserAttempt,
+    AgentMetric,
+    ChatSession,
+    ChatMessage,
 )
 from scalar_fastapi import get_scalar_api_reference
 
@@ -21,6 +28,7 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown: nothing needed
 
+
 # Configure root logger to output to stdout (same stream uvicorn uses)
 logging.basicConfig(
     level=logging.INFO,
@@ -28,14 +36,13 @@ logging.basicConfig(
     stream=sys.stdout,
 )
 
-
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description="AI-powered learning platform backend API",
-    docs_url=None,
-    redoc_url=None,
-    openapi_url="/api/openapi.json" if settings.debug else None,
+    docs_url="/docs" if settings.debug else None,
+    redoc_url="/redoc" if settings.debug else None,
+    openapi_url="/api/openapi.json",
     lifespan=lifespan,
 )
 
@@ -76,11 +83,13 @@ async def health_check():
 
 # Import routers
 from app.api.v1.api import api_router
+
 app.include_router(api_router, prefix="/api/v1")
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",

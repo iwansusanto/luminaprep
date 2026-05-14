@@ -10,6 +10,8 @@ from app.agents.exceptions import (
     QuizGenerationError,
     FeedbackGenerationError,
 )
+from app.utils.langfuse_client import langfuse
+from app.core.config import settings
 
 from app.crud.quiz import create_quiz
 from app.crud.question import create_question
@@ -31,19 +33,35 @@ class AgentOrchestrator:
         file_path: str,
         file_type: Literal["pdf", "txt"],
     ) -> dict:
+        trace = None
+        if settings.langfuse_enabled:
+            trace = langfuse.trace(
+                name="process_material",
+                metadata={"material_id": material_id, "file_type": file_type},
+            )
         try:
             result = await self.ingestion_agent.ingest(
                 material_id, file_path, file_type
             )
+            if trace:
+                trace.update(output={"status": "success"})
             return {
                 "status": "success",
                 "operation": "process_material",
                 "result": result,
             }
         except Exception as e:
+            if trace:
+                trace.update(output={"status": "error", "error": str(e)})
             raise AgentError(f"Failed to process material: {str(e)}")
 
     async def generate_material_summary(self, material_id: str, user_id: str) -> str:
+        trace = None
+        if settings.langfuse_enabled:
+            trace = langfuse.trace(
+                name="generate_material_summary",
+                metadata={"material_id": material_id, "user_id": user_id},
+            )
         try:
             material = get_material_by_id(self.db, material_id, user_id)
             if not material:
@@ -67,11 +85,15 @@ class AgentOrchestrator:
             combined_text = "\n\n".join(results["documents"][0])
             summary = await self.summarization_agent.generate(combined_text)
 
+            if trace:
+                trace.update(output={"summary_length": len(summary) if summary else 0})
             return summary or ""
 
         except AgentError:
             raise
         except Exception as e:
+            if trace:
+                trace.update(output={"status": "error", "error": str(e)})
             raise AgentError(f"Failed to generate summary: {str(e)}")
 
     async def generate_material_quiz(
@@ -82,6 +104,17 @@ class AgentOrchestrator:
         num_questions: int,
         user_id: str,
     ) -> Quiz:
+        trace = None
+        if settings.langfuse_enabled:
+            trace = langfuse.trace(
+                name="generate_material_quiz",
+                metadata={
+                    "material_id": material_id,
+                    "project_id": project_id,
+                    "difficulty": difficulty,
+                    "num_questions": num_questions,
+                },
+            )
         try:
             material = get_material_by_id(self.db, material_id, user_id)
             if not material:
@@ -119,12 +152,18 @@ class AgentOrchestrator:
                 )
 
             self.db.commit()
+            if trace:
+                trace.update(
+                    output={"quiz_id": quiz.id, "question_count": len(questions)}
+                )
             return quiz
 
         except QuizGenerationError:
             raise
         except Exception as e:
             self.db.rollback()
+            if trace:
+                trace.update(output={"status": "error", "error": str(e)})
             raise QuizGenerationError(f"Failed to generate quiz: {str(e)}")
 
     async def generate_feedback(
@@ -135,6 +174,16 @@ class AgentOrchestrator:
         is_correct: bool,
         user_id: str,
     ) -> str:
+        trace = None
+        if settings.langfuse_enabled:
+            trace = langfuse.trace(
+                name="generate_feedback",
+                metadata={
+                    "question_id": question_id,
+                    "quiz_id": quiz_id,
+                    "is_correct": is_correct,
+                },
+            )
         try:
             from app.crud.question import get_question_by_id
             from app.crud.quiz import get_quiz_by_id
@@ -155,9 +204,15 @@ class AgentOrchestrator:
                 is_correct=is_correct,
             )
 
+            if trace:
+                trace.update(
+                    output={"feedback_length": len(feedback) if feedback else 0}
+                )
             return feedback
 
         except FeedbackGenerationError:
             raise
         except Exception as e:
+            if trace:
+                trace.update(output={"status": "error", "error": str(e)})
             raise FeedbackGenerationError(f"Failed to generate feedback: {str(e)}")

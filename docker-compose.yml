@@ -22,19 +22,25 @@ services:
     image: redis:7-alpine
     container_name: luminaprep-redis
     restart: always
+    command: --maxmemory-policy noeviction
     networks:
       - luminaprep-net
-    # No port exposed externally — only accessible within the network
 
   api:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: luminaprep-backend:latest
     container_name: luminaprep-api
     ports:
       - "8000:8000"
     env_file:
       - ./backend/.env
+    environment:
+      - LANGFUSE_PUBLIC_KEY=pk-lf-032825a1-77a8-4ad5-9d37-5d5a760bb8df
+      - LANGFUSE_SECRET_KEY=sk-lf-e24f6b4d-1e21-462c-a155-e54d083d3105
+      - LANGFUSE_HOST=https://langprep.luminaprep.my.id
+      - LANGFUSE_ENABLED=true
     depends_on:
       - redis
     restart: unless-stopped
@@ -45,13 +51,16 @@ services:
       - ./backend/uploads:/app/uploads
 
   celery_worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: luminaprep-backend:latest
     container_name: luminaprep-celery-worker
     command: uv run celery -A app.celery_app worker --loglevel=info
     env_file:
       - ./backend/.env
+    environment:
+      - LANGFUSE_PUBLIC_KEY=pk-lf-032825a1-77a8-4ad5-9d37-5d5a760bb8df
+      - LANGFUSE_SECRET_KEY=sk-lf-e24f6b4d-1e21-462c-a155-e54d083d3105
+      - LANGFUSE_HOST=https://langprep.luminaprep.my.id
+      - LANGFUSE_ENABLED=true
     depends_on:
       - redis
     restart: unless-stopped

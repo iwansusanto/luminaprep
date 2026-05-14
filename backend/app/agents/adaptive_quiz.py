@@ -2,6 +2,8 @@ from typing import Literal
 from app.agents.mcq_quiz import MCQQuestion, MCQQuizAgent
 from app.vector_db.collections import chromadb_collections
 from app.agents.exceptions import QuizGenerationError, VectorDBError
+from app.utils.langfuse_client import langfuse
+from app.core.config import settings
 
 
 DIFFICULTY_QUERIES = {
@@ -47,6 +49,16 @@ class AdaptiveQuizAgent:
         difficulty: Literal["easy", "medium", "hard"],
         num_questions: int,
     ) -> list[MCQQuestion]:
+        trace = None
+        if settings.langfuse_enabled:
+            trace = langfuse.trace(
+                name="generate_adaptive_quiz",
+                metadata={
+                    "material_id": material_id,
+                    "difficulty": difficulty,
+                    "num_questions": num_questions,
+                },
+            )
         try:
             context_query = self._get_difficulty_query(difficulty, material_id)
             results = self.collection.query(
@@ -72,9 +84,13 @@ class AdaptiveQuizAgent:
                 difficulty=difficulty,
             )
 
+            if trace:
+                trace.update(output={"question_count": len(questions)})
             return questions
 
         except QuizGenerationError:
             raise
         except Exception as e:
+            if trace:
+                trace.update(output={"status": "error", "error": str(e)})
             raise QuizGenerationError(f"Failed to generate adaptive quiz: {str(e)}")
