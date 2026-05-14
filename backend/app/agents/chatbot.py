@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """
 ChatbotAgent — conversational AI tutor for LuminaPrep.
 
@@ -504,3 +505,5 @@ class ChatbotAgent:
                 metadata={"tool_calls": tool_calls_made},
             )
         return "Maaf, terjadi kesalahan dalam memproses permintaan.", tool_calls_made
+=======
+>>>>>>> 3b17d1e (Remove tracked Python bytecode files)
