@@ -30,5 +30,6 @@ COPY . .
 ENV PYTHONUNBUFFERED=1
 ENV UV_SYSTEM_PYTHON=1
 
-RUN chmod +x scripts/start.sh
+# Run the application using the startup script
+RUN chmod +x scripts/start.sh scripts/worker.sh
 CMD ["./scripts/start.sh"]
