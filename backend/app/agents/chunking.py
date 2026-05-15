@@ -1,30 +1,29 @@
 import logging
 
-from chonkie import SemanticChunker
-
-logger = logging.getLogger(__name__)
-from chonkie import SemanticChunker, OpenAIEmbeddings
+from chonkie import TokenChunker, SemanticChunker, OpenAIEmbeddings
 from app.core.config import settings
 
 
 class DocumentChunker:
     def __init__(self):
+        self.chunker = None
         try:
-            # Use a local model for semantic chunking when optional embeddings are installed.
-            self.chunker = SemanticChunker(
-                embedding_model="all-MiniLM-L6-v2", threshold=0.5
+            # Attempt OpenAI-based semantic chunking first if possible
+            embeddings = OpenAIEmbeddings(
+                model="text-embedding-3-small",
+                api_key=settings.OPENAI_API_KEY,
             )
-        except Exception as exc:
-            logger.warning(
-                "Semantic chunker unavailable; falling back to fixed-size chunking: %s",
-                exc,
-            )
-            self.chunker = None
-        embeddings = OpenAIEmbeddings(
-            model="text-embedding-3-small",
-            api_key=settings.OPENAI_API_KEY,
-        )
-        self.chunker = SemanticChunker(embedding_model=embeddings, threshold=0.5)
+            self.chunker = SemanticChunker(embedding_model=embeddings, threshold=0.5)
+            logger.info("Initialized OpenAI SemanticChunker")
+        except Exception as e:
+            logger.warning("OpenAI SemanticChunker unavailable: %s", e)
+            try:
+                # Fallback to lightweight TokenChunker (no heavy dependencies)
+                self.chunker = TokenChunker(chunk_size=512, chunk_overlap=64)
+                logger.info("Falling back to TokenChunker")
+            except Exception as e2:
+                logger.error("Failed to initialize any Chonkie chunker: %s", e2)
+                self.chunker = None
 
     def chunk(self, text: str) -> list[str]:
         if self.chunker is None:
