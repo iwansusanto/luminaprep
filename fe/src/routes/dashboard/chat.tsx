@@ -5,9 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Send, Bot, User, Trash2, Plus, Loader2,
   X, FileText, ChevronDown, Sparkles,
-  Globe, Search, BookOpen, BrainCircuit,
+  Globe, BookOpen, BrainCircuit,
 } from 'lucide-react'
 import { message as antMessage, Tooltip } from 'antd'
+import { useStreamChat } from '../../hooks/useStreamChat'
+import { ToolBadge } from '../../components/shared/ToolBadge'
 
 export const Route = createFileRoute('/dashboard/chat')({
   component: ChatPage,
@@ -40,6 +42,8 @@ interface Material {
 interface ToolCall {
   tool: string
   args: Record<string, unknown>
+  id?: string
+  result?: Record<string, unknown>
 }
 
 // ── API helpers ───────────────────────────────────────────────────────────────
@@ -66,21 +70,176 @@ async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json()
 }
 
-// ── Tool badge ────────────────────────────────────────────────────────────────
-function ToolBadge({ tool }: { tool: string }) {
-  const map: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
-    search_material: { icon: <BookOpen className="w-3 h-3" />, label: 'Searched materials', color: 'bg-violet-100 text-violet-700' },
-    get_context: { icon: <BrainCircuit className="w-3 h-3" />, label: 'Fetched your data', color: 'bg-indigo-100 text-indigo-700' },
-    get_quiz_questions: { icon: <BrainCircuit className="w-3 h-3" />, label: 'Loaded quiz questions', color: 'bg-amber-100 text-amber-700' },
-    get_quiz_results: { icon: <Sparkles className="w-3 h-3" />, label: 'Checked quiz results', color: 'bg-emerald-100 text-emerald-700' },
-    web_search: { icon: <Globe className="w-3 h-3" />, label: 'Searched the web', color: 'bg-sky-100 text-sky-700' },
-    update_quiz: { icon: <BrainCircuit className="w-3 h-3" />, label: 'Updated quiz', color: 'bg-rose-100 text-rose-700' },
-  }
-  const info = map[tool] ?? { icon: <Search className="w-3 h-3" />, label: tool, color: 'bg-slate-100 text-slate-600' }
+// ── Tool Call Accordion ───────────────────────────────────────────────────────
+function ToolCallAccordion({ toolCall }: { toolCall: ToolCall }) {
+  const [isOpen, setIsOpen] = useState(false)
+  
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${info.color}`}>
-      {info.icon}{info.label}
-    </span>
+    <div className="w-full">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between gap-2 group"
+      >
+        <ToolBadge tool={toolCall.tool} />
+        {toolCall.result && (
+          <ChevronDown 
+            className={`w-3 h-3 text-slate-400 transition-transform ${
+              isOpen ? 'rotate-180' : ''
+            }`}
+          />
+        )}
+      </button>
+      
+      <AnimatePresence>
+        {isOpen && toolCall.result && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <div className="space-y-2">
+                {/* Arguments */}
+                {Object.keys(toolCall.args).length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      Arguments
+                    </p>
+                    <pre className="text-xs text-slate-600 overflow-auto max-h-32 bg-white p-2 rounded border border-slate-200">
+                      {JSON.stringify(toolCall.args, null, 2)}
+                    </pre>
+                  </div>
+                )}
+                
+                {/* Result */}
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Result
+                  </p>
+                  <div className="text-xs text-slate-700 bg-white p-3 rounded border border-slate-200 max-h-64 overflow-auto">
+                    {renderToolResult(toolCall.result)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// Helper function to render tool results in a user-friendly way
+function renderToolResult(result: Record<string, unknown>): React.ReactNode {
+  // Handle get_context results
+  if ('projects' in result || 'materials' in result || 'quizzes' in result) {
+    return (
+      <div className="space-y-3">
+        {result.projects && Array.isArray(result.projects) && (
+          <div>
+            <p className="font-semibold text-slate-700 mb-1">
+              Projects ({result.projects.length})
+            </p>
+            {result.projects.length === 0 ? (
+              <p className="text-slate-500 italic">No projects found</p>
+            ) : (
+              <ul className="list-disc list-inside space-y-1">
+                {result.projects.map((p: any, i: number) => (
+                  <li key={i} className="text-slate-600">
+                    {p.title} <span className="text-slate-400">({p.status})</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+        
+        {result.materials && Array.isArray(result.materials) && (
+          <div>
+            <p className="font-semibold text-slate-700 mb-1">
+              Materials ({result.materials.length})
+            </p>
+            {result.materials.length === 0 ? (
+              <p className="text-slate-500 italic">No materials found</p>
+            ) : (
+              <ul className="list-disc list-inside space-y-1">
+                {result.materials.slice(0, 10).map((m: any, i: number) => (
+                  <li key={i} className="text-slate-600">
+                    {m.file_name} <span className="text-slate-400">({m.status})</span>
+                  </li>
+                ))}
+                {result.materials.length > 10 && (
+                  <li className="text-slate-500 italic">
+                    ... and {result.materials.length - 10} more
+                  </li>
+                )}
+              </ul>
+            )}
+          </div>
+        )}
+        
+        {result.quizzes && Array.isArray(result.quizzes) && (
+          <div>
+            <p className="font-semibold text-slate-700 mb-1">
+              Quizzes ({result.quizzes.length})
+            </p>
+            {result.quizzes.length === 0 ? (
+              <p className="text-slate-500 italic">No quizzes found</p>
+            ) : (
+              <ul className="list-disc list-inside space-y-1">
+                {result.quizzes.slice(0, 10).map((q: any, i: number) => (
+                  <li key={i} className="text-slate-600">
+                    {q.topic || 'Untitled'} - {q.question_count} questions
+                  </li>
+                ))}
+                {result.quizzes.length > 10 && (
+                  <li className="text-slate-500 italic">
+                    ... and {result.quizzes.length - 10} more
+                  </li>
+                )}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+  
+  // Handle search_material results
+  if ('results' in result && Array.isArray(result.results)) {
+    return (
+      <div>
+        <p className="font-semibold text-slate-700 mb-2">
+          Found {result.results.length} results
+        </p>
+        <div className="space-y-2">
+          {result.results.slice(0, 5).map((r: any, i: number) => (
+            <div key={i} className="p-2 bg-slate-50 rounded border border-slate-200">
+              <p className="text-slate-700">{r.text || r.content}</p>
+              {r.metadata && (
+                <p className="text-xs text-slate-500 mt-1">
+                  Source: {r.metadata.source || 'Unknown'}
+                </p>
+              )}
+            </div>
+          ))}
+          {result.results.length > 5 && (
+            <p className="text-slate-500 italic text-xs">
+              ... and {result.results.length - 5} more results
+            </p>
+          )}
+        </div>
+      </div>
+    )
+  }
+  
+  // Default: show raw JSON
+  return (
+    <pre className="text-xs overflow-auto">
+      {JSON.stringify(result, null, 2)}
+    </pre>
   )
 }
 
@@ -99,10 +258,12 @@ function MessageBubble({ msg, toolCalls }: { msg: Message; toolCalls?: ToolCall[
         {isUser ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4 text-indigo-600" />}
       </div>
       <div className={`max-w-[75%] space-y-2 ${isUser ? 'items-end' : 'items-start'} flex flex-col`}>
-        {/* Tool badges */}
+        {/* Enhanced tool badges with expandable results */}
         {!isUser && toolCalls && toolCalls.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {toolCalls.map((tc, i) => <ToolBadge key={i} tool={tc.tool} />)}
+          <div className="flex flex-wrap gap-1.5 w-full">
+            {toolCalls.map((tc, i) => (
+              <ToolCallAccordion key={i} toolCall={tc} />
+            ))}
           </div>
         )}
         <div className={`px-5 py-3.5 rounded-3xl text-sm leading-relaxed whitespace-pre-wrap ${
@@ -127,7 +288,6 @@ function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [toolCallsMap, setToolCallsMap] = useState<Record<string, ToolCall[]>>({})
   const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [materials, setMaterials] = useState<Material[]>([])
   const [attachedMaterials, setAttachedMaterials] = useState<Material[]>([])
@@ -136,11 +296,12 @@ function ChatPage() {
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const { streaming, streamedContent, toolCalls: streamingToolCalls, startStream, stopStream } = useStreamChat()
 
   // Scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, loading])
+  }, [messages, loadingHistory, streamedContent])
 
   // Load sessions
   const loadSessions = useCallback(async () => {
@@ -166,6 +327,7 @@ function ChatPage() {
 
   // Select session
   const handleSelectSession = async (sid: string) => {
+    stopStream()
     setLoadingHistory(true)
     setActiveSession(sid)
     try {
@@ -180,6 +342,7 @@ function ChatPage() {
 
   // New chat
   const handleNewChat = () => {
+    stopStream()
     setActiveSession(undefined)
     setMessages([])
     setAttachedMaterials([])
@@ -201,7 +364,7 @@ function ChatPage() {
   // Send message
   const handleSend = async () => {
     const text = input.trim()
-    if (!text || loading) return
+    if (!text || streaming) return
 
     const userMsg: Message = {
       id: crypto.randomUUID(),
@@ -215,53 +378,43 @@ function ChatPage() {
     setInput('')
     const attached = [...attachedMaterials]
     setAttachedMaterials([])
-    setLoading(true)
 
-    try {
-      const body: Record<string, unknown> = {
+    startStream(
+      {
         message: text,
-        session_id: activeSession,
-        project_id: projectId,
-      }
-      if (attached.length === 1) body.material_id = attached[0].id
-      if (attached.length > 0) body.attached_material_ids = attached.map(m => m.id)
+        sessionId: activeSession,
+        projectId,
+        materialId: attached.length === 1 ? attached[0].id : undefined,
+        attachedMaterialIds: attached.length > 0 ? attached.map(m => m.id) : undefined,
+      },
+      (newSessionId, finalContent, finalToolCalls) => {
+        setActiveSession(newSessionId || activeSession)
 
-      const res = await apiFetch<{ session_id: string; reply: string; tool_calls: ToolCall[] }>(
-        `${API}/chat`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+        const assistantMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: finalContent,
+          created_at: new Date().toISOString(),
         }
-      )
 
-      setActiveSession(res.session_id)
+        setMessages(prev => [...prev, assistantMsg])
 
-      const assistantMsg: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: res.reply,
-        created_at: new Date().toISOString(),
+        if (finalToolCalls.length > 0) {
+          setToolCallsMap(prev => ({ ...prev, [assistantMsg.id]: finalToolCalls }))
+        }
+
+        loadSessions()
+      },
+      (_errorMsg) => {
+        const errMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: 'Sorry, something went wrong. Please try again.',
+          created_at: new Date().toISOString(),
+        }
+        setMessages(prev => [...prev, errMsg])
       }
-      setMessages(prev => [...prev, assistantMsg])
-
-      // Store tool calls mapped to this assistant message
-      if (res.tool_calls?.length > 0) {
-        setToolCallsMap(prev => ({ ...prev, [assistantMsg.id]: res.tool_calls }))
-      }
-
-      loadSessions()
-    } catch (err: unknown) {
-      const errMsg: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: 'Sorry, something went wrong. Please try again.',
-        created_at: new Date().toISOString(),
-      }
-      setMessages(prev => [...prev, errMsg])
-    } finally {
-      setLoading(false)
-    }
+    )
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -405,8 +558,32 @@ function ChatPage() {
             ))
           )}
 
-          {/* Typing indicator */}
-          {loading && (
+          {/* Show streaming message in real-time */}
+          {streaming && streamedContent && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex gap-3"
+            >
+              <div className="w-8 h-8 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                <Bot className="w-4 h-4 text-indigo-600" />
+              </div>
+              <div className="max-w-[75%] space-y-2 flex flex-col items-start">
+                {streamingToolCalls.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {streamingToolCalls.map((tc, i) => <ToolBadge key={i} tool={tc.tool} />)}
+                  </div>
+                )}
+                <div className="px-5 py-3.5 rounded-3xl rounded-tl-sm text-sm leading-relaxed whitespace-pre-wrap bg-white text-slate-700 border border-slate-200/80 shadow-sm">
+                  {streamedContent}
+                  <span className="inline-block w-0.5 h-4 bg-indigo-400 ml-1 animate-pulse" />
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Typing indicator (only show when streaming but no content yet) */}
+          {streaming && !streamedContent && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3">
               <div className="w-8 h-8 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shrink-0">
                 <Bot className="w-4 h-4 text-indigo-600" />
@@ -504,10 +681,10 @@ function ChatPage() {
             />
             <button
               onClick={handleSend}
-              disabled={!input.trim() || loading}
+              disabled={!input.trim() || streaming}
               className="w-9 h-9 bg-indigo-600 disabled:bg-slate-200 text-white disabled:text-slate-400 rounded-xl flex items-center justify-center transition-all shrink-0 hover:bg-indigo-500 active:scale-95"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>
           </div>
           <p className="text-[10px] text-slate-300 text-center font-medium">

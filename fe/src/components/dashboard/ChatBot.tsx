@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MessageCircle, X, Send, Loader2, Bot, User, Trash2, ChevronDown } from 'lucide-react'
 import { authFetch } from '../../lib/api'
+import { useStreamChat } from '../../hooks/useStreamChat'
+import { ToolBadge } from '../shared/ToolBadge'
 
 interface Message {
   id: string
@@ -25,31 +27,6 @@ interface ChatBotProps {
 }
 
 const API_BASE = '/api/v1/agent'
-
-async function sendMessage(params: {
-  message: string
-  sessionId?: string
-  projectId?: string
-  materialId?: string
-  quizId?: string
-}): Promise<{ session_id: string; reply: string; tool_calls: unknown[] }> {
-  const res = await authFetch(`${API_BASE}/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      message: params.message,
-      session_id: params.sessionId,
-      project_id: params.projectId,
-      material_id: params.materialId,
-      quiz_id: params.quizId,
-    }),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.detail || 'Failed to send message')
-  }
-  return res.json()
-}
 
 async function fetchSessions(): Promise<ChatSession[]> {
   const res = await authFetch(`${API_BASE}/sessions`)
@@ -105,10 +82,10 @@ export const ChatBot: React.FC<ChatBotProps> = ({ projectId, materialId, quizId 
   const [sessionId, setSessionId] = useState<string | undefined>()
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [showSessions, setShowSessions] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [loadingHistory, setLoadingHistory] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const { streaming, streamedContent, toolCalls, startStream, stopStream } = useStreamChat()
 
   const scrollToBottom = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -135,6 +112,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ projectId, materialId, quizId 
   }
 
   const handleSelectSession = async (sid: string) => {
+    stopStream()
     setLoadingHistory(true)
     setShowSessions(false)
     try {
@@ -147,6 +125,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ projectId, materialId, quizId 
   }
 
   const handleNewChat = () => {
+    stopStream()
     setSessionId(undefined)
     setMessages([])
     setShowSessions(false)
@@ -161,7 +140,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ projectId, materialId, quizId 
 
   const handleSend = async () => {
     const text = input.trim()
-    if (!text || loading) return
+    if (!text || streaming) return
 
     const userMsg: Message = {
       id: crypto.randomUUID(),
@@ -171,38 +150,38 @@ export const ChatBot: React.FC<ChatBotProps> = ({ projectId, materialId, quizId 
     }
     setMessages((prev) => [...prev, userMsg])
     setInput('')
-    setLoading(true)
 
-    try {
-      const res = await sendMessage({
+    startStream(
+      {
         message: text,
         sessionId,
         projectId,
         materialId,
         quizId,
-      })
-
-      setSessionId(res.session_id)
-
-      const assistantMsg: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: res.reply,
-        created_at: new Date().toISOString(),
+      },
+      (newSessionId, finalContent, _finalToolCalls) => {
+        setSessionId(newSessionId || sessionId)
+        
+        const assistantMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: finalContent,
+          created_at: new Date().toISOString(),
+        }
+        
+        setMessages((prev) => [...prev, assistantMsg])
+        loadSessions()
+      },
+      (_errorMsg) => {
+        const errMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: 'Sorry, something went wrong. Please try again.',
+          created_at: new Date().toISOString(),
+        }
+        setMessages((prev) => [...prev, errMsg])
       }
-      setMessages((prev) => [...prev, assistantMsg])
-      loadSessions() // refresh session list
-    } catch (err) {
-      const errMsg: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: 'Sorry, something went wrong. Please try again.',
-        created_at: new Date().toISOString(),
-      }
-      setMessages((prev) => [...prev, errMsg])
-    } finally {
-      setLoading(false)
-    }
+    )
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -358,7 +337,29 @@ export const ChatBot: React.FC<ChatBotProps> = ({ projectId, materialId, quizId 
               ) : (
                 messages.map((msg) => <MessageBubble key={msg.id} msg={msg} />)
               )}
-              {loading && (
+              
+              {streaming && streamedContent && (
+                <div className="flex gap-3">
+                  <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mt-0.5">
+                    <Bot className="w-3.5 h-3.5 text-indigo-600" />
+                  </div>
+                  <div className="max-w-[80%] space-y-2">
+                    {toolCalls.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {toolCalls.map((tc, i) => (
+                          <ToolBadge key={i} tool={tc.tool} />
+                        ))}
+                      </div>
+                    )}
+                    <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-white text-slate-700 border border-slate-100 shadow-sm text-sm leading-relaxed">
+                      {streamedContent}
+                      <span className="inline-block w-0.5 h-4 bg-indigo-400 ml-0.5 animate-pulse" />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {streaming && !streamedContent && (
                 <div className="flex gap-3">
                   <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mt-0.5">
                     <Bot className="w-3.5 h-3.5 text-indigo-600" />
@@ -390,7 +391,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ projectId, materialId, quizId 
                 />
                 <button
                   onClick={handleSend}
-                  disabled={!input.trim() || loading}
+                  disabled={!input.trim() || streaming}
                   className="w-8 h-8 bg-indigo-600 disabled:bg-slate-200 text-white disabled:text-slate-400 rounded-xl flex items-center justify-center transition-colors shrink-0"
                 >
                   <Send className="w-3.5 h-3.5" />
