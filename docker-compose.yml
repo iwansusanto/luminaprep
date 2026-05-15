@@ -37,6 +37,7 @@ services:
     env_file:
       - ./backend/.env
     environment:
+      - TZ=Asia/Jakarta
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
       - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
       - LANGFUSE_HOST=${LANGFUSE_HOST}
@@ -57,6 +58,7 @@ services:
     env_file:
       - ./backend/.env
     environment:
+      - TZ=Asia/Jakarta
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
       - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
       - LANGFUSE_HOST=${LANGFUSE_HOST}
@@ -75,6 +77,7 @@ services:
     container_name: luminaprep-mysql
     restart: always
     environment:
+      TZ: Asia/Jakarta
       MYSQL_ROOT_PASSWORD: ${MYSQL_PASS_ROOT}
       MYSQL_DATABASE: ${MYSQL_DB}
       MYSQL_USER: ${MYSQL_USER}
