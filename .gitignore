@@ -1,5 +1,6 @@
 # Database Data
 dbdata/
+backend/chroma_db/
 
 # IDEs and Editors
 .vscode/
