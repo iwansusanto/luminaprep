@@ -72,6 +72,7 @@ async def upload_material(
         file_name=file.filename or "unknown",
         storage_path=file_path,
         file_type=file_type,
+        file_size=file.size,
     )
 
     async def run_ingestion():
