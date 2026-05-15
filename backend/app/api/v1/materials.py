@@ -24,6 +24,11 @@ from app.api.deps import get_current_active_user
 from app.models.user import User
 from app.agents import IngestionAgent
 
+import logging
+import time
+
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 
@@ -51,12 +56,9 @@ async def upload_material(
         )
 
     # Save file to storage
-    import time
     start_time = time.time()
     file_path = await save_uploaded_file(file, file.filename or "unknown")
     duration = time.time() - start_time
-    import logging
-    logger = logging.getLogger(__name__)
     logger.info(f"File saved to {file_path} in {duration:.2f}s")
 
     # Determine file type
@@ -75,19 +77,25 @@ async def upload_material(
         file_size=file.size,
     )
 
-    async def run_ingestion():
-        db = SessionLocal()
+    async def run_ingestion(m_id: str, f_path: str, f_type: str):
+        logger.info(f"Background task started: Ingesting material {m_id}")
+        db_session = SessionLocal()
         try:
-            agent = IngestionAgent(db)
-            return await agent.ingest_with_retry(
-                material_id=str(material.id),
-                file_path=file_path,
-                file_type=file_type,
+            agent = IngestionAgent(db_session)
+            result = await agent.ingest_with_retry(
+                material_id=m_id,
+                file_path=f_path,
+                file_type=f_type,
             )
+            logger.info(f"Background ingestion completed for {m_id}: {result}")
+        except Exception as e:
+            logger.error(f"Background ingestion failed for {m_id}: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
         finally:
-            db.close()
+            db_session.close()
 
-    background_tasks.add_task(run_ingestion)
+    background_tasks.add_task(run_ingestion, str(material.id), file_path, file_type)
 
     return material
 
