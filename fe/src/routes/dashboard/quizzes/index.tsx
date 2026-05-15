@@ -65,11 +65,11 @@ type Quiz = {
   project_id: string
 }
 
-const statusMap: Record<string, 'Ready' | 'Draft' | 'Generated' | 'Failed' | 'Processing' | 'Finish'> = {
+const statusMap: Record<string, 'Ready' | 'Draft' | 'Generated' | 'Failed' | 'Processing' | 'Completed'> = {
   draft: 'Draft',
   generated: 'Generated',
   completed: 'Ready',
-  finished: 'Finish',
+  finish: 'Completed',
   failed: 'Failed',
   processing: 'Processing',
 }
@@ -247,7 +247,7 @@ function QuizzesPage() {
           const val = statusMap[info.getValue() as keyof typeof statusMap] || 'Generated'
           const colors = {
             Ready: 'text-indigo-600 bg-indigo-50 border-indigo-100',
-            Finish: 'text-purple-600 bg-purple-50 border-purple-100',
+            Completed: 'text-purple-600 bg-purple-50 border-purple-100',
             Generated: 'text-emerald-600 bg-emerald-50 border-emerald-100',
             Draft: 'text-slate-400 bg-slate-50 border-slate-100',
             Failed: 'text-rose-600 bg-rose-50 border-rose-100',
@@ -258,7 +258,7 @@ function QuizzesPage() {
               <div
                 className={`w-2 h-2 rounded-full ${val === 'Ready'
                   ? 'bg-indigo-500'
-                  : val === 'Finish'
+                  : val === 'Completed'
                     ? 'bg-purple-500'
                     : val === 'Generated'
                       ? 'bg-emerald-500'
@@ -293,11 +293,25 @@ function QuizzesPage() {
           const startLabel =
             quiz.status === 'completed'
               ? 'Start'
-              : quiz.status === 'failed'
-                ? 'Failed'
-                : quiz.status === 'processing'
-                  ? 'Processing...'
-                  : 'Not Ready'
+              : quiz.status === 'finish'
+                ? 'Retake'
+                : quiz.status === 'draft'
+                  ? 'Continue'
+                  : quiz.status === 'failed'
+                    ? 'Failed'
+                    : quiz.status === 'processing'
+                      ? 'Processing...'
+                      : 'Not Ready'
+
+          const buttonColors: Record<string, string> = {
+            completed: 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-500/20',
+            finish: 'bg-purple-600 text-white hover:bg-purple-700 shadow-purple-500/20',
+            draft: 'bg-slate-800 text-white hover:bg-slate-900 shadow-slate-800/20',
+            failed: 'bg-rose-100 text-rose-400 cursor-not-allowed shadow-none pointer-events-none',
+            processing: 'bg-amber-100 text-amber-500 cursor-not-allowed shadow-none pointer-events-none',
+          }
+
+          const buttonColorClass = buttonColors[quiz.status] || 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none pointer-events-none'
 
           return (
             <div className="flex items-center justify-end gap-3 pr-4">
@@ -305,10 +319,7 @@ function QuizzesPage() {
                 to={startPath}
                 params={{ uuid: quiz.id }}
                 disabled={isDisabled}
-                className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 ${isDisabled
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none pointer-events-none'
-                  : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-slate-900/10'
-                  }`}
+                className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 ${buttonColorClass}`}
               >
                 {startLabel}
               </Link>

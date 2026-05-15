@@ -1,6 +1,7 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
+from sqlalchemy import func, case
 from typing import List
 from app.database import get_db
 from app.crud.quiz import (
@@ -12,6 +13,7 @@ from app.crud.quiz import (
 from app.crud.question import get_questions_by_quiz
 from app.crud.project import get_project_by_id
 from app.crud.quiz_session import create_quiz_session
+from app.models.user_attempt import UserAttempt
 from app.schemas.quiz import (
     QuizCreate,
     QuizRead,
@@ -19,7 +21,7 @@ from app.schemas.quiz import (
     QuizGenerationRequest,
     QuizGenerationResponse,
 )
-from app.models.quiz_session import QuizSessionRead
+from app.models.quiz_session import QuizSession, QuizSessionRead
 from app.api.deps import get_current_active_user
 from app.models.user import User
 
@@ -129,19 +131,52 @@ def get_project_quizzes(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     quizzes = get_quizzes_by_project(db, project_id, current_user.id)
     
+    if not quizzes:
+        return []
+        
+    quiz_ids = [q.id for q in quizzes]
+    
+    # Group user_attempts by quiz_session_id and quiz_id
+    attempts_agg = db.query(
+        UserAttempt.quiz_id,
+        UserAttempt.quiz_session_id,
+        QuizSession.status.label("status_session"),
+        func.count(UserAttempt.id).label("total_questions"),
+        func.sum(case((UserAttempt.is_correct == True, 1), else_=0)).label("score_correct"),
+        func.sum(UserAttempt.score_earned).label("score_earned")
+    ).outerjoin(
+        QuizSession, UserAttempt.quiz_session_id == QuizSession.id
+    ).filter(
+        UserAttempt.quiz_id.in_(quiz_ids),
+        UserAttempt.quiz_session_id.isnot(None)
+    ).group_by(
+        UserAttempt.quiz_id,
+        UserAttempt.quiz_session_id,
+        QuizSession.status
+    ).all()
+    
+    attempts_by_quiz = {qid: [] for qid in quiz_ids}
+    for row in attempts_agg:
+        attempts_by_quiz[row.quiz_id].append({
+            "quiz_id": row.quiz_id,
+            "quiz_session_id": row.quiz_session_id,
+            "score_correct": int(row.score_correct or 0),
+            "score_earned": float(row.score_earned or 0.0),
+            "total_questions": int(row.total_questions or 0),
+            "status_session": row.status_session
+        })
+    
     result = []
     for quiz in quizzes:
         quiz_dict = quiz.model_dump()
-        user_attempts = []
-        for session in getattr(quiz, "quiz_sessions", []):
-            user_attempts.append({
-                "quiz_id": quiz.id,
-                "quiz_session_id": session.id,
-                "score_correct": session.correct_answers,
-                "score_earned": session.score,
-                "total_questions": session.total_questions
-            })
-        quiz_dict["user_attempts"] = user_attempts
+        attempts = attempts_by_quiz.get(quiz.id, [])
+        first_attempt = attempts[0] if attempts else None
+        quiz_dict["user_attempts"] = first_attempt
+        
+        # Dynamically set quiz status to finish in response if the session was completed
+        if first_attempt and first_attempt.get("status_session") == "completed" and quiz_dict["status"] != "finish":
+            quiz_dict["status"] = "finish"
+            
         result.append(quiz_dict)
         
     return result

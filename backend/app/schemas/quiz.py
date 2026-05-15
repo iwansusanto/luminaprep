@@ -21,6 +21,7 @@ class QuizAttemptRead(SQLModel):
     score_correct: Optional[int] = None
     score_earned: Optional[float] = None
     total_questions: Optional[int] = None
+    status_session: Optional[str] = None
 
 
 class QuizRead(QuizBase):
@@ -28,7 +29,7 @@ class QuizRead(QuizBase):
     project_id: str
     created_at: datetime
     updated_at: datetime
-    user_attempts: List[QuizAttemptRead] = []
+    user_attempts: Optional[QuizAttemptRead] = None
 
 
 class QuizUpdate(SQLModel):
