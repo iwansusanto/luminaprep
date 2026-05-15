@@ -8,6 +8,7 @@ class MaterialBase(SQLModel):
     file_name: str = Field(max_length=255)
     file_type: str = Field(max_length=50)
     storage_path: str = Field(max_length=512)
+    file_size: Optional[int] = Field(default=None)
     status: str = Field(default="uploaded", max_length=50)
     summary: Optional[str] = Field(default=None, sa_type=sa.TEXT)
     citations: Optional[str] = Field(default=None, sa_type=sa.TEXT)
