@@ -46,11 +46,20 @@ app.use(
     on: {
       proxyReq: (proxyReq, req, res) => {
         const targetUrl = `${API_URL}${proxyReq.path}`;
-        console.log(`[BFF Proxy Request] ${req.method} ${req.url} -> ${targetUrl}`);
+        
+        // Use cookie token if available, otherwise pass through existing Authorization header
+        const cookieToken = req.cookies?.access_token;
+        const headerToken = req.headers.authorization;
 
-        const accessToken = req.cookies?.access_token;
-        if (accessToken) {
-          proxyReq.setHeader('Authorization', `Bearer ${accessToken}`);
+        if (cookieToken) {
+          proxyReq.setHeader('Authorization', `Bearer ${cookieToken}`);
+          console.log(`[BFF Proxy Request] ${req.method} ${req.url} -> ${targetUrl} (Using Cookie Token)`);
+        } else if (headerToken) {
+          // If frontend sent its own header, ensure it's passed through
+          proxyReq.setHeader('Authorization', headerToken);
+          console.log(`[BFF Proxy Request] ${req.method} ${req.url} -> ${targetUrl} (Using Header Token)`);
+        } else {
+          console.log(`[BFF Proxy Request] ${req.method} ${req.url} -> ${targetUrl} (No Token)`);
         }
       },
       proxyRes: (proxyRes, req, res) => {
@@ -70,7 +79,7 @@ app.use(express.json());
 app.post('/auth/login', async (req, res) => {
   try {
     const { email, name, avatar_url } = req.body;
-    
+    console.log('API_URL : ', API_URL)
     // Hit backend endpoint /api/v1/auth/signin
     const backendResponse = await fetch(`${API_URL}/api/v1/auth/signin`, {
       method: 'POST',

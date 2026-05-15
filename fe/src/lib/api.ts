@@ -1,5 +1,5 @@
 const BASE_URL = '/api';
-export const TOKEN_KEY = 'lumina_token';
+
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
@@ -12,9 +12,9 @@ export interface RequestOptions {
 }
 
 /** Get auth headers from localStorage */
+/** Get auth headers (currently empty as BFF handles token injection via cookies) */
 export function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem(TOKEN_KEY);
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return {};
 }
 
 /**
@@ -29,9 +29,8 @@ export async function authFetch(url: string, init: RequestInit = {}): Promise<Re
   const res = await fetch(url, { ...init, headers });
 
   // Auto-logout on 401 — token expired or invalid
+  // Auto-logout on 401 — session expired or invalid
   if (res.status === 401) {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem('lumina_user');
     window.location.href = '/login';
   }
 
@@ -43,21 +42,15 @@ export async function authFetch(url: string, init: RequestInit = {}): Promise<Re
  * Auto-injects Bearer token from localStorage.
  */
 export const apiRequest = async <T>(path: string, options: RequestOptions = {}): Promise<T> => {
-  const { method = 'GET', body, headers = {}, version = 'v1', token } = options;
+  const { method = 'GET', body, headers = {}, version = 'v1' } = options;
 
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   const url = `${BASE_URL}/${version}${cleanPath}`;
-
-  const storedToken = token || localStorage.getItem(TOKEN_KEY);
 
   const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
     ...headers,
   };
-
-  if (storedToken) {
-    requestHeaders['Authorization'] = `Bearer ${storedToken}`;
-  }
 
   const response = await fetch(url, {
     method,
@@ -68,8 +61,6 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}):
   if (!response.ok) {
     // Auto-logout on 401
     if (response.status === 401) {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem('lumina_user');
       window.location.href = '/login';
     }
     let errorData;
