@@ -7,6 +7,8 @@ class QuizBase(SQLModel):
     difficulty_level: str = Field(max_length=50)
     question_count: int
     status: str = Field(default="draft", max_length=50)
+    topic: Optional[str] = Field(default=None, max_length=255)
+    custom_request: Optional[str] = Field(default=None, max_length=1000)
 
 
 class QuizCreate(QuizBase):
@@ -24,6 +26,8 @@ class QuizUpdate(SQLModel):
     difficulty_level: Optional[str] = Field(default=None, max_length=50)
     question_count: Optional[int] = None
     status: Optional[str] = Field(default=None, max_length=50)
+    topic: Optional[str] = Field(default=None, max_length=255)
+    custom_request: Optional[str] = Field(default=None, max_length=1000)
 
 
 class QuestionBase(SQLModel):
@@ -31,7 +35,7 @@ class QuestionBase(SQLModel):
     options: dict
     correct_answer: str
     explanation: Optional[str] = None
-    metadata: Optional[dict] = None
+    question_metadata: Optional[dict] = None
 
 
 class QuestionRead(QuestionBase):
@@ -48,9 +52,20 @@ class QuizWithQuestions(QuizRead):
 class QuizGenerationRequest(SQLModel):
     difficulty_level: str = Field(max_length=50)
     question_count: int
+    topic: Optional[str] = Field(
+        default=None,
+        max_length=255,
+        description="Topik spesifik, contoh: 'pecahan', 'fotosintesis'",
+    )
+    custom_request: Optional[str] = Field(
+        default=None,
+        max_length=1000,
+        description="Instruksi tambahan, contoh: 'gunakan bahasa Inggris untuk kelas 5 SD'",
+    )
 
 
 class QuizGenerationResponse(SQLModel):
     task_id: str
     status: str
     message: str
+    questions_count: int = 0

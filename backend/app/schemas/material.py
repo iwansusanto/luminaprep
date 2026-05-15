@@ -5,8 +5,8 @@ from datetime import datetime
 
 class MaterialBase(SQLModel):
     file_name: str = Field(max_length=255)
-    storage_path: str = Field(max_length=500)
-    file_type: str = Field(max_length=100)
+    storage_path: str = Field(max_length=512)
+    file_type: str = Field(max_length=50)
     file_size: Optional[int] = None
     status: str = Field(default="uploaded", max_length=50)
     summary: Optional[str] = None
@@ -15,7 +15,6 @@ class MaterialBase(SQLModel):
 
 class MaterialCreate(MaterialBase):
     project_id: str
-    pass
 
 
 class MaterialRead(MaterialBase):
@@ -28,16 +27,21 @@ class MaterialRead(MaterialBase):
 
 class MaterialUpdate(SQLModel):
     file_name: Optional[str] = Field(default=None, max_length=255)
-    storage_path: Optional[str] = Field(default=None, max_length=500)
-    file_type: Optional[str] = Field(default=None, max_length=100)
+    storage_path: Optional[str] = Field(default=None, max_length=512)
+    file_type: Optional[str] = Field(default=None, max_length=50)
     file_size: Optional[int] = None
     status: Optional[str] = Field(default=None, max_length=50)
     summary: Optional[str] = None
     citations: Optional[str] = None
 
 
+class MaterialWithQuizStatus(MaterialRead):
+    quiz_status: Optional[str] = None
+    quiz_count: int = 0
+
+
 class MaterialListResponse(SQLModel):
-    materials: List[MaterialRead]
+    materials: List[MaterialWithQuizStatus]
 
 
 class MaterialResponse(MaterialRead):

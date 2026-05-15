@@ -6,7 +6,7 @@ celery_app = Celery(
     "luminaprep_backend",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["app.tasks"]
+    include=["app.tasks.quiz_tasks"],
 )
 
 # Configure Celery

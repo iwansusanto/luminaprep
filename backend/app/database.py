@@ -1,27 +1,2 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from app.core.config import settings
-
-# Create database engine
-engine = create_engine(
-    settings.database_url,
-    echo=settings.debug,
-    pool_pre_ping=True,
-    pool_recycle=300,
-)
-
-# Create session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Create base class for models
-Base = declarative_base()
-
-
-def get_db():
-    """Dependency to get database session."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Compatibility shim — all code should import from app.db.database
+from app.db.database import engine, SessionLocal, Base, get_db, text  # noqa: F401

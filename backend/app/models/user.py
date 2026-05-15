@@ -15,10 +15,10 @@ class User(UserBase, table=True):
     full_name: Optional[str] = Field(default=None, max_length=255)
     avatar_url: Optional[str] = Field(default=None)
     hashed_password: Optional[str] = Field(default=None, max_length=255)
-    deleted_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    
+    deleted_at: Optional[datetime] = Field(default=None)
+
     # Relationships
     projects: List["Project"] = Relationship(back_populates="user")
     materials: List["Material"] = Relationship(back_populates="user")
@@ -34,6 +34,8 @@ class UserCreate(SQLModel):
 class UserRead(SQLModel):
     id: str
     email: str
+    full_name: Optional[str] = None
+    avatar_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

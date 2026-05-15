@@ -3,6 +3,8 @@ import logging
 from chonkie import SemanticChunker
 
 logger = logging.getLogger(__name__)
+from chonkie import SemanticChunker, OpenAIEmbeddings
+from app.core.config import settings
 
 
 class DocumentChunker:
@@ -18,6 +20,11 @@ class DocumentChunker:
                 exc,
             )
             self.chunker = None
+        embeddings = OpenAIEmbeddings(
+            model="text-embedding-3-small",
+            api_key=settings.OPENAI_API_KEY,
+        )
+        self.chunker = SemanticChunker(embedding_model=embeddings, threshold=0.5)
 
     def chunk(self, text: str) -> list[str]:
         if self.chunker is None:

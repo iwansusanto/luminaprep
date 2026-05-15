@@ -1,10 +1,14 @@
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.quiz_session import QuizSession, QuizSessionCreate, QuizSessionUpdate
 from app.models.quiz import Quiz
 from app.models.question import Question
 from app.models.user_attempt import UserAttempt, UserAttemptCreate
 from typing import List, Optional
-from datetime import datetime
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def create_quiz_session(
@@ -79,13 +83,13 @@ def update_quiz_session(
         return None
     
     # Update fields
-    for field, value in update_data.dict(exclude_unset=True).items():
+    for field, value in update_data.model_dump(exclude_unset=True).items():
         if hasattr(quiz_session, field):
             setattr(quiz_session, field, value)
     
     # Set completed_at if status is completed
     if update_data.status == "completed" and not quiz_session.completed_at:
-        quiz_session.completed_at = datetime.utcnow()
+        quiz_session.completed_at = _now()
     
     db.commit()
     db.refresh(quiz_session)
@@ -192,7 +196,7 @@ def update_session_stats(
     # Check if all questions answered
     if total_attempts >= quiz_session.total_questions:
         quiz_session.status = "completed"
-        quiz_session.completed_at = datetime.utcnow()
+        quiz_session.completed_at = _now()
     
     db.commit()
     db.refresh(quiz_session)
@@ -208,14 +212,18 @@ def complete_quiz_session(
     quiz_session = get_quiz_session_by_id(db, session_id, user_id)
     if not quiz_session:
         return None
-    
-    # Update session to completed
-    quiz_session.status = "completed"
-    quiz_session.completed_at = datetime.utcnow()
-    
-    # Final stats update
+
+    # Final stats update first
     update_session_stats(db, session_id, user_id)
-    
+
+    # Re-fetch after stats update and force completed status
+    quiz_session = get_quiz_session_by_id(db, session_id, user_id)
+    if quiz_session and quiz_session.status != "completed":
+        quiz_session.status = "completed"
+        quiz_session.completed_at = _now()
+        db.commit()
+        db.refresh(quiz_session)
+
     return quiz_session
 
 

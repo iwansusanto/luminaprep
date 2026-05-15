@@ -65,9 +65,12 @@ export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, cl
     formData.append('file', file);
     setIsUploading(true);
 
+    const token = localStorage.getItem('lumina_token');
+
     try {
       const response = await fetch(`/api/v1/materials/upload?project_id=${projectId}`, {
         method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       });
 

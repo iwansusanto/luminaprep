@@ -11,6 +11,9 @@ dbdata/
 *.sw?
 .env
 
+# Langfuse secrets
+.env.langfuse
+
 # OS generated files
 .DS_Store
 .DS_Store?

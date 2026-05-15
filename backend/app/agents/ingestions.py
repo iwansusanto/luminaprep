@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from app.agents.parsers import ParserAgent
 from app.agents.chunking import DocumentChunker
 from app.agents.embedding_pipeline import EmbeddingPipelineAgent
+from app.agents.summarization import SummarizationAgent
 from app.models.material import Material
 from app.crud.material import update_material
-from app.agents.summarization import SummarizationAgent
 from app.agents.exceptions import IngestionError
 
 
@@ -21,54 +21,47 @@ class IngestionAgent:
         self, material_id: str, file_path: str, file_type: Literal["pdf", "txt"]
     ) -> dict:
         try:
-            material = self.db.query(Material).get(material_id)
+            material = self.db.get(Material, material_id)
             if not material:
-                raise IngestionError(f"Material {material_id} not found in database")
+                raise IngestionError(f"Material {material_id} not found")
 
             user_id = material.user_id
+            update_material(self.db, material_id=material_id, user_id=user_id, status="processing")
 
-            update_material(
-                self.db, material_id=material_id, user_id=user_id, status="processing"
-            )
-
+            # Parse into pages (run in thread to avoid blocking async loop)
             import asyncio
             pages = await asyncio.to_thread(self.parser.parse, file_path, file_type)
 
+            # Generate summary from first 2 + last 2 pages, max ~1000 tokens
+            summary = await self.summarizer.generate_from_pages(pages)
+
+            # Chunk all pages for vector storage
             all_chunks = []
             for page in pages:
-                chunks = self.chunker.chunk(page)
-                all_chunks.extend(chunks)
+                all_chunks.extend(self.chunker.chunk(page))
 
             self.embedding_pipeline.store_chunks(all_chunks, material_id)
-
-            # Generate summary for the material
-            full_text = " ".join(pages)
-            summary = await self.summarizer.generate(full_text)
 
             update_material(
                 self.db,
                 material_id=material_id,
                 user_id=user_id,
                 status="completed",
-                summary=summary,
+                summary=summary or None,
             )
 
             return {
                 "status": "success",
                 "material_id": material_id,
                 "num_chunks": len(all_chunks),
+                "summary_length": len(summary) if summary else 0,
             }
 
         except Exception as e:
             try:
-                material = self.db.query(Material).get(material_id)
-                if material:
-                    update_material(
-                        self.db,
-                        material_id=material_id,
-                        user_id=material.user_id,
-                        status="failed",
-                    )
+                mat = self.db.get(Material, material_id)
+                if mat:
+                    update_material(self.db, material_id=material_id, user_id=mat.user_id, status="failed")
             except Exception:
                 pass
             raise e
@@ -88,5 +81,4 @@ class IngestionAgent:
                 last_error = e
                 if attempt == max_retries - 1:
                     break
-                continue
         raise IngestionError(f"Failed after {max_retries} attempts: {str(last_error)}")

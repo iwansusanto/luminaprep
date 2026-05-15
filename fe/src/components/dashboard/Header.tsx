@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Modal } from 'antd';
 import { MaterialUploader } from './MaterialUploader';
 import { setting_material } from '../../lib/utils';
+import { authFetch } from '../../lib/api';
 
 const Header = () => {
   const auth = useAuth();
@@ -17,7 +18,7 @@ const Header = () => {
   const fetchMaterialsCount = useCallback(async () => {
     if (!projectId) return;
     try {
-      const response = await fetch(`/api/v1/materials/project/${projectId}`);
+      const response = await authFetch(`/api/v1/materials/project/${projectId}`);
       if (response.ok) {
         const data = await response.json();
         setMaterialsCount(Array.isArray(data.materials) ? data.materials.length : 0);

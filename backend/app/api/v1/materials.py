@@ -215,51 +215,6 @@ def get_material(
     return material
 
 
-@router.post("/{material_id}/quizzes", response_model=dict)
-def create_quiz_from_material(
-    material_id: str,
-    quiz_request: dict,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-):
-    """Create a quiz from material and generate AI questions."""
-    # Import quiz functions
-    from app.crud.quiz import create_quiz, update_quiz_status
-    from app.crud.question import create_question
-    from app.agents import MCQQuizAgent
-
-    # Verify material exists and belongs to user
-    material = get_material_by_id(db, material_id, current_user.id)
-    if not material:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
-        )
-
-    # Create quiz
-    quiz = create_quiz(
-        db=db,
-        project_id=material.project_id,
-        difficulty_level=quiz_request.get("difficulty_level", "medium"),
-        question_count=quiz_request.get("question_count", 5),
-        user_id=current_user.id,
-    )
-
-    if not quiz:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to create quiz"
-        )
-
-    # Update quiz status to completed
-    update_quiz_status(db, quiz.id, "completed")
-
-    return {
-        "task_id": quiz.id,
-        "status": "completed",
-        "message": f"Quiz created successfully",
-        "questions_count": 0,
-    }
-
-
 @router.delete("/{material_id}")
 def delete_material(
     material_id: str,

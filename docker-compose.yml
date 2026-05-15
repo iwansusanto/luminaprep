@@ -11,7 +11,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - API_URL=${API_URL} # Points to the api service
+      - API_URL=${API_URL}
     depends_on:
       - api
     restart: unless-stopped
@@ -19,11 +19,10 @@ services:
       - luminaprep-net
 
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     container_name: luminaprep-redis
     restart: always
-    ports:
-      - "6379:6379"
+    command: --maxmemory-policy noeviction
     networks:
       - luminaprep-net
 
@@ -31,57 +30,45 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: luminaprep-backend:latest
     container_name: luminaprep-api
     ports:
       - "8000:8000"
+    env_file:
+      - ./backend/.env
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - SECRET_KEY=${SECRET_KEY}
-      - ALGORITHM=${ALGORITHM}
-      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
-      - UPLOAD_DIR=${UPLOAD_DIR}
-      - MAX_FILE_SIZE=${MAX_FILE_SIZE}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_BASE_URL=${OPENAI_BASE_URL}
+      - LANGFUSE_PUBLIC_KEY=pk-lf-032825a1-77a8-4ad5-9d37-5d5a760bb8df
+      - LANGFUSE_SECRET_KEY=sk-lf-e24f6b4d-1e21-462c-a155-e54d083d3105
+      - LANGFUSE_HOST=https://langprep.luminaprep.my.id
+      - LANGFUSE_ENABLED=true
     depends_on:
-      - db
       - redis
     restart: unless-stopped
     networks:
       - luminaprep-net
     volumes:
       - ./backend/chroma_db:/app/chroma_db
+      - ./backend/uploads:/app/uploads
 
-  db:
-    image: mysql:8.4
-    container_name: luminaprep-mysql
-    restart: always
+  celery_worker:
+    image: luminaprep-backend:latest
+    container_name: luminaprep-celery-worker
+    command: uv run celery -A app.celery_app worker --loglevel=info
+    env_file:
+      - ./backend/.env
     environment:
-      MYSQL_ROOT_PASSWORD: weGFDaWcfNa/a9c3qftpkbzxiiyJ9UM+
-      MYSQL_DATABASE: db_lp
-      MYSQL_USER: user_lp
-      MYSQL_PASSWORD: Z1KkO7XJXVX9ZZCC1DaiRCsJYuxMlRkR
-    ports:
-      - "3363:3306"
-    volumes:
-      - ./dbdata:/var/lib/mysql
-    networks:
-      - luminaprep-net
-
-  phpmyadmin:
-    image: phpmyadmin:latest
-    container_name: luminaprep-phpmyadmin
-    restart: always
-    ports:
-      - "8099:80"
-    environment:
-      PMA_HOST: db
+      - LANGFUSE_PUBLIC_KEY=pk-lf-032825a1-77a8-4ad5-9d37-5d5a760bb8df
+      - LANGFUSE_SECRET_KEY=sk-lf-e24f6b4d-1e21-462c-a155-e54d083d3105
+      - LANGFUSE_HOST=https://langprep.luminaprep.my.id
+      - LANGFUSE_ENABLED=true
     depends_on:
-      - db
+      - redis
+    restart: unless-stopped
     networks:
       - luminaprep-net
+    volumes:
+      - ./backend/chroma_db:/app/chroma_db
+      - ./backend/uploads:/app/uploads
 
 networks:
   luminaprep-net:

@@ -83,7 +83,7 @@ Format respons dalam paragraf yang terstruktur dan mudah dipahami.
             )
 
             response = self.client.chat.completions.create(
-                model="deepseek/deepseek-v4-flash",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
