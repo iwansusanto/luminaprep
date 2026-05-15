@@ -127,7 +127,24 @@ def get_project_quizzes(
     project = get_project_by_id(db, project_id, current_user.id)
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
-    return get_quizzes_by_project(db, project_id, current_user.id)
+    quizzes = get_quizzes_by_project(db, project_id, current_user.id)
+    
+    result = []
+    for quiz in quizzes:
+        quiz_dict = quiz.model_dump()
+        user_attempts = []
+        for session in getattr(quiz, "quiz_sessions", []):
+            user_attempts.append({
+                "quiz_id": quiz.id,
+                "quiz_session_id": session.id,
+                "score_correct": session.correct_answers,
+                "score_earned": session.score,
+                "total_questions": session.total_questions
+            })
+        quiz_dict["user_attempts"] = user_attempts
+        result.append(quiz_dict)
+        
+    return result
 
 
 # ── Parameterised routes ───────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Send, Bot, User, Trash2, Plus, Loader2,
-  Paperclip, X, FileText, ChevronDown, Sparkles,
+  X, FileText, ChevronDown, Sparkles,
   Globe, Search, BookOpen, BrainCircuit,
 } from 'lucide-react'
 import { message as antMessage, Tooltip } from 'antd'
@@ -489,7 +489,7 @@ function ChatPage() {
                 onClick={() => setShowAttachPicker(v => !v)}
                 className={`p-1.5 rounded-xl transition-all shrink-0 ${showAttachPicker || attachedMaterials.length > 0 ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200'}`}
               >
-                <Paperclip className="w-4 h-4" />
+                <Plus className="w-4 h-4" />
               </button>
             </Tooltip>
             <textarea

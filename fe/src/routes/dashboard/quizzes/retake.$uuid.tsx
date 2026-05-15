@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { motion, AnimatePresence, type Variants } from 'framer-motion'
+import { motion, type Variants } from 'framer-motion'
 import {
   ChevronRight, Clock, Info, CheckCircle2, ChevronLeft,
-  BrainCircuit, Loader2, AlertCircle, X, Bot, Sparkles,
+  BrainCircuit, Loader2, AlertCircle, Sparkles,
 } from 'lucide-react'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { message } from 'antd'
 import { authFetch } from '../../../lib/api'
 import { useStreamFeedback } from '../../../hooks/useStreamFeedback'

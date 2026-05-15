@@ -15,11 +15,20 @@ class QuizCreate(QuizBase):
     project_id: str
 
 
+class QuizAttemptRead(SQLModel):
+    quiz_id: str
+    quiz_session_id: str
+    score_correct: Optional[int] = None
+    score_earned: Optional[float] = None
+    total_questions: Optional[int] = None
+
+
 class QuizRead(QuizBase):
     id: str
     project_id: str
     created_at: datetime
     updated_at: datetime
+    user_attempts: List[QuizAttemptRead] = []
 
 
 class QuizUpdate(SQLModel):

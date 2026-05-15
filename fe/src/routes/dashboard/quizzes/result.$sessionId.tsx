@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
 import { motion, type Variants } from 'framer-motion'
 import {
-  Trophy, CheckCircle2, XCircle, RotateCcw,
+  Trophy, CheckCircle2, X, RefreshCw,
   ArrowLeft, BrainCircuit, Sparkles, Loader2, AlertCircle,
   Target, Clock, Zap, ChevronDown, ChevronUp,
 } from 'lucide-react'
@@ -101,7 +101,7 @@ function BreakdownCard({ item: b, index }: { item: BreakdownItem; index: number 
         <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${b.is_correct ? 'bg-emerald-500' : 'bg-rose-500'}`}>
           {b.is_correct
             ? <CheckCircle2 className="w-4 h-4 text-white" />
-            : <XCircle className="w-4 h-4 text-white" />}
+            : <X className="w-4 h-4 text-white" />}
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-slate-800 leading-snug line-clamp-2">{b.question_text}</p>
@@ -124,20 +124,18 @@ function BreakdownCard({ item: b, index }: { item: BreakdownItem; index: number 
               return (
                 <div
                   key={key}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm ${
-                    isCorrect
-                      ? 'bg-emerald-100 border border-emerald-300 text-emerald-800'
-                      : isUser && !isCorrect
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm ${isCorrect
+                    ? 'bg-emerald-100 border border-emerald-300 text-emerald-800'
+                    : isUser && !isCorrect
                       ? 'bg-rose-100 border border-rose-300 text-rose-800'
                       : 'bg-white border border-slate-200 text-slate-600'
-                  }`}
+                    }`}
                 >
-                  <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 ${
-                    isCorrect ? 'bg-emerald-500 text-white' : isUser && !isCorrect ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-400'
-                  }`}>{key}</span>
+                  <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 ${isCorrect ? 'bg-emerald-500 text-white' : isUser && !isCorrect ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-400'
+                    }`}>{key}</span>
                   <span className="flex-1">{value}</span>
                   {isCorrect && <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />}
-                  {isUser && !isCorrect && <XCircle className="w-4 h-4 text-rose-500 shrink-0" />}
+                  {isUser && !isCorrect && <X className="w-4 h-4 text-rose-500 shrink-0" />}
                 </div>
               )
             })}
@@ -262,7 +260,7 @@ function QuizResultPage() {
             <div className="grid grid-cols-3 gap-3">
               {[
                 { icon: CheckCircle2, value: result.correct_answers, label: 'Correct', color: 'bg-emerald-100 text-emerald-600' },
-                { icon: XCircle, value: result.total_questions - result.correct_answers, label: 'Incorrect', color: 'bg-rose-100 text-rose-600' },
+                { icon: X, value: result.total_questions - result.correct_answers, label: 'Incorrect', color: 'bg-rose-100 text-rose-600' },
                 { icon: Clock, value: duration ? formatDuration(duration) : '—', label: 'Time', color: 'bg-indigo-100 text-indigo-600' },
               ].map((s) => (
                 <div key={s.label} className="bg-slate-50 rounded-2xl p-4 text-center">
@@ -316,7 +314,7 @@ function QuizResultPage() {
           params={{ uuid: result.quiz_id }}
           className="flex-1 flex items-center justify-center gap-3 py-5 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[11px] hover:bg-indigo-600 transition-all shadow-xl shadow-slate-900/10 active:scale-95"
         >
-          <RotateCcw className="w-4 h-4" /> Retake Quiz
+          <RefreshCw className="w-4 h-4" /> Retake Quiz
         </Link>
         <Link
           to="/dashboard/quizzes"
