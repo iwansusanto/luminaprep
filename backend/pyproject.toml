@@ -23,10 +23,10 @@ dependencies = [
     "httpx>=0.25.0",
     "bcrypt==4.0.1",
     "pypdf>=6.10.2",
-    "chonkie[st,catsu]>=1.6.5",
+    "chonkie>=1.6.5",
     "chromadb>=1.5.9",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 readme = "README.md"
 license = {text = "MIT"}
 
