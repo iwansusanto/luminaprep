@@ -14,8 +14,8 @@ class ChatSession(SQLModel, table=True):
     material_id: Optional[str] = Field(default=None)  # context hint, no FK needed
     quiz_id: Optional[str] = Field(default=None)       # context hint, no FK needed
     title: Optional[str] = Field(default=None, max_length=255)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
     deleted_at: Optional[datetime] = Field(default=None)
 
     # Relationships
@@ -31,7 +31,7 @@ class ChatMessage(SQLModel, table=True):
     content: str
     tool_name: Optional[str] = Field(default=None, max_length=100)
     tool_result: Optional[Dict[str, Any]] = Field(sa_type=JSON, default=None)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now)
 
     # Relationships
     session: "ChatSession" = Relationship(back_populates="messages")

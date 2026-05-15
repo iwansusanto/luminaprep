@@ -17,8 +17,8 @@ class Quiz(QuizBase, table=True):
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     project_id: str = Field(foreign_key="projects.id")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
     deleted_at: Optional[datetime] = Field(default=None)
 
     # Relationships

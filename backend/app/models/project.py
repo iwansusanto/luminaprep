@@ -17,8 +17,8 @@ class Project(ProjectBase, table=True):
     vector_collection_name: Optional[str] = Field(default=None, max_length=255)
     status: str = Field(default="active", max_length=50)
     deleted_at: Optional[datetime] = Field(default=None)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
 
     # Relationships
     user: Optional["User"] = Relationship(back_populates="projects")
