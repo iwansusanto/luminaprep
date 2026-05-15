@@ -65,10 +65,11 @@ type Quiz = {
   project_id: string
 }
 
-const statusMap: Record<string, 'Completed' | 'Draft' | 'Generated' | 'Failed' | 'Processing'> = {
+const statusMap: Record<string, 'Ready' | 'Draft' | 'Generated' | 'Failed' | 'Processing' | 'Finish'> = {
   draft: 'Draft',
   generated: 'Generated',
-  completed: 'Completed',
+  completed: 'Ready',
+  finished: 'Finish',
   failed: 'Failed',
   processing: 'Processing',
 }
@@ -245,7 +246,8 @@ function QuizzesPage() {
         cell: (info) => {
           const val = statusMap[info.getValue() as keyof typeof statusMap] || 'Generated'
           const colors = {
-            Completed: 'text-indigo-600 bg-indigo-50 border-indigo-100',
+            Ready: 'text-indigo-600 bg-indigo-50 border-indigo-100',
+            Finish: 'text-purple-600 bg-purple-50 border-purple-100',
             Generated: 'text-emerald-600 bg-emerald-50 border-emerald-100',
             Draft: 'text-slate-400 bg-slate-50 border-slate-100',
             Failed: 'text-rose-600 bg-rose-50 border-rose-100',
@@ -254,17 +256,18 @@ function QuizzesPage() {
           return (
             <div className="flex items-center gap-2">
               <div
-                className={`w-2 h-2 rounded-full ${
-                  val === 'Completed'
-                    ? 'bg-indigo-500'
+                className={`w-2 h-2 rounded-full ${val === 'Ready'
+                  ? 'bg-indigo-500'
+                  : val === 'Finish'
+                    ? 'bg-purple-500'
                     : val === 'Generated'
-                    ? 'bg-emerald-500'
-                    : val === 'Failed'
-                    ? 'bg-rose-500'
-                    : val === 'Processing'
-                    ? 'bg-amber-500 animate-pulse'
-                    : 'bg-slate-300'
-                }`}
+                      ? 'bg-emerald-500'
+                      : val === 'Failed'
+                        ? 'bg-rose-500'
+                        : val === 'Processing'
+                          ? 'bg-amber-500 animate-pulse'
+                          : 'bg-slate-300'
+                  }`}
               />
               <span className={`text-[10px] font-black uppercase tracking-widest ${colors[val]}`}>
                 {val}
@@ -283,18 +286,18 @@ function QuizzesPage() {
           const isDisabled = quiz.status === 'failed' || quiz.status === 'processing'
           const startPath =
             quiz.status === 'completed'
-              ? '/dashboard/quizzes/retake/$uuid'
+              ? '/dashboard/quizzes/start/$uuid'
               : quiz.status === 'draft'
-              ? '/dashboard/quizzes/continue/$uuid'
-              : '/dashboard/quizzes/start/$uuid'
+                ? '/dashboard/quizzes/continue/$uuid'
+                : '/dashboard/quizzes/retake/$uuid'
           const startLabel =
             quiz.status === 'completed'
               ? 'Start'
               : quiz.status === 'failed'
-              ? 'Failed'
-              : quiz.status === 'processing'
-              ? 'Processing...'
-              : 'Not Ready'
+                ? 'Failed'
+                : quiz.status === 'processing'
+                  ? 'Processing...'
+                  : 'Not Ready'
 
           return (
             <div className="flex items-center justify-end gap-3 pr-4">
@@ -302,11 +305,10 @@ function QuizzesPage() {
                 to={startPath}
                 params={{ uuid: quiz.id }}
                 disabled={isDisabled}
-                className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 ${
-                  isDisabled
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none pointer-events-none'
-                    : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-slate-900/10'
-                }`}
+                className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 ${isDisabled
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none pointer-events-none'
+                  : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-slate-900/10'
+                  }`}
               >
                 {startLabel}
               </Link>
@@ -378,7 +380,7 @@ function QuizzesPage() {
         {[
           { label: 'Avg Score', value: 'N/A', icon: BarChart3, color: 'text-indigo-500', bg: 'bg-indigo-50' },
           {
-            label: 'Completed',
+            label: 'Ready',
             value: quizzes.filter((q) => q.status === 'completed').length.toString(),
             icon: History,
             color: 'text-emerald-500',
