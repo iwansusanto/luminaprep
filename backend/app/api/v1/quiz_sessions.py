@@ -15,7 +15,7 @@ from app.crud.quiz import get_quiz_by_id
 from app.crud.question import get_questions_by_quiz
 from app.schemas.quiz import QuizRead
 from app.models.quiz_session import QuizSessionCreate, QuizSessionRead, QuizSessionUpdate
-from app.models.user_attempt import UserAttemptRead
+from app.models.user_attempt import UserAttempt, UserAttemptRead
 from app.api.deps import get_current_active_user
 from app.models.user import User
 
@@ -207,9 +207,24 @@ def get_quiz_session_questions(
             "question_metadata": question.question_metadata
         })
 
+    latest_question_idx = db.query(UserAttempt).filter(UserAttempt.quiz_session_id == session_id).count()
+    
+    latest_time = 0
+    latest_attempt = db.query(UserAttempt).filter(UserAttempt.quiz_session_id == session_id).order_by(UserAttempt.created_at.desc()).first()
+    if latest_attempt and quiz_session.started_at and latest_attempt.created_at:
+        try:
+            started = quiz_session.started_at.replace(tzinfo=None)
+            ended = latest_attempt.created_at.replace(tzinfo=None)
+            delta = int((ended - started).total_seconds())
+            latest_time = delta if delta > 0 else 0
+        except Exception as e:
+            print(f"Time calculation error: {e}")
+
     return {
         "session_id": session_id,
         "quiz_id": quiz_session.quiz_id,
         "total_questions": len(questions_data),
+        "latest_question": latest_question_idx,
+        "latest_time": latest_time,
         "questions": questions_data
     }

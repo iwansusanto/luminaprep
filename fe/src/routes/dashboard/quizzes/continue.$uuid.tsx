@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { motion, type Variants } from 'framer-motion'
 import {
   ChevronRight, Info, CheckCircle2, ChevronLeft,
-  BrainCircuit, Loader2, AlertCircle, Clock,  Sparkles,
+  BrainCircuit, Loader2, AlertCircle, Clock, Sparkles,
 } from 'lucide-react'
 import { useState, useEffect, useCallback } from 'react'
 import { message } from 'antd'
@@ -65,20 +65,13 @@ function ContinueQuizPage() {
     setLoading(true)
     setError(null)
     try {
-      const sessionRes = await authFetch(`/api/v1/quizzes/${uuid}/sessions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      if (!sessionRes.ok) {
-        const err = await sessionRes.json().catch(() => ({}))
-        throw new Error((err as { detail?: string }).detail || 'Failed to start session')
-      }
-      const session = await sessionRes.json()
-      setSessionId(session.id)
-      const qRes = await authFetch(`/api/v1/quiz_sessions/${session.id}/questions`)
+      const qRes = await authFetch(`/api/v1/quiz_sessions/${uuid}/questions`)
       if (!qRes.ok) throw new Error('Failed to load questions')
       const qData = await qRes.json()
+      setSessionId(uuid)
       setQuestions(qData.questions || [])
+      setCurrentIdx(qData.latest_question || 0)
+      setElapsed(qData.latest_time || 0)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to start quiz')
     } finally {

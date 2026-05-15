@@ -370,7 +370,7 @@ function QuizzesPage() {
               )}
               <Link
                 to={startPath}
-                params={{ uuid: quiz.id }}
+                params={{ uuid: quiz.status === 'continue' ? (quiz.user_attempts?.quiz_session_id || quiz.id) : quiz.id }}
                 disabled={isDisabled}
                 className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 ${buttonColorClass}`}
               >
