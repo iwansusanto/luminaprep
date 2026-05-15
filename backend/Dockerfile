@@ -26,6 +26,7 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY . .
+RUN rm -f uv.lock
 
 ENV PYTHONUNBUFFERED=1
 ENV UV_SYSTEM_PYTHON=1
