@@ -1,0 +1,176 @@
+{
+  "generated_at": "2026-05-15T18:37:53.057766+00:00",
+  "base_url": "http://localhost:8000",
+  "samples_per_endpoint": 1,
+  "timeout_seconds": 5.0,
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/",
+      "expected_statuses": [
+        200
+      ],
+      "summary": {
+        "samples": 1,
+        "ok_count": 0,
+        "error_count": 1,
+        "error_rate": 1.0,
+        "min_ms": null,
+        "max_ms": null,
+        "avg_ms": null,
+        "p50_ms": null,
+        "p95_ms": null,
+        "p99_ms": null
+      },
+      "samples": [
+        {
+          "status": null,
+          "duration_ms": 6.3,
+          "ok": false,
+          "error": "URLError",
+          "message": "<urlopen error [Errno 111] Connection refused>"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "expected_statuses": [
+        200
+      ],
+      "summary": {
+        "samples": 1,
+        "ok_count": 0,
+        "error_count": 1,
+        "error_rate": 1.0,
+        "min_ms": null,
+        "max_ms": null,
+        "avg_ms": null,
+        "p50_ms": null,
+        "p95_ms": null,
+        "p99_ms": null
+      },
+      "samples": [
+        {
+          "status": null,
+          "duration_ms": 0.16,
+          "ok": false,
+          "error": "URLError",
+          "message": "<urlopen error [Errno 111] Connection refused>"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/google/auth",
+      "expected_statuses": [
+        200
+      ],
+      "summary": {
+        "samples": 1,
+        "ok_count": 0,
+        "error_count": 1,
+        "error_rate": 1.0,
+        "min_ms": null,
+        "max_ms": null,
+        "avg_ms": null,
+        "p50_ms": null,
+        "p95_ms": null,
+        "p99_ms": null
+      },
+      "samples": [
+        {
+          "status": null,
+          "duration_ms": 0.1,
+          "ok": false,
+          "error": "URLError",
+          "message": "<urlopen error [Errno 111] Connection refused>"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "expected_statuses": [
+        401
+      ],
+      "summary": {
+        "samples": 1,
+        "ok_count": 0,
+        "error_count": 1,
+        "error_rate": 1.0,
+        "min_ms": null,
+        "max_ms": null,
+        "avg_ms": null,
+        "p50_ms": null,
+        "p95_ms": null,
+        "p99_ms": null
+      },
+      "samples": [
+        {
+          "status": null,
+          "duration_ms": 0.08,
+          "ok": false,
+          "error": "URLError",
+          "message": "<urlopen error [Errno 111] Connection refused>"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/projects/",
+      "expected_statuses": [
+        401
+      ],
+      "summary": {
+        "samples": 1,
+        "ok_count": 0,
+        "error_count": 1,
+        "error_rate": 1.0,
+        "min_ms": null,
+        "max_ms": null,
+        "avg_ms": null,
+        "p50_ms": null,
+        "p95_ms": null,
+        "p99_ms": null
+      },
+      "samples": [
+        {
+          "status": null,
+          "duration_ms": 0.07,
+          "ok": false,
+          "error": "URLError",
+          "message": "<urlopen error [Errno 111] Connection refused>"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/materials/project/test-project",
+      "expected_statuses": [
+        401
+      ],
+      "summary": {
+        "samples": 1,
+        "ok_count": 0,
+        "error_count": 1,
+        "error_rate": 1.0,
+        "min_ms": null,
+        "max_ms": null,
+        "avg_ms": null,
+        "p50_ms": null,
+        "p95_ms": null,
+        "p99_ms": null
+      },
+      "samples": [
+        {
+          "status": null,
+          "duration_ms": 0.07,
+          "ok": false,
+          "error": "URLError",
+          "message": "<urlopen error [Errno 111] Connection refused>"
+        }
+      ]
+    }
+  ]
+}
