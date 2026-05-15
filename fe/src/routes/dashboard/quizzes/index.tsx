@@ -242,7 +242,7 @@ function QuizzesPage() {
             const isAvg = pct >= 50 && pct < 80
             const colorClass = isGood ? 'text-emerald-600' : isAvg ? 'text-amber-600' : 'text-rose-600'
             const bgClass = isGood ? 'bg-emerald-500' : isAvg ? 'bg-amber-500' : 'bg-rose-500'
-            
+
             return (
               <div className="flex flex-col gap-1.5 min-w-[120px]">
                 <div className="flex items-end justify-between gap-2">
@@ -368,6 +368,15 @@ function QuizzesPage() {
                   Retake
                 </Link>
               )}
+              {quiz.status === 'finish' && quiz.user_attempts?.quiz_session_id && (
+                <Link
+                  to="/dashboard/quizzes/result/$sessionId"
+                  params={{ sessionId: quiz.user_attempts.quiz_session_id }}
+                  className="px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                >
+                  Result
+                </Link>
+              )}
               <Link
                 to={startPath}
                 params={{ uuid: quiz.status === 'continue' ? (quiz.user_attempts?.quiz_session_id || quiz.id) : quiz.id }}
@@ -417,6 +426,17 @@ function QuizzesPage() {
     initialState: { pagination: { pageSize: 50 } },
   })
 
+  const attemptedQuizzes = quizzes.filter((q) => q.user_attempts != null)
+  const avgScore = attemptedQuizzes.length > 0
+    ? (attemptedQuizzes.reduce((acc, q) => acc + (q.user_attempts?.score_earned || 0), 0) / attemptedQuizzes.length).toFixed(1)
+    : 'N/A'
+  
+  const totalCorrect = attemptedQuizzes.reduce((acc, q) => acc + (q.user_attempts?.score_correct || 0), 0)
+  const totalAttemptedQns = attemptedQuizzes.reduce((acc, q) => acc + (q.user_attempts?.total_questions || 0), 0)
+  const accuracy = totalAttemptedQns > 0
+    ? Math.round((totalCorrect / totalAttemptedQns) * 100) + '%'
+    : 'N/A'
+
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-8 pb-20">
       {/* Page Header */}
@@ -442,7 +462,7 @@ function QuizzesPage() {
       {/* Stats */}
       <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: 'Avg Score', value: 'N/A', icon: BarChart3, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+          { label: 'Avg Score', value: avgScore, icon: BarChart3, color: 'text-indigo-500', bg: 'bg-indigo-50' },
           {
             label: 'Ready',
             value: quizzes.filter((q) => q.status === 'completed').length.toString(),
@@ -457,7 +477,7 @@ function QuizzesPage() {
             color: 'text-amber-500',
             bg: 'bg-amber-50',
           },
-          { label: 'Accuracy', value: 'N/A', icon: Sparkles, color: 'text-purple-500', bg: 'bg-purple-50' },
+          { label: 'Accuracy', value: accuracy, icon: Sparkles, color: 'text-purple-500', bg: 'bg-purple-50' },
         ].map((stat, i) => (
           <div key={i} className="bg-white border border-slate-200/60 rounded-3xl p-5 flex items-center gap-4 shadow-sm">
             <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center`}>
