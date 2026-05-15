@@ -63,6 +63,13 @@ type Quiz = {
   created_at: string
   updated_at: string
   project_id: string
+  material_id: string | null
+  material: {
+    id: string
+    file_name: string
+    summary: string | null
+    citations: string | null
+  } | null
   user_attempts?: {
     quiz_session_id: string
     score_correct: number
@@ -203,7 +210,9 @@ function QuizzesPage() {
             </div>
             <div>
               <p className="text-sm font-black text-slate-800 leading-none mb-1.5">
-                Quiz #{info.row.index + 1}
+                {info.row.original.material?.file_name
+                  ? info.row.original.material.file_name.replace(/\.[^/.]+$/, '') // strip extension
+                  : `Quiz #${info.row.index + 1}`}
               </p>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 {info.row.original.question_count} Questions
