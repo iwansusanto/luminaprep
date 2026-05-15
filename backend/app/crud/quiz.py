@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from app.models.quiz import Quiz
 from app.models.project import Project
 from typing import List, Optional
@@ -17,6 +17,7 @@ def create_quiz(
     user_id: str,
     topic: Optional[str] = None,
     custom_request: Optional[str] = None,
+    material_id: Optional[str] = None,
 ) -> Optional[Quiz]:
     """Create a new quiz."""
     project = db.query(Project).filter(
@@ -34,6 +35,7 @@ def create_quiz(
         status="draft",
         topic=topic,
         custom_request=custom_request,
+        material_id=material_id,
     )
     db.add(quiz)
     db.commit()
@@ -44,12 +46,18 @@ def create_quiz(
 def get_quiz_by_id(db: Session, quiz_id: str, user_id: str) -> Optional[Quiz]:
     """Get quiz by ID with user verification."""
     try:
-        quiz = db.query(Quiz).join(Project).filter(
-            Quiz.id == quiz_id,
-            Project.user_id == user_id,
-            Quiz.deleted_at.is_(None),
-            Project.deleted_at.is_(None),
-        ).first()
+        quiz = (
+            db.query(Quiz)
+            .join(Project)
+            .options(selectinload(Quiz.material))
+            .filter(
+                Quiz.id == quiz_id,
+                Project.user_id == user_id,
+                Quiz.deleted_at.is_(None),
+                Project.deleted_at.is_(None),
+            )
+            .first()
+        )
         return quiz
     except Exception as e:
         print(f"Error in get_quiz_by_id: {e}")
@@ -61,6 +69,7 @@ def get_quizzes_by_project(db: Session, project_id: str, user_id: str) -> List[Q
     return (
         db.query(Quiz)
         .join(Project)
+        .options(selectinload(Quiz.material))
         .filter(
             Quiz.project_id == project_id,
             Project.user_id == user_id,

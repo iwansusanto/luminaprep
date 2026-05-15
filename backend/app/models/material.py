@@ -1,6 +1,6 @@
 from sqlmodel import SQLModel, Field, Relationship
 import sqlalchemy as sa
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 import uuid
 
@@ -11,7 +11,6 @@ class MaterialBase(SQLModel):
     storage_path: str = Field(max_length=512)
     file_size: Optional[int] = Field(default=None)
     status: str = Field(default="uploaded", max_length=50)
-    file_size: Optional[int] = Field(default=None)
     summary: Optional[str] = Field(default=None, sa_type=sa.TEXT)
     citations: Optional[str] = Field(default=None, sa_type=sa.TEXT)
 
@@ -51,3 +50,4 @@ class Material(MaterialBase, table=True):
     # Relationships
     project: "Project" = Relationship(back_populates="materials")
     user: "User" = Relationship(back_populates="materials")
+    quizzes: List["Quiz"] = Relationship(back_populates="material")

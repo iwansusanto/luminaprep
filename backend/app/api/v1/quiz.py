@@ -92,6 +92,7 @@ def create_quiz_from_material(
         user_id=current_user.id,
         topic=topic or None,
         custom_request=custom_request or None,
+        material_id=material_id,
     )
 
     if not quiz:
@@ -174,7 +175,8 @@ def get_project_quizzes(
         attempts = attempts_by_quiz.get(quiz.id, [])
         first_attempt = attempts[0] if attempts else None
         quiz_dict["user_attempts"] = first_attempt
-        
+        quiz_dict["material_id"] = quiz.material_id
+
         # Dynamically set quiz status to finish or draft in response based on session status
         if first_attempt:
             status_session = first_attempt.get("status_session")
@@ -220,14 +222,26 @@ def get_quiz(
         quiz = get_quiz_by_id(db, quiz_id, current_user.id)
         if not quiz:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quiz not found")
+
+        material_info = None
+        if quiz.material:
+            material_info = {
+                "id": quiz.material.id,
+                "file_name": quiz.material.file_name,
+                "summary": quiz.material.summary,
+                "citations": quiz.material.citations,
+            }
+
         return {
             "id": quiz.id,
             "project_id": quiz.project_id,
+            "material_id": quiz.material_id,
             "difficulty_level": quiz.difficulty_level,
             "question_count": quiz.question_count,
             "status": quiz.status,
             "topic": quiz.topic,
             "custom_request": quiz.custom_request,
+            "material": material_info,
         }
     except HTTPException:
         raise

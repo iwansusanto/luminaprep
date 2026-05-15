@@ -33,7 +33,6 @@ def make_quiz_public(
     public_quiz = create_public_quiz(
         db=db,
         quiz_id=quiz_data.quiz_id,
-        material_id=quiz_data.material_id,
         user_id=current_user.id,
     )
     if not public_quiz:
