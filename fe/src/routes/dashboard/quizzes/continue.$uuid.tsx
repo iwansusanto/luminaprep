@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { motion, type Variants } from 'framer-motion'
 import {
   ChevronRight, Info, CheckCircle2, ChevronLeft,
-  BrainCircuit, Loader2, AlertCircle, Save,  Sparkles,
+  BrainCircuit, Loader2, AlertCircle, Clock, Sparkles,
 } from 'lucide-react'
 import { useState, useEffect, useCallback } from 'react'
 import { message } from 'antd'
@@ -43,28 +43,35 @@ function ContinueQuizPage() {
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [elapsed, setElapsed] = useState(0)
   const [showFeedback, setShowFeedback] = useState(false)
 
   const { feedback, progressMsg, suggestions, score, streaming, isCorrect, startStream, clearFeedback } = useStreamFeedback()
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setElapsed((prev) => prev + 1)
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  }
 
   const initSession = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const sessionRes = await authFetch(`/api/v1/quizzes/${uuid}/sessions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      if (!sessionRes.ok) {
-        const err = await sessionRes.json().catch(() => ({}))
-        throw new Error((err as { detail?: string }).detail || 'Failed to start session')
-      }
-      const session = await sessionRes.json()
-      setSessionId(session.id)
-      const qRes = await authFetch(`/api/v1/quiz_sessions/${session.id}/questions`)
+      const qRes = await authFetch(`/api/v1/quiz_sessions/${uuid}/questions`)
       if (!qRes.ok) throw new Error('Failed to load questions')
       const qData = await qRes.json()
+      setSessionId(uuid)
       setQuestions(qData.questions || [])
+      setCurrentIdx(qData.latest_question || 0)
+      setElapsed(qData.latest_time || 0)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to start quiz')
     } finally {
@@ -160,9 +167,9 @@ function ContinueQuizPage() {
             <motion.div animate={{ width: `${((currentIdx + 1) / total) * 100}%` }} className="h-full bg-amber-500 rounded-full transition-all duration-500" />
           </div>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl">
-          <Save className="w-4 h-4 text-emerald-400" />
-          <span className="text-xs font-black tracking-widest uppercase">Auto-Saved</span>
+        <div className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl shadow-md">
+          <Clock className="w-4 h-4 text-amber-400" />
+          <span className="text-xs font-black tracking-widest">{formatTime(elapsed)}</span>
         </div>
       </motion.div>
 

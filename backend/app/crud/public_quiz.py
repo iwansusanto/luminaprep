@@ -13,7 +13,6 @@ def _now() -> datetime:
 def create_public_quiz(
     db: Session,
     quiz_id: str,
-    material_id: str,
     user_id: str,
 ) -> Optional[PublicQuiz]:
     """Make a quiz public. Verify user owns the quiz."""
@@ -33,6 +32,9 @@ def create_public_quiz(
     existing = db.exec(existing_statement).first()
     if existing:
         return None
+
+    # Get material_id from the quiz's direct relation
+    material_id = quiz.material_id
 
     public_quiz = PublicQuiz(
         material_id=material_id,

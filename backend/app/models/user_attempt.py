@@ -20,8 +20,8 @@ class UserAttempt(UserAttemptBase, table=True):
     quiz_id: str = Field(foreign_key="quizzes.id")
     question_id: str = Field(foreign_key="questions.id")
     quiz_session_id: Optional[str] = Field(foreign_key="quiz_sessions.id", default=None)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
     deleted_at: Optional[datetime] = Field(default=None, sa_column_kwargs={"comment": "Soft delete timestamp"})
     
     # Relationships

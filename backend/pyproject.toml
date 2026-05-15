@@ -23,7 +23,7 @@ dependencies = [
     "httpx>=0.25.0",
     "bcrypt==4.0.1",
     "pypdf>=6.10.2",
-    "chonkie>=1.6.5",
+    "chonkie[openai,st]>=1.6.5",
     "chromadb>=1.5.9",
     "langfuse>=2.0.0,<3.0.0",
     "openai-agents>=0.13.0",

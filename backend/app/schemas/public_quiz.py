@@ -5,12 +5,11 @@ from typing import Optional
 
 class PublicQuizCreate(SQLModel):
     quiz_id: str
-    material_id: str
 
 
 class PublicQuizRead(SQLModel):
     quiz_id: str
-    material_id: str
+    material_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

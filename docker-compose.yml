@@ -7,10 +7,11 @@ services:
         - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
     container_name: luminaprep-fe
     ports:
-      - "3000:3000"
+      - ${FE_PORT_EXPOSE}:${FE_PORT}
     environment:
-      - NODE_ENV=production
-      - PORT=3000
+      - NODE_ENV=${NODE_ENV}
+      - PORT=${FE_PORT}
+      - API_URL=${API_URL}
     depends_on:
       - api
     restart: unless-stopped
@@ -32,14 +33,15 @@ services:
     image: luminaprep-backend:latest
     container_name: luminaprep-api
     ports:
-      - "8000:8000"
+      - ${API_PORT_EXPOSE}:${API_PORT}
     env_file:
       - ./backend/.env
     environment:
-      - LANGFUSE_PUBLIC_KEY=pk-lf-032825a1-77a8-4ad5-9d37-5d5a760bb8df
-      - LANGFUSE_SECRET_KEY=sk-lf-e24f6b4d-1e21-462c-a155-e54d083d3105
-      - LANGFUSE_HOST=https://langprep.luminaprep.my.id
-      - LANGFUSE_ENABLED=true
+      - TZ=Asia/Jakarta
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
+      - LANGFUSE_HOST=${LANGFUSE_HOST}
+      - LANGFUSE_ENABLED=${LANGFUSE_ENABLED}
     depends_on:
       - redis
     restart: unless-stopped
@@ -56,10 +58,11 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      - LANGFUSE_PUBLIC_KEY=pk-lf-032825a1-77a8-4ad5-9d37-5d5a760bb8df
-      - LANGFUSE_SECRET_KEY=sk-lf-e24f6b4d-1e21-462c-a155-e54d083d3105
-      - LANGFUSE_HOST=https://langprep.luminaprep.my.id
-      - LANGFUSE_ENABLED=true
+      - TZ=Asia/Jakarta
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
+      - LANGFUSE_HOST=${LANGFUSE_HOST}
+      - LANGFUSE_ENABLED=${LANGFUSE_ENABLED}
     depends_on:
       - redis
     restart: unless-stopped
@@ -68,6 +71,36 @@ services:
     volumes:
       - ./backend/chroma_db:/app/chroma_db
       - ./backend/uploads:/app/uploads
+
+  db:
+    image: mysql:8.4
+    container_name: luminaprep-mysql
+    restart: always
+    environment:
+      TZ: Asia/Jakarta
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASS_ROOT}
+      MYSQL_DATABASE: ${MYSQL_DB}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASS}
+    ports:
+      - "${MYSQL_PORT_EXPOSE}:${MYSQL_PORT}"
+    volumes:
+      - ./dbdata:/var/lib/mysql
+    networks:
+      - luminaprep-net
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: luminaprep-phpmyadmin
+    restart: always
+    ports:
+      - "${PMA_PORT_EXPOSE}:${PMA_PORT}"
+    environment:
+      PMA_HOST: db
+    depends_on:
+      - db
+    networks:
+      - luminaprep-net
 
 networks:
   luminaprep-net:

@@ -17,12 +17,14 @@ class Quiz(QuizBase, table=True):
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     project_id: str = Field(foreign_key="projects.id")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    material_id: Optional[str] = Field(default=None, foreign_key="materials.id", index=True)
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
     deleted_at: Optional[datetime] = Field(default=None)
 
     # Relationships
     project: "Project" = Relationship(back_populates="quizzes")
+    material: Optional["Material"] = Relationship(back_populates="quizzes")
     questions: List["Question"] = Relationship(back_populates="quiz")
     user_attempts: List["UserAttempt"] = Relationship(back_populates="quiz")
     quiz_sessions: List["QuizSession"] = Relationship(back_populates="quiz")
@@ -35,6 +37,7 @@ class QuizCreate(QuizBase):
 class QuizRead(QuizBase):
     id: str
     project_id: str
+    material_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

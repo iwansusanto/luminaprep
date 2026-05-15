@@ -24,12 +24,21 @@ class QuizAttemptRead(SQLModel):
     status_session: Optional[str] = None
 
 
+class MaterialInfo(SQLModel):
+    id: str
+    file_name: str
+    summary: Optional[str] = None
+    citations: Optional[str] = None
+
+
 class QuizRead(QuizBase):
     id: str
     project_id: str
+    material_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     user_attempts: Optional[QuizAttemptRead] = None
+    material: Optional[MaterialInfo] = None
 
 
 class QuizUpdate(SQLModel):
