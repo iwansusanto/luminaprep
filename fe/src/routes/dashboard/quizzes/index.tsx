@@ -63,10 +63,18 @@ type Quiz = {
   created_at: string
   updated_at: string
   project_id: string
+  user_attempts?: {
+    quiz_session_id: string
+    score_correct: number
+    score_earned: number
+    total_questions: number
+    status_session: string
+  } | null
 }
 
-const statusMap: Record<string, 'Ready' | 'Draft' | 'Generated' | 'Failed' | 'Processing' | 'Completed'> = {
+const statusMap: Record<string, 'Ready' | 'Draft' | 'Continue' | 'Generated' | 'Failed' | 'Processing' | 'Completed'> = {
   draft: 'Draft',
+  continue: 'Continue',
   generated: 'Generated',
   completed: 'Ready',
   finish: 'Completed',
@@ -224,8 +232,40 @@ function QuizzesPage() {
       }),
       columnHelper.display({
         id: 'score',
-        header: 'Best Score',
-        cell: () => <span className="text-sm font-medium text-slate-300">—</span>,
+        header: 'Score',
+        cell: (info) => {
+          const quiz = info.row.original
+          const attempts = quiz.user_attempts
+          if (attempts && attempts.score_correct !== undefined) {
+            const pct = Math.round((attempts.score_correct / quiz.question_count) * 100)
+            const isGood = pct >= 80
+            const isAvg = pct >= 50 && pct < 80
+            const colorClass = isGood ? 'text-emerald-600' : isAvg ? 'text-amber-600' : 'text-rose-600'
+            const bgClass = isGood ? 'bg-emerald-500' : isAvg ? 'bg-amber-500' : 'bg-rose-500'
+            
+            return (
+              <div className="flex flex-col gap-1.5 min-w-[120px]">
+                <div className="flex items-end justify-between gap-2">
+                  <span className={`text-lg font-black leading-none ${colorClass}`}>
+                    {pct}%
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                    {attempts.score_correct} / {quiz.question_count}
+                  </span>
+                </div>
+                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className={`h-full rounded-full ${bgClass}`}
+                  />
+                </div>
+              </div>
+            )
+          }
+          return <span className="text-sm font-medium text-slate-300">—</span>
+        },
       }),
       columnHelper.accessor('created_at', {
         header: 'Created At',
@@ -250,6 +290,7 @@ function QuizzesPage() {
             Completed: 'text-purple-600 bg-purple-50 border-purple-100',
             Generated: 'text-emerald-600 bg-emerald-50 border-emerald-100',
             Draft: 'text-slate-400 bg-slate-50 border-slate-100',
+            Continue: 'text-sky-600 bg-sky-50 border-sky-100',
             Failed: 'text-rose-600 bg-rose-50 border-rose-100',
             Processing: 'text-amber-600 bg-amber-50 border-amber-100',
           }
@@ -262,11 +303,13 @@ function QuizzesPage() {
                     ? 'bg-purple-500'
                     : val === 'Generated'
                       ? 'bg-emerald-500'
-                      : val === 'Failed'
-                        ? 'bg-rose-500'
-                        : val === 'Processing'
-                          ? 'bg-amber-500 animate-pulse'
-                          : 'bg-slate-300'
+                      : val === 'Continue'
+                        ? 'bg-sky-500'
+                        : val === 'Failed'
+                          ? 'bg-rose-500'
+                          : val === 'Processing'
+                            ? 'bg-amber-500 animate-pulse'
+                            : 'bg-slate-300'
                   }`}
               />
               <span className={`text-[10px] font-black uppercase tracking-widest ${colors[val]}`}>
@@ -287,7 +330,7 @@ function QuizzesPage() {
           const startPath =
             quiz.status === 'completed'
               ? '/dashboard/quizzes/start/$uuid'
-              : quiz.status === 'draft'
+              : quiz.status === 'continue' || quiz.status === 'draft'
                 ? '/dashboard/quizzes/continue/$uuid'
                 : '/dashboard/quizzes/retake/$uuid'
           const startLabel =
@@ -295,7 +338,7 @@ function QuizzesPage() {
               ? 'Start'
               : quiz.status === 'finish'
                 ? 'Retake'
-                : quiz.status === 'draft'
+                : quiz.status === 'continue' || quiz.status === 'draft'
                   ? 'Continue'
                   : quiz.status === 'failed'
                     ? 'Failed'
@@ -306,6 +349,7 @@ function QuizzesPage() {
           const buttonColors: Record<string, string> = {
             completed: 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-500/20',
             finish: 'bg-purple-600 text-white hover:bg-purple-700 shadow-purple-500/20',
+            continue: 'bg-slate-800 text-white hover:bg-slate-900 shadow-slate-800/20',
             draft: 'bg-slate-800 text-white hover:bg-slate-900 shadow-slate-800/20',
             failed: 'bg-rose-100 text-rose-400 cursor-not-allowed shadow-none pointer-events-none',
             processing: 'bg-amber-100 text-amber-500 cursor-not-allowed shadow-none pointer-events-none',
@@ -315,6 +359,15 @@ function QuizzesPage() {
 
           return (
             <div className="flex items-center justify-end gap-3 pr-4">
+              {quiz.status === 'continue' && (
+                <Link
+                  to="/dashboard/quizzes/retake/$uuid"
+                  params={{ uuid: quiz.id }}
+                  className="px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                >
+                  Retake
+                </Link>
+              )}
               <Link
                 to={startPath}
                 params={{ uuid: quiz.id }}

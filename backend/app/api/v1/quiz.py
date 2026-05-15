@@ -153,6 +153,8 @@ def get_project_quizzes(
         UserAttempt.quiz_id,
         UserAttempt.quiz_session_id,
         QuizSession.status
+    ).order_by(
+        func.max(UserAttempt.created_at).desc()
     ).all()
     
     attempts_by_quiz = {qid: [] for qid in quiz_ids}
@@ -173,9 +175,13 @@ def get_project_quizzes(
         first_attempt = attempts[0] if attempts else None
         quiz_dict["user_attempts"] = first_attempt
         
-        # Dynamically set quiz status to finish in response if the session was completed
-        if first_attempt and first_attempt.get("status_session") == "completed" and quiz_dict["status"] != "finish":
-            quiz_dict["status"] = "finish"
+        # Dynamically set quiz status to finish or draft in response based on session status
+        if first_attempt:
+            status_session = first_attempt.get("status_session")
+            if status_session == "completed" and quiz_dict["status"] != "finish":
+                quiz_dict["status"] = "finish"
+            elif status_session == "active" and quiz_dict["status"] != "draft":
+                quiz_dict["status"] = "continue"
             
         result.append(quiz_dict)
         
