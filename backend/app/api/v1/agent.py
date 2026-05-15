@@ -1,13 +1,15 @@
 """
 Agent / Chatbot API
 
-POST   /api/v1/agent/chat              — send message (new or existing session)
+POST   /api/v1/agent/chat              — send message (new or existing session) — streaming SSE
 GET    /api/v1/agent/sessions          — list user's sessions
 GET    /api/v1/agent/sessions/{id}     — session + full message history
 DELETE /api/v1/agent/sessions/{id}     — soft-delete session
 """
+
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -17,7 +19,6 @@ from app.models.user import User
 from app.models.chat import ChatSession, ChatMessage
 from app.schemas.chat import (
     ChatRequest,
-    ChatResponse,
     ChatSessionRead,
     ChatSessionWithMessages,
     ChatMessageRead,
@@ -31,34 +32,37 @@ def _now():
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-# ── POST /agent/chat ──────────────────────────────────────────────────────────
-
-@router.post("/chat", response_model=ChatResponse)
-def chat(
+@router.post("/chat")
+async def chat(
     body: ChatRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """
-    Send a message to the AI agent.
+    Send a message to the AI agent. Returns a streaming SSE response.
 
     Context scoping (all optional):
-    - project_id  → scope to a project
-    - material_id → enables tutor mode (agent can search material content)
-    - quiz_id     → enables quiz assistant mode (agent can access quiz questions)
+    - project_id  -> scope to a project
+    - material_id -> enables tutor mode (agent can search material content)
+    - quiz_id     -> enables quiz assistant mode (agent can access quiz questions)
 
     Pass session_id to continue an existing conversation.
     Omit session_id to start a new one.
     """
-    # Resolve or create session
     if body.session_id:
-        session = db.query(ChatSession).filter(
-            ChatSession.id == body.session_id,
-            ChatSession.user_id == current_user.id,
-            ChatSession.deleted_at.is_(None),
-        ).first()
+        session = (
+            db.query(ChatSession)
+            .filter(
+                ChatSession.id == body.session_id,
+                ChatSession.user_id == current_user.id,
+                ChatSession.deleted_at.is_(None),
+            )
+            .first()
+        )
         if not session:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Session not found"
+            )
     else:
         session = ChatSession(
             user_id=current_user.id,
@@ -71,7 +75,6 @@ def chat(
         db.commit()
         db.refresh(session)
 
-    # Load prior history
     prior = (
         db.query(ChatMessage)
         .filter(ChatMessage.session_id == session.id)
@@ -86,17 +89,17 @@ def chat(
         else:
             history.append({"role": m.role, "content": m.content})
 
-    # Run agent with full context
-    # If user attached specific materials, prepend them to the message
     user_message = body.message
     if body.attached_material_ids:
         material_ids_str = ", ".join(body.attached_material_ids)
         user_message = (
             f"[Materi yang dilampirkan: {material_ids_str}]\n\n{body.message}"
         )
-        # Also set material_id on session if only one attached
         if len(body.attached_material_ids) == 1 and not session.material_id:
             session.material_id = body.attached_material_ids[0]
+
+    db.add(ChatMessage(session_id=session.id, role="user", content=body.message))
+    db.commit()
 
     agent = ChatbotAgent(
         db=db,
@@ -106,35 +109,44 @@ def chat(
         quiz_id=session.quiz_id,
     )
 
-    try:
-        reply, tool_calls = agent.chat(history=history, user_message=user_message)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Agent error: {str(e)}",
-        )
+    async def event_generator():
+        try:
+            async for chunk in agent.chat_stream(
+                history=history, user_message=user_message
+            ):
+                yield chunk
+        except Exception as e:
+            yield f"data: {__import__('json').dumps({'type': 'error', 'message': str(e)})}\n\n"
+            return
 
-    # Persist messages
-    db.add(ChatMessage(session_id=session.id, role="user", content=body.message))
+        reply = agent.get_final_response()
+        tool_calls = agent.get_tool_calls()
 
-    for tc in tool_calls:
-        db.add(ChatMessage(
-            session_id=session.id,
-            role="tool",
-            content="",
-            tool_name=tc["tool"],
-            tool_result=tc.get("args"),
-        ))
+        for tc in tool_calls:
+            db.add(
+                ChatMessage(
+                    session_id=session.id,
+                    role="tool",
+                    content="",
+                    tool_name=tc.get("tool"),
+                    tool_result=tc.get("args"),
+                )
+            )
 
-    db.add(ChatMessage(session_id=session.id, role="assistant", content=reply))
+        db.add(ChatMessage(session_id=session.id, role="assistant", content=reply))
+        session.updated_at = _now()
+        db.commit()
 
-    session.updated_at = _now()
-    db.commit()
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
-    return ChatResponse(session_id=session.id, reply=reply, tool_calls=tool_calls)
-
-
-# ── GET /agent/sessions ───────────────────────────────────────────────────────
 
 @router.get("/sessions", response_model=List[ChatSessionRead])
 def list_sessions(
@@ -152,22 +164,26 @@ def list_sessions(
     )
 
 
-# ── GET /agent/sessions/{session_id} ─────────────────────────────────────────
-
 @router.get("/sessions/{session_id}", response_model=ChatSessionWithMessages)
 def get_session(
     session_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    session = db.query(ChatSession).filter(
-        ChatSession.id == session_id,
-        ChatSession.user_id == current_user.id,
-        ChatSession.deleted_at.is_(None),
-    ).first()
+    session = (
+        db.query(ChatSession)
+        .filter(
+            ChatSession.id == session_id,
+            ChatSession.user_id == current_user.id,
+            ChatSession.deleted_at.is_(None),
+        )
+        .first()
+    )
 
     if not session:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session not found"
+        )
 
     messages = (
         db.query(ChatMessage)
@@ -182,22 +198,26 @@ def get_session(
     )
 
 
-# ── DELETE /agent/sessions/{session_id} ──────────────────────────────────────
-
 @router.delete("/sessions/{session_id}")
 def delete_session(
     session_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    session = db.query(ChatSession).filter(
-        ChatSession.id == session_id,
-        ChatSession.user_id == current_user.id,
-        ChatSession.deleted_at.is_(None),
-    ).first()
+    session = (
+        db.query(ChatSession)
+        .filter(
+            ChatSession.id == session_id,
+            ChatSession.user_id == current_user.id,
+            ChatSession.deleted_at.is_(None),
+        )
+        .first()
+    )
 
     if not session:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session not found"
+        )
 
     session.deleted_at = _now()
     db.commit()
