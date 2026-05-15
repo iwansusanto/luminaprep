@@ -2,11 +2,13 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import {
   ChevronRight, Clock, Info, CheckCircle2, ChevronLeft,
-  Sparkles, Loader2, AlertCircle, XCircle, Bot,
+  Sparkles, Loader2, AlertCircle, Bot, X,
 } from 'lucide-react'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { message } from 'antd'
 import { authFetch } from '../../../lib/api'
+import { useStreamFeedback } from '../../../hooks/useStreamFeedback'
+import { AIFeedbackPanel } from '../../../components/dashboard/AIFeedbackPanel'
 
 export const Route = createFileRoute('/dashboard/quizzes/start/$uuid')({
   component: StartQuizPage,
@@ -35,53 +37,6 @@ interface SessionData {
   questions: Question[]
 }
 
-// ── SSE feedback hook ─────────────────────────────────────────────────────────
-function useStreamFeedback() {
-  const [feedback, setFeedback] = useState<string>('')
-  const [streaming, setStreaming] = useState(false)
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
-  const esRef = useRef<EventSource | null>(null)
-
-  const startStream = useCallback((sessionId: string, questionId: string) => {
-    if (esRef.current) esRef.current.close()
-    setFeedback('')
-    setIsCorrect(null)
-    setStreaming(true)
-    const token = localStorage.getItem('lumina_token')
-    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : ''
-    const es = new EventSource(
-      `/api/v1/stream/feedback/${sessionId}/${questionId}${tokenParam}`,
-    )
-    esRef.current = es
-
-    es.onmessage = (e) => {
-      if (e.data === '[DONE]') {
-        setStreaming(false)
-        es.close()
-        return
-      }
-      try {
-        const parsed = JSON.parse(e.data)
-        if (parsed.type === 'start') setIsCorrect(parsed.is_correct)
-        else if (parsed.type === 'token') setFeedback((prev) => prev + parsed.content)
-        else if (parsed.type === 'done') { setStreaming(false); es.close() }
-        else if (parsed.type === 'error') { setStreaming(false); es.close() }
-      } catch { /* ignore parse errors */ }
-    }
-    es.onerror = () => { setStreaming(false); es.close() }
-  }, [])
-
-  const clearFeedback = useCallback(() => {
-    esRef.current?.close()
-    setFeedback('')
-    setIsCorrect(null)
-    setStreaming(false)
-  }, [])
-
-  useEffect(() => () => esRef.current?.close(), [])
-
-  return { feedback, streaming, isCorrect, startStream, clearFeedback }
-}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 function StartQuizPage() {
@@ -98,7 +53,7 @@ function StartQuizPage() {
   const [elapsed, setElapsed] = useState(0)
   const [showFeedback, setShowFeedback] = useState(false)
 
-  const { feedback, streaming, isCorrect, startStream, clearFeedback } = useStreamFeedback()
+  const { feedback, progressMsg, suggestions, score, streaming, isCorrect, startStream, clearFeedback } = useStreamFeedback()
 
   useEffect(() => {
     const t = setInterval(() => setElapsed((s) => s + 1), 1000)
@@ -284,16 +239,14 @@ function StartQuizPage() {
                   key={key}
                   onClick={() => handleSelectAnswer(key)}
                   disabled={showFeedback}
-                  className={`flex items-center justify-between p-5 rounded-2xl border transition-all text-left disabled:cursor-default ${
-                    isSelected
-                      ? 'border-emerald-500 bg-emerald-50 shadow-md'
-                      : 'border-slate-100 bg-slate-50/50 hover:border-emerald-300 hover:bg-emerald-50/30 disabled:hover:border-slate-100 disabled:hover:bg-slate-50/50'
-                  }`}
+                  className={`flex items-center justify-between p-5 rounded-2xl border transition-all text-left disabled:cursor-default ${isSelected
+                    ? 'border-emerald-500 bg-emerald-50 shadow-md'
+                    : 'border-slate-100 bg-slate-50/50 hover:border-emerald-300 hover:bg-emerald-50/30 disabled:hover:border-slate-100 disabled:hover:bg-slate-50/50'
+                    }`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black transition-colors border ${
-                      isSelected ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-400'
-                    }`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black transition-colors border ${isSelected ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-400'
+                      }`}>
                       {key}
                     </div>
                     <span className="text-sm font-semibold text-slate-600">{value}</span>
@@ -307,50 +260,16 @@ function StartQuizPage() {
       )}
 
       {/* AI Feedback Panel */}
-      <AnimatePresence>
-        {showFeedback && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 16 }}
-            className={`rounded-[2rem] border p-8 shadow-lg ${
-              isCorrect === true
-                ? 'bg-emerald-50 border-emerald-200'
-                : isCorrect === false
-                ? 'bg-rose-50 border-rose-200'
-                : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <div className="flex items-start gap-4">
-              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-                isCorrect === true ? 'bg-emerald-500' : isCorrect === false ? 'bg-rose-500' : 'bg-indigo-500'
-              }`}>
-                {isCorrect === true ? (
-                  <CheckCircle2 className="w-5 h-5 text-white" />
-                ) : isCorrect === false ? (
-                  <XCircle className="w-5 h-5 text-white" />
-                ) : (
-                  <Bot className="w-5 h-5 text-white" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-3">
-                  <p className={`text-xs font-black uppercase tracking-widest ${
-                    isCorrect === true ? 'text-emerald-700' : isCorrect === false ? 'text-rose-700' : 'text-indigo-700'
-                  }`}>
-                    {isCorrect === true ? 'Correct!' : isCorrect === false ? 'Incorrect' : 'AI Feedback'}
-                  </p>
-                  {streaming && <Loader2 className="w-3 h-3 text-slate-400 animate-spin" />}
-                </div>
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-                  {feedback}
-                  {streaming && <span className="inline-block w-1 h-4 bg-slate-400 animate-pulse ml-0.5 align-middle" />}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AIFeedbackPanel
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        streaming={streaming}
+        progressMsg={progressMsg}
+        feedback={feedback}
+        suggestions={suggestions}
+        score={score}
+        neutralTheme="indigo"
+      />
 
       {/* Navigation */}
       <motion.div variants={item} className="flex items-center justify-between">

@@ -2,11 +2,13 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import {
   ChevronRight, Clock, Info, CheckCircle2, ChevronLeft,
-  BrainCircuit, Loader2, AlertCircle, XCircle, Bot, Sparkles,
+  BrainCircuit, Loader2, AlertCircle, X, Bot, Sparkles,
 } from 'lucide-react'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { message } from 'antd'
 import { authFetch } from '../../../lib/api'
+import { useStreamFeedback } from '../../../hooks/useStreamFeedback'
+import { AIFeedbackPanel } from '../../../components/dashboard/AIFeedbackPanel'
 
 export const Route = createFileRoute('/dashboard/quizzes/retake/$uuid')({
   component: RetakeQuizPage,
@@ -28,43 +30,6 @@ interface Question {
   question_metadata?: Record<string, unknown>
 }
 
-function useStreamFeedback() {
-  const [feedback, setFeedback] = useState('')
-  const [streaming, setStreaming] = useState(false)
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
-  const esRef = useRef<EventSource | null>(null)
-
-  const startStream = useCallback((sessionId: string, questionId: string) => {
-    if (esRef.current) esRef.current.close()
-    setFeedback('')
-    setIsCorrect(null)
-    setStreaming(true)
-    const token = localStorage.getItem('lumina_token')
-    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : ''
-    const es = new EventSource(`/api/v1/stream/feedback/${sessionId}/${questionId}${tokenParam}`)
-    esRef.current = es
-    es.onmessage = (e) => {
-      if (e.data === '[DONE]') { setStreaming(false); es.close(); return }
-      try {
-        const p = JSON.parse(e.data)
-        if (p.type === 'start') setIsCorrect(p.is_correct)
-        else if (p.type === 'token') setFeedback((prev) => prev + p.content)
-        else if (p.type === 'done' || p.type === 'error') { setStreaming(false); es.close() }
-      } catch { /* ignore */ }
-    }
-    es.onerror = () => { setStreaming(false); es.close() }
-  }, [])
-
-  const clearFeedback = useCallback(() => {
-    esRef.current?.close()
-    setFeedback('')
-    setIsCorrect(null)
-    setStreaming(false)
-  }, [])
-
-  useEffect(() => () => esRef.current?.close(), [])
-  return { feedback, streaming, isCorrect, startStream, clearFeedback }
-}
 
 function RetakeQuizPage() {
   const { uuid } = Route.useParams()
@@ -81,7 +46,7 @@ function RetakeQuizPage() {
   const [elapsed, setElapsed] = useState(0)
   const [showFeedback, setShowFeedback] = useState(false)
 
-  const { feedback, streaming, isCorrect, startStream, clearFeedback } = useStreamFeedback()
+  const { feedback, progressMsg, suggestions, score, streaming, isCorrect, startStream, clearFeedback } = useStreamFeedback()
 
   useEffect(() => {
     const t = setInterval(() => setElapsed((s) => s + 1), 1000)
@@ -239,30 +204,16 @@ function RetakeQuizPage() {
       )}
 
       {/* Feedback */}
-      <AnimatePresence>
-        {showFeedback && (
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
-            className={`rounded-[2rem] border p-8 shadow-lg ${isCorrect === true ? 'bg-emerald-50 border-emerald-200' : isCorrect === false ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200'}`}>
-            <div className="flex items-start gap-4">
-              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${isCorrect === true ? 'bg-emerald-500' : isCorrect === false ? 'bg-rose-500' : 'bg-indigo-500'}`}>
-                {isCorrect === true ? <CheckCircle2 className="w-5 h-5 text-white" /> : isCorrect === false ? <XCircle className="w-5 h-5 text-white" /> : <Bot className="w-5 h-5 text-white" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-3">
-                  <p className={`text-xs font-black uppercase tracking-widest ${isCorrect === true ? 'text-emerald-700' : isCorrect === false ? 'text-rose-700' : 'text-indigo-700'}`}>
-                    {isCorrect === true ? 'Correct!' : isCorrect === false ? 'Incorrect' : 'AI Feedback'}
-                  </p>
-                  {streaming && <Loader2 className="w-3 h-3 text-slate-400 animate-spin" />}
-                </div>
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-                  {feedback}
-                  {streaming && <span className="inline-block w-1 h-4 bg-slate-400 animate-pulse ml-0.5 align-middle" />}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AIFeedbackPanel
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        streaming={streaming}
+        progressMsg={progressMsg}
+        feedback={feedback}
+        suggestions={suggestions}
+        score={score}
+        neutralTheme="indigo"
+      />
 
       {/* Navigation */}
       <motion.div variants={item} className="flex items-center justify-between">
