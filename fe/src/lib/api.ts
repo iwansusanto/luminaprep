@@ -72,6 +72,11 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}):
     throw new Error(errorData.detail || errorData.message || errorData.error || `API request failed with status ${response.status}`);
   }
 
+  // 204 No Content — return null, don't try to parse empty body
+  if (response.status === 204) {
+    return null as T;
+  }
+
   return response.json();
 };
 
