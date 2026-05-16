@@ -95,6 +95,7 @@ export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, cl
       alert('An error occurred during upload.');
     } finally {
       setIsUploading(false);
+      e.target.value = '';
     }
   };
 
