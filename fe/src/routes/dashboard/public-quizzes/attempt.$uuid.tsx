@@ -268,7 +268,7 @@ function AttemptPublicQuizPage() {
         feedback={feedback}
         suggestions={suggestions}
         score={score}
-        neutralTheme="violet"
+        neutralTheme="indigo"
       />
 
       {/* Navigation */}

@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useAuth } from '../../../context/AuthContext'
 import { api } from '../../../lib/api'
-import { Skeleton, message, Modal, Dropdown, Menu } from 'antd'
+import { Skeleton, message, Modal, Dropdown } from 'antd'
 import {
   Search,
   Filter,
@@ -379,11 +379,10 @@ function QuizzesPage() {
           const isPublished = publishedQuizIds.has(quizId)
           return (
             <span
-              className={`inline-flex items-center px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${
-                isPublished
+              className={`inline-flex items-center px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${isPublished
                   ? 'bg-violet-50 text-violet-600 border-violet-100'
                   : 'bg-slate-50 text-slate-400 border-slate-100'
-              }`}
+                }`}
             >
               {isPublished ? 'PUBLIC' : 'PRIVATE'}
             </span>
@@ -515,7 +514,7 @@ function QuizzesPage() {
   const avgScore = attemptedQuizzes.length > 0
     ? (attemptedQuizzes.reduce((acc, q) => acc + (q.user_attempts?.score_earned || 0), 0) / attemptedQuizzes.length).toFixed(1)
     : 'N/A'
-  
+
   const totalCorrect = attemptedQuizzes.reduce((acc, q) => acc + (q.user_attempts?.score_correct || 0), 0)
   const totalAttemptedQns = attemptedQuizzes.reduce((acc, q) => acc + (q.user_attempts?.total_questions || 0), 0)
   const accuracy = totalAttemptedQns > 0
