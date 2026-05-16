@@ -7,7 +7,6 @@ import {
   Filter,
   Sparkles,
   Globe,
-  Calendar,
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
 import {
