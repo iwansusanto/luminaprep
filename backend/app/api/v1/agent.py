@@ -54,7 +54,36 @@ async def chat(
     Pass session_id to continue an existing conversation.
     Omit session_id to start a new one.
     """
+    trace = observability.safe_trace(
+        "chatbot-agent",
+        metadata=observability.standard_metadata(
+            "chatbot-agent",
+            user_id=current_user.id,
+            project_id=body.project_id,
+            material_id=body.material_id,
+            quiz_id=body.quiz_id,
+            session_id=body.session_id,
+            attached_material_count=len(body.attached_material_ids or []),
+            history_count=0,
+            mode="stream",
+        ),
+        input={
+            "session_id": body.session_id,
+            "message_preview": _preview(body.message),
+            "project_id": body.project_id,
+            "material_id": body.material_id,
+            "quiz_id": body.quiz_id,
+            "attached_material_ids": body.attached_material_ids or [],
+            "history_count": 0,
+            "mode": "stream",
+        },
+    )
     if body.session_id:
+        load_session_span = observability.span(
+            trace,
+            "load-chat-session",
+            input={"session_id": body.session_id},
+        )
         session = (
             db.query(ChatSession)
             .filter(
@@ -64,7 +93,19 @@ async def chat(
             )
             .first()
         )
+        observability.end_observation(
+            load_session_span,
+            output={"found": bool(session), "session_id": body.session_id},
+        )
         if not session:
+            observability.update_observation(
+                trace,
+                output={
+                    "status": "failed",
+                    "error": "Session not found",
+                    "session_id": body.session_id,
+                },
+            )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Session not found"
             )
@@ -80,6 +121,11 @@ async def chat(
         db.commit()
         db.refresh(session)
 
+    load_history_span = observability.span(
+        trace,
+        "load-chat-history",
+        input={"session_id": session.id},
+    )
     prior = (
         db.query(ChatMessage)
         .filter(ChatMessage.session_id == session.id)
@@ -93,6 +139,10 @@ async def chat(
             history.append({"role": "tool", "tool_call_id": m.id, "content": m.content})
         else:
             history.append({"role": m.role, "content": m.content})
+    observability.end_observation(
+        load_history_span,
+        output={"message_count": len(prior), "history_count": len(history)},
+    )
 
     user_message = body.message
     if body.attached_material_ids:
@@ -106,8 +156,18 @@ async def chat(
     db.add(ChatMessage(session_id=session.id, role="user", content=body.message))
     db.commit()
 
-    trace = observability.safe_trace(
-        "chatbot-agent",
+    persist_user_span = observability.span(
+        trace,
+        "persist-user-message",
+        input={"session_id": session.id},
+    )
+    observability.end_observation(
+        persist_user_span,
+        output={"status": "success", "message_length": len(body.message)},
+    )
+
+    observability.update_observation(
+        trace,
         metadata=observability.standard_metadata(
             "chatbot-agent",
             user_id=current_user.id,
@@ -163,6 +223,7 @@ async def chat(
                     "error": str(e),
                 },
             )
+            observability.flush()
             yield f"data: {__import__('json').dumps({'type': 'error', 'message': str(e)})}\n\n"
             return
 
@@ -170,6 +231,14 @@ async def chat(
         tool_calls = agent.get_tool_calls()
 
         for tc in tool_calls:
+            persist_tool_span = observability.span(
+                trace,
+                "persist-tool-message",
+                input={
+                    "session_id": session.id,
+                    "tool_name": tc.get("tool"),
+                },
+            )
             db.add(
                 ChatMessage(
                     session_id=session.id,
@@ -179,10 +248,23 @@ async def chat(
                     tool_result=tc.get("args"),
                 )
             )
+            observability.end_observation(
+                persist_tool_span,
+                output={"status": "success", "tool_name": tc.get("tool")},
+            )
 
+        persist_assistant_span = observability.span(
+            trace,
+            "persist-assistant-message",
+            input={"session_id": session.id},
+        )
         db.add(ChatMessage(session_id=session.id, role="assistant", content=reply))
         session.updated_at = _now()
         db.commit()
+        observability.end_observation(
+            persist_assistant_span,
+            output={"status": "success", "reply_length": len(reply)},
+        )
 
         observability.update_observation(
             trace,
@@ -193,6 +275,7 @@ async def chat(
                 "tool_calls": len(tool_calls),
             },
         )
+        observability.flush()
 
     return StreamingResponse(
         event_generator(),

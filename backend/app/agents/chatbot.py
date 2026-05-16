@@ -494,13 +494,29 @@ class ChatbotAgent:
             _db=self.db,
         )
 
+    def _trace_span(self, name: str, **kwargs: Any):
+        return observability.span(self.trace, name, **kwargs)
+
     async def chat_stream(
         self,
         history: list[dict],
         user_message: str,
     ) -> AsyncGenerator[str, None]:
+        prompt_span = self._trace_span(
+            "build-system-prompt",
+            input={
+                "project_id": self.project_id,
+                "material_id": self.material_id,
+                "quiz_id": self.quiz_id,
+                "history_count": len(history),
+            },
+        )
         system_prompt = _build_system_prompt(
             self.project_id, self.material_id, self.quiz_id
+        )
+        observability.end_observation(
+            prompt_span,
+            output={"prompt_length": len(system_prompt)},
         )
 
         # Create explicit model settings with empty metadata dict
@@ -532,8 +548,25 @@ class ChatbotAgent:
             f"{history_text}\nUser: {user_message}" if history_text else user_message
         )
 
-        run_span = observability.span(
-            self.trace,
+        prepare_span = self._trace_span(
+            "prepare-chat-input",
+            input={
+                "history_count": len(history),
+                "message_preview": _preview(user_message),
+                "project_id": self.project_id,
+                "material_id": self.material_id,
+                "quiz_id": self.quiz_id,
+            },
+        )
+        observability.end_observation(
+            prepare_span,
+            output={
+                "input_length": len(full_input),
+                "history_count": len(history),
+            },
+        )
+
+        run_span = self._trace_span(
             "run-agent-stream",
             input={
                 "history_count": len(history),
