@@ -19,6 +19,30 @@ class MCQQuestion(BaseModel):
     explanation: str
 
 
+MODEL_NAME = "gpt-4o-mini"
+PROMPT_VERSION = "v1"
+
+
+def _usage_to_dict(response) -> dict | None:
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return None
+    if hasattr(usage, "model_dump"):
+        return usage.model_dump()
+    if isinstance(usage, dict):
+        return usage
+    return {
+        key: getattr(usage, key)
+        for key in ("prompt_tokens", "completion_tokens", "total_tokens")
+        if hasattr(usage, key)
+    }
+
+
+def _preview(text: str, limit: int = 500) -> str:
+    normalized = " ".join(text.split())
+    return normalized[:limit]
+
+
 def _style_instruction(custom_request: str) -> str:
     """Build a style/format instruction line from custom_request."""
     return f"\nGaya/format soal: {custom_request}" if custom_request else ""
@@ -30,6 +54,7 @@ def generate_topics(
     difficulty: str,
     topic: str = "",
     custom_request: str = "",
+    trace=None,
 ) -> list[str]:
     topic_line = f"\nFokus topik: {topic}" if topic else ""
     style_line = _style_instruction(custom_request)
@@ -41,8 +66,22 @@ def generate_topics(
 Buatlah tepat {num_questions} topik spesifik untuk soal pilihan ganda tingkat {difficulty}.
 Satu topik per baris, tanpa penomoran, tanpa bullet."""
 
+    generation = observability.generation(
+        trace,
+        name="generate-topics",
+        model=MODEL_NAME,
+        input_data={
+            "operation": "generate-topics",
+            "prompt_version": PROMPT_VERSION,
+            "difficulty": difficulty,
+            "question_count_requested": num_questions,
+            "topic": topic or None,
+            "custom_request_present": bool(custom_request),
+            "prompt_preview": _preview(user_prompt),
+        },
+    )
     response = oa_client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=MODEL_NAME,
         messages=[
             {
                 "role": "system",
@@ -53,6 +92,13 @@ Satu topik per baris, tanpa penomoran, tanpa bullet."""
         temperature=0.5,
     )
     content = response.choices[0].message.content
+    observability.end_observation(
+        generation,
+        output={
+            "topic_count": len(content.split("\n")) if content else 0,
+            "usage": _usage_to_dict(response),
+        },
+    )
     if not content:
         return []
     return [t.strip() for t in content.split("\n") if t.strip()]
@@ -67,10 +113,22 @@ def get_related_chunks(query: str, collection, n_results: int = 5) -> list[str]:
     return [item for sublist in results["documents"] for item in sublist]
 
 
-def build_complete_summary(chunks: list[str]) -> str:
+def build_complete_summary(chunks: list[str], trace=None, topic: str = "") -> str:
     combined = "\n\n".join(chunks)
+    generation = observability.generation(
+        trace,
+        name="build-complete-summary",
+        model=MODEL_NAME,
+        input_data={
+            "operation": "build-complete-summary",
+            "prompt_version": PROMPT_VERSION,
+            "topic": topic or None,
+            "chunk_count": len(chunks),
+            "context_preview": _preview(combined),
+        },
+    )
     response = oa_client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=MODEL_NAME,
         messages=[
             {
                 "role": "system",
@@ -83,7 +141,15 @@ def build_complete_summary(chunks: list[str]) -> str:
         ],
         temperature=0.3,
     )
-    return response.choices[0].message.content or ""
+    content = response.choices[0].message.content or ""
+    observability.end_observation(
+        generation,
+        output={
+            "summary_length": len(content),
+            "usage": _usage_to_dict(response),
+        },
+    )
+    return content
 
 
 def generate_question(
@@ -92,6 +158,7 @@ def generate_question(
     topic: str = "",
     custom_request: str = "",
     max_retries: int = 3,
+    trace=None,
 ) -> MCQQuestion | None:
     topic_line = f"\nTopik soal: {topic}" if topic else ""
     style_line = _style_instruction(custom_request)
@@ -110,9 +177,23 @@ Jawab HANYA dengan JSON valid:
 }}"""
 
     for attempt in range(max_retries):
+        generation = observability.generation(
+            trace,
+            name="generate-question",
+            model=MODEL_NAME,
+            input_data={
+                "operation": "generate-question",
+                "prompt_version": PROMPT_VERSION,
+                "difficulty": difficulty,
+                "topic": topic or None,
+                "attempt": attempt + 1,
+                "custom_request_present": bool(custom_request),
+                "prompt_preview": _preview(user_prompt),
+            },
+        )
         try:
             response = oa_client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=MODEL_NAME,
                 messages=[
                     {
                         "role": "system",
@@ -124,6 +205,10 @@ Jawab HANYA dengan JSON valid:
             )
             content = response.choices[0].message.content
             if not content:
+                observability.end_observation(
+                    generation,
+                    output={"valid": False, "reason": "empty response"},
+                )
                 continue
 
             # Strip markdown fences
@@ -140,13 +225,26 @@ Jawab HANYA dengan JSON valid:
             labels = ["A", "B", "C", "D", "E"]
             options_dict = {labels[i]: opt for i, opt in enumerate(options_list)}
 
-            return MCQQuestion(
+            question = MCQQuestion(
                 question=data["question"],
                 correct_answer=data["correct_answer"],
                 options=options_dict,
                 explanation=data["explanation"],
             )
-        except (json.JSONDecodeError, KeyError, TypeError):
+            observability.end_observation(
+                generation,
+                output={
+                    "valid": True,
+                    "option_count": len(options_dict),
+                    "usage": _usage_to_dict(response),
+                },
+            )
+            return question
+        except (json.JSONDecodeError, KeyError, TypeError) as exc:
+            observability.end_observation(
+                generation,
+                output={"valid": False, "error": str(exc)},
+            )
             if attempt == max_retries - 1:
                 return None
     return None
@@ -157,6 +255,7 @@ def generate_single_question_for_topic(
     difficulty: str,
     collection,
     custom_request: str = "",
+    trace=None,
 ) -> MCQQuestion | None:
     try:
         # Use topic as the ChromaDB search query for more relevant chunks
@@ -164,10 +263,16 @@ def generate_single_question_for_topic(
         chunks = get_related_chunks(search_query, collection)
         if not chunks:
             return None
-        summary = build_complete_summary(chunks)
+        summary = build_complete_summary(chunks, trace=trace, topic=topic)
         if not summary:
             return None
-        return generate_question(summary, difficulty, topic=topic, custom_request=custom_request)
+        return generate_question(
+            summary,
+            difficulty,
+            topic=topic,
+            custom_request=custom_request,
+            trace=trace,
+        )
     except Exception:
         return None
 
@@ -242,8 +347,9 @@ def _run_task_body(
         topics_span = observability.span(trace, "generate-topics")
         topics = generate_topics(
             num_questions, summary, difficulty,
-            topic=topic, custom_request=custom_request,
+            topic=topic, custom_request=custom_request, trace=trace,
         )
+        topics = topics[:num_questions]
         observability.end_observation(
             topics_span,
             output={"topic_count": len(topics), "topics": topics[:10]},
@@ -258,6 +364,8 @@ def _run_task_body(
 
         questions = []
         for t in topics:
+            if len(questions) >= num_questions:
+                break
             topic_span = observability.span(
                 trace,
                 "topic-loop",
@@ -288,7 +396,7 @@ def _run_task_body(
                     "build-complete-summary",
                     metadata={"topic": t},
                 )
-                complete_summary = build_complete_summary(chunks)
+                complete_summary = build_complete_summary(chunks, trace=trace, topic=t)
                 observability.end_observation(
                     summary_span,
                     output={
@@ -308,13 +416,14 @@ def _run_task_body(
                 question_span = observability.span(
                     trace,
                     "generate-question",
-                    metadata={"topic": t, "model": "gpt-4o-mini"},
+                    metadata={"topic": t, "model": MODEL_NAME},
                 )
                 q = generate_question(
                     complete_summary,
                     difficulty,
                     topic=t,
                     custom_request=custom_request,
+                    trace=trace,
                 )
                 observability.end_observation(
                     question_span,
