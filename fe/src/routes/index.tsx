@@ -4,7 +4,7 @@ import {
   ArrowRight,
   FileText,
   Brain,
-  BarChart,
+  BarChart3,
   Zap,
   ChevronRight
 } from 'lucide-react'
@@ -199,7 +199,7 @@ function LandingPage() {
               >
                 <div className="flex items-start gap-4 mb-4">
                   <div className="w-10 h-10 bg-white border border-[#E4E4E7] rounded-lg flex items-center justify-center flex-shrink-0">
-                    <BarChart className="w-5 h-5 text-[#09090B]" />
+                    <BarChart3 className="w-5 h-5 text-[#09090B]" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-[#09090B] mb-1">Progress Analytics</h3>
