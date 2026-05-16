@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     langfuse_secret_key: str = ""
     langfuse_host: str = "https://langprep.luminaprep.my.id"
     langfuse_enabled: bool = False
+    langfuse_environment: str = "development"
 
 
 settings = Settings()  # type: ignore
