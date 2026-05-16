@@ -144,7 +144,7 @@ function AttemptPublicQuizPage() {
         })
       } catch { /* ignore */ }
       message.success('Quiz completed!')
-      navigate({ to: '/dashboard/public-quizzes' })
+      navigate({ to: '/dashboard/quizzes/result/$sessionId', params: { sessionId: sessionData.session_id } })
     }
   }
 

@@ -65,6 +65,7 @@ type Quiz = {
   updated_at: string
   project_id: string
   material_id: string | null
+  is_owner: boolean
   material: {
     id: string
     file_name: string
@@ -117,7 +118,7 @@ function QuizzesPage() {
       if (!silent) setLoading(true)
       try {
         const [quizzesData, materialsData, publicQuizzesData] = await Promise.all([
-          api.get<Quiz[]>(`/quizzes/projects/${projectId}/quizzes`),
+          api.get<Quiz[]>('/quizzes/my'),
           api.get<{ materials: Material[] }>(`/materials/project/${projectId}`),
           api.get<Array<{ quiz_id: string }>>('/public_quizzes'),
         ])
@@ -135,12 +136,10 @@ function QuizzesPage() {
         setQuizzes(newQuizzes)
         setMaterials(Array.isArray(materialsData.materials) ? materialsData.materials : [])
 
-        // Build set of published quiz IDs — filter to only user's own quizzes
-        const userQuizIds = new Set(newQuizzes.map(q => q.id))
+        // Build set of published quiz IDs — only owner quizzes can be published/unpublished
         const published = new Set(
           publicQuizzesData
             .map((pq) => pq.quiz_id)
-            .filter((id) => userQuizIds.has(id))
         )
         setPublishedQuizIds(published)
       } catch (error) {
@@ -167,9 +166,9 @@ function QuizzesPage() {
 
   const handleDeleteQuiz = (quiz: Quiz, index: number) => {
     Modal.confirm({
-      title: 'Delete Quiz',
-      content: `Are you sure you want to delete Quiz #${index + 1}? This cannot be undone.`,
-      okText: 'Delete',
+      title: 'Remove Quiz',
+      content: `This will remove the quiz from your view only${quiz.is_owner ? '. Other users who have taken this quiz will still see it.' : '.'}`,
+      okText: 'Remove',
       okType: 'danger',
       cancelText: 'Cancel',
       centered: true,
@@ -177,9 +176,9 @@ function QuizzesPage() {
         try {
           await api.delete(`/quizzes/${quiz.id}`)
           setQuizzes((prev) => prev.filter((q) => q.id !== quiz.id))
-          message.success('Quiz deleted successfully')
+          message.success('Quiz removed from your list')
         } catch (err: any) {
-          message.error(err.message || 'Failed to delete quiz')
+          message.error(err.message || 'Failed to remove quiz')
         }
       },
     })
@@ -334,8 +333,15 @@ function QuizzesPage() {
         id: 'visibility',
         header: 'Visibility',
         cell: (info) => {
-          const quizId = info.row.original.id
-          const isPublished = publishedQuizIds.has(quizId)
+          const quiz = info.row.original
+          if (!quiz.is_owner) {
+            return (
+              <span className="inline-flex items-center px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border bg-sky-50 text-sky-600 border-sky-100">
+                SHARED
+              </span>
+            )
+          }
+          const isPublished = publishedQuizIds.has(quiz.id)
           return (
             <span
               className={`inline-flex items-center px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${isPublished
@@ -418,13 +424,13 @@ function QuizzesPage() {
                 trigger={['click']}
                 menu={{
                   items: [
-                    {
+                    ...(quiz.is_owner ? [{
                       key: 'publish',
                       label: publishedQuizIds.has(quiz.id) ? '🌐 Unpublish' : '🌐 Publish',
                       onClick: () => publishedQuizIds.has(quiz.id)
                         ? handleUnpublishQuiz(quiz.id)
                         : handlePublishQuiz(quiz.id),
-                    },
+                    }] : []),
                     {
                       key: 'refresh',
                       icon: <RefreshCw className="w-3.5 h-3.5" />,
@@ -434,7 +440,7 @@ function QuizzesPage() {
                     {
                       key: 'delete',
                       icon: <Trash2 className="w-3.5 h-3.5" />,
-                      label: 'Delete Quiz',
+                      label: 'Remove from My Quiz',
                       danger: true,
                       onClick: () => handleDeleteQuiz(quiz, idx),
                     },

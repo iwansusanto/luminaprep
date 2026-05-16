@@ -159,6 +159,11 @@ def start_public_quiz_session(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Failed to create quiz session",
             )
+
+        # Add user_quiz association for the taker (so quiz appears in their My Quiz)
+        from app.crud.user_quiz import add_user_quiz
+        add_user_quiz(db=db, user_id=current_user.id, quiz_id=quiz_id, is_owner=False)
+
         return quiz_session
     except HTTPException:
         raise

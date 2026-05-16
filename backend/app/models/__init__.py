@@ -7,6 +7,7 @@ from .quiz_session import QuizSession, QuizSessionCreate, QuizSessionRead, QuizS
 from .user_attempt import UserAttempt, UserAttemptCreate, UserAttemptRead, UserAttemptUpdate
 from .agent_metric import AgentMetric, AgentMetricCreate, AgentMetricRead, AgentMetricUpdate
 from .chat import ChatSession, ChatMessage
+from .user_quiz import UserQuiz
 
 __all__ = [
     "User", "UserCreate", "UserRead", "UserLogin",
@@ -18,4 +19,5 @@ __all__ = [
     "UserAttempt", "UserAttemptCreate", "UserAttemptRead", "UserAttemptUpdate",
     "AgentMetric", "AgentMetricCreate", "AgentMetricRead", "AgentMetricUpdate",
     "ChatSession", "ChatMessage",
+    "UserQuiz",
 ]

@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session, selectinload
 from app.models.quiz import Quiz
 from app.models.project import Project
+from app.models.user_quiz import UserQuiz
 from typing import List, Optional
 
 
@@ -40,21 +41,42 @@ def create_quiz(
     db.add(quiz)
     db.commit()
     db.refresh(quiz)
+
+    # Add owner to user_quizzes
+    user_quiz = UserQuiz(
+        user_id=user_id,
+        quiz_id=quiz.id,
+        is_owner=True,
+    )
+    db.add(user_quiz)
+    db.commit()
+
     return quiz
 
 
 def get_quiz_by_id(db: Session, quiz_id: str, user_id: str) -> Optional[Quiz]:
-    """Get quiz by ID with user verification."""
+    """Get quiz by ID with user verification (project ownership OR user_quiz association)."""
     try:
+        # Check both project ownership and user_quiz association
         quiz = (
             db.query(Quiz)
             .join(Project)
             .options(selectinload(Quiz.material))
             .filter(
                 Quiz.id == quiz_id,
-                Project.user_id == user_id,
                 Quiz.deleted_at.is_(None),
                 Project.deleted_at.is_(None),
+            )
+            .filter(
+                (Project.user_id == user_id)
+                | (
+                    Quiz.id.in_(
+                        db.query(UserQuiz.quiz_id).filter(
+                            UserQuiz.user_id == user_id,
+                            UserQuiz.deleted_at.is_(None),
+                        )
+                    )
+                )
             )
             .first()
         )
@@ -103,18 +125,38 @@ def update_quiz(
     return quiz
 
 
+def get_my_quizzes(db: Session, user_id: str) -> List[Quiz]:
+    """Get all quizzes for a user via user_quiz associations."""
+    quiz_ids = (
+        db.query(UserQuiz.quiz_id)
+        .filter(
+            UserQuiz.user_id == user_id,
+            UserQuiz.deleted_at.is_(None),
+        )
+        .subquery()
+    )
+    return (
+        db.query(Quiz)
+        .options(selectinload(Quiz.material))
+        .filter(
+            Quiz.id.in_(quiz_ids),
+            Quiz.deleted_at.is_(None),
+        )
+        .order_by(Quiz.created_at.desc())
+        .all()
+    )
+
+
 def delete_quiz(db: Session, quiz_id: str, user_id: str) -> Optional[Quiz]:
-    """Soft-delete a quiz."""
-    quiz = db.query(Quiz).filter(
-        Quiz.id == quiz_id,
-        Quiz.project.has(Project.user_id == user_id),
-        Quiz.deleted_at.is_(None),
-    ).first()
-    if not quiz:
+    """Remove quiz from user's view (soft-delete user_quiz association).
+    The actual quiz record is kept for other users who have access."""
+    from app.crud.user_quiz import remove_user_quiz
+
+    removed = remove_user_quiz(db, user_id, quiz_id)
+    if not removed:
         return None
-    quiz.deleted_at = _now()
-    db.commit()
-    db.refresh(quiz)
+    # Return the quiz object for the endpoint response
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
     return quiz
 
 

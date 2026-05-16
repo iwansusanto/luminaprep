@@ -193,7 +193,7 @@ def get_quiz_session_questions(
         )
 
     try:
-        questions = get_questions_by_quiz(db, quiz_session.quiz_id, current_user.id)
+        questions = get_questions_by_quiz(db, quiz_session.quiz_id)
     except Exception as e:
         print(f"Error getting questions: {e}")
         questions = []

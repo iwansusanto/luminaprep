@@ -8,6 +8,7 @@ from app.crud.quiz import (
     create_quiz,
     get_quiz_by_id,
     get_quizzes_by_project,
+    get_my_quizzes,
     delete_quiz,
 )
 from app.crud.question import get_questions_by_quiz
@@ -24,6 +25,7 @@ from app.schemas.quiz import (
 from app.models.quiz_session import QuizSession, QuizSessionRead
 from app.api.deps import get_current_active_user
 from app.models.user import User
+from app.models.user_quiz import UserQuiz
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -196,6 +198,94 @@ def get_project_quizzes(
             
         result.append(quiz_dict)
         
+    return result
+
+
+@router.get("/my")
+def get_my_quiz_list(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Get all quizzes for the current user (via user_quiz associations)."""
+    from app.models.quiz_session import QuizSession
+    from app.models.user_attempt import UserAttempt
+
+    quizzes = get_my_quizzes(db, current_user.id)
+
+    if not quizzes:
+        return []
+
+    # Get is_owner status for each quiz
+    user_quiz_rows = {
+        uq.quiz_id: uq.is_owner
+        for uq in db.query(UserQuiz).filter(
+            UserQuiz.user_id == current_user.id,
+            UserQuiz.quiz_id.in_([q.id for q in quizzes]),
+            UserQuiz.deleted_at.is_(None),
+        ).all()
+    }
+
+    quiz_ids = [q.id for q in quizzes]
+
+    # Group user_attempts by quiz_session_id and quiz_id
+    attempts_agg = db.query(
+        UserAttempt.quiz_id,
+        UserAttempt.quiz_session_id,
+        QuizSession.status.label("status_session"),
+        func.count(UserAttempt.id).label("total_questions"),
+        func.sum(case((UserAttempt.is_correct == True, 1), else_=0)).label("score_correct"),
+        func.sum(UserAttempt.score_earned).label("score_earned")
+    ).outerjoin(
+        QuizSession, UserAttempt.quiz_session_id == QuizSession.id
+    ).filter(
+        UserAttempt.quiz_id.in_(quiz_ids),
+        UserAttempt.quiz_session_id.isnot(None)
+    ).group_by(
+        UserAttempt.quiz_id,
+        UserAttempt.quiz_session_id,
+        QuizSession.status
+    ).order_by(
+        func.max(UserAttempt.created_at).desc()
+    ).all()
+
+    attempts_by_quiz = {qid: [] for qid in quiz_ids}
+    for row in attempts_agg:
+        attempts_by_quiz[row.quiz_id].append({
+            "quiz_id": row.quiz_id,
+            "quiz_session_id": row.quiz_session_id,
+            "score_correct": int(row.score_correct or 0),
+            "score_earned": float(row.score_earned or 0.0),
+            "total_questions": int(row.total_questions or 0),
+            "status_session": row.status_session
+        })
+
+    result = []
+    for quiz in quizzes:
+        quiz_dict = quiz.model_dump()
+        attempts = attempts_by_quiz.get(quiz.id, [])
+        first_attempt = attempts[0] if attempts else None
+        quiz_dict["user_attempts"] = first_attempt
+        quiz_dict["material_id"] = quiz.material_id
+        quiz_dict["is_owner"] = user_quiz_rows.get(quiz.id, False)
+        if quiz.material:
+            quiz_dict["material"] = {
+                "id": quiz.material.id,
+                "file_name": quiz.material.file_name,
+                "summary": quiz.material.summary,
+                "citations": quiz.material.citations
+            }
+        else:
+            quiz_dict["material"] = None
+
+        if first_attempt:
+            status_session = first_attempt.get("status_session")
+            if status_session == "completed" and quiz_dict["status"] != "finish":
+                quiz_dict["status"] = "finish"
+            elif status_session == "active" and quiz_dict["status"] != "draft":
+                quiz_dict["status"] = "continue"
+
+        result.append(quiz_dict)
+
     return result
 
 
