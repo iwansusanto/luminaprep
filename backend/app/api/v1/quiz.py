@@ -176,6 +176,15 @@ def get_project_quizzes(
         first_attempt = attempts[0] if attempts else None
         quiz_dict["user_attempts"] = first_attempt
         quiz_dict["material_id"] = quiz.material_id
+        if quiz.material:
+            quiz_dict["material"] = {
+                "id": quiz.material.id,
+                "file_name": quiz.material.file_name,
+                "summary": quiz.material.summary,
+                "citations": quiz.material.citations
+            }
+        else:
+            quiz_dict["material"] = None
 
         # Dynamically set quiz status to finish or draft in response based on session status
         if first_attempt:
