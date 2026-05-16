@@ -24,8 +24,13 @@ from app.schemas.chat import (
     ChatMessageRead,
 )
 from app.agents.chatbot import ChatbotAgent
+from app.utils import langfuse_client as observability
 
 router = APIRouter()
+
+
+def _preview(text: str, limit: int = 500) -> str:
+    return " ".join(text.split())[:limit]
 
 
 def _now():
@@ -101,21 +106,63 @@ async def chat(
     db.add(ChatMessage(session_id=session.id, role="user", content=body.message))
     db.commit()
 
+    trace = observability.safe_trace(
+        "chatbot-agent",
+        metadata=observability.standard_metadata(
+            "chatbot-agent",
+            user_id=current_user.id,
+            project_id=session.project_id,
+            material_id=session.material_id,
+            quiz_id=session.quiz_id,
+            session_id=session.id,
+            attached_material_count=len(body.attached_material_ids or []),
+            history_count=len(history),
+            mode="stream",
+        ),
+        input={
+            "session_id": session.id,
+            "message_preview": _preview(body.message),
+            "project_id": session.project_id,
+            "material_id": session.material_id,
+            "quiz_id": session.quiz_id,
+            "attached_material_ids": body.attached_material_ids or [],
+            "history_count": len(history),
+            "mode": "stream",
+        },
+    )
+
     agent = ChatbotAgent(
         db=db,
         user_id=current_user.id,
         project_id=session.project_id,
         material_id=session.material_id,
         quiz_id=session.quiz_id,
+        trace=trace,
     )
 
     async def event_generator():
         try:
+            observability.update_observation(
+                trace,
+                output={
+                    "status": "streaming",
+                    "session_id": session.id,
+                    "message_preview": _preview(body.message),
+                },
+            )
             async for chunk in agent.chat_stream(
                 history=history, user_message=user_message
             ):
                 yield chunk
         except Exception as e:
+            observability.update_observation(
+                trace,
+                output={
+                    "status": "failed",
+                    "session_id": session.id,
+                    "error": str(e),
+                },
+            )
             yield f"data: {__import__('json').dumps({'type': 'error', 'message': str(e)})}\n\n"
             return
 
@@ -136,6 +183,16 @@ async def chat(
         db.add(ChatMessage(session_id=session.id, role="assistant", content=reply))
         session.updated_at = _now()
         db.commit()
+
+        observability.update_observation(
+            trace,
+            output={
+                "status": "completed",
+                "session_id": session.id,
+                "reply_length": len(reply),
+                "tool_calls": len(tool_calls),
+            },
+        )
 
     return StreamingResponse(
         event_generator(),

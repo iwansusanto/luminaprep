@@ -18,6 +18,7 @@ from app.models.quiz import Quiz
 from app.models.project import Project
 from app.models.material import Material
 from app.models.question import Question
+from app.utils import langfuse_client as observability
 from app.utils.sanitize import sanitize_prompt_field
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,7 @@ class ChatbotContext:
     project_id: Optional[str] = None
     material_id: Optional[str] = None
     quiz_id: Optional[str] = None
+    trace: Any = field(default=None, repr=False, compare=False)
     _db: Any = field(default=None, repr=False, compare=False)
 
     @property
@@ -406,6 +408,10 @@ def web_search(ctx: RunContextWrapper[ChatbotContext], query: str) -> dict:
         return {"found": False, "error": str(e), "query": query}
 
 
+def _preview(text: str, limit: int = 500) -> str:
+    return " ".join(text.split())[:limit]
+
+
 def _build_system_prompt(
     project_id: Optional[str],
     material_id: Optional[str],
@@ -466,12 +472,14 @@ class ChatbotAgent:
         project_id: Optional[str] = None,
         material_id: Optional[str] = None,
         quiz_id: Optional[str] = None,
+        trace: Any = None,
     ):
         self.db = db
         self.user_id = user_id
         self.project_id = project_id
         self.material_id = material_id
         self.quiz_id = quiz_id
+        self.trace = trace
         self._final_response: str = ""
         self._tool_calls: list[dict] = []
         self._tool_results: list[dict] = []
@@ -482,6 +490,7 @@ class ChatbotAgent:
             project_id=self.project_id,
             material_id=self.material_id,
             quiz_id=self.quiz_id,
+            trace=self.trace,
             _db=self.db,
         )
 
@@ -523,61 +532,143 @@ class ChatbotAgent:
             f"{history_text}\nUser: {user_message}" if history_text else user_message
         )
 
+        run_span = observability.span(
+            self.trace,
+            "run-agent-stream",
+            input={
+                "history_count": len(history),
+                "message_preview": _preview(user_message),
+                "project_id": self.project_id,
+                "material_id": self.material_id,
+                "quiz_id": self.quiz_id,
+            },
+        )
+        tool_spans: dict[str, Any] = {}
         runner = Runner.run_streamed(
             agent,
             input=full_input,
             context=self._build_context(),
         )
 
-        async for event in runner.stream_events():
-            if event.type == "raw_response_event":
-                if hasattr(event.data, "delta") and event.data.delta:
-                    self._final_response += event.data.delta
-                    yield f"data: {json.dumps({'type': 'text_delta', 'delta': event.data.delta})}\n\n"
-
-            elif event.type == "run_item_stream_event":
-                if event.name == "tool_called":
-                    if hasattr(event.item, "raw_item") and hasattr(
-                        event.item.raw_item, "name"
-                    ):
-                        tool_name = event.item.raw_item.name
-                        arguments = getattr(event.item.raw_item, "arguments", "{}")
-                        tool_call_id = getattr(event.item.raw_item, "id", None)
-
-                        self._tool_calls.append(
-                            {"tool": tool_name, "args": arguments, "id": tool_call_id}
+        try:
+            async for event in runner.stream_events():
+                if event.type == "raw_response_event":
+                    if hasattr(event.data, "delta") and event.data.delta:
+                        self._final_response += event.data.delta
+                        yield (
+                            f"data: {json.dumps({'type': 'text_delta', 'delta': event.data.delta})}\n\n"
                         )
 
-                        yield f"data: {json.dumps({'type': 'tool_call', 'tool_name': tool_name, 'tool_call_id': tool_call_id, 'argument': arguments})}\n\n"
+                elif event.type == "run_item_stream_event":
+                    if event.name == "tool_called":
+                        if hasattr(event.item, "raw_item") and hasattr(
+                            event.item.raw_item, "name"
+                        ):
+                            tool_name = event.item.raw_item.name
+                            arguments = getattr(event.item.raw_item, "arguments", "{}")
+                            tool_call_id = getattr(event.item.raw_item, "id", None)
 
-                        logger.info(f"Tool called: {tool_name} with args: {arguments}")
+                            self._tool_calls.append(
+                                {"tool": tool_name, "args": arguments, "id": tool_call_id}
+                            )
 
-                # Capture tool results
-                elif event.name == "tool_result":
-                    if hasattr(event.item, "raw_item"):
-                        tool_call_id = getattr(
-                            event.item.raw_item, "tool_call_id", None
-                        )
-                        result = getattr(event.item.raw_item, "content", None)
+                            tool_spans[tool_call_id] = observability.span(
+                                self.trace,
+                                f"tool-call:{tool_name}",
+                                input={
+                                    "tool_name": tool_name,
+                                    "tool_call_id": tool_call_id,
+                                    "arguments_preview": _preview(
+                                        arguments if isinstance(arguments, str) else str(arguments)
+                                    ),
+                                },
+                            )
 
-                        # Parse result if it's a string
-                        try:
-                            if isinstance(result, str):
-                                result_data = json.loads(result)
-                            else:
-                                result_data = result
-                        except (json.JSONDecodeError, TypeError):
-                            result_data = {"raw": str(result)}
+                            yield (
+                                f"data: {json.dumps({'type': 'tool_call', 'tool_name': tool_name, 'tool_call_id': tool_call_id, 'argument': arguments})}\n\n"
+                            )
 
-                        self._tool_results.append(
-                            {"tool_call_id": tool_call_id, "result": result_data}
-                        )
+                            logger.info(f"Tool called: {tool_name} with args: {arguments}")
 
-                        yield f"data: {json.dumps({'type': 'tool_result', 'tool_call_id': tool_call_id, 'result': result_data})}\n\n"
+                    elif event.name == "tool_result":
+                        if hasattr(event.item, "raw_item"):
+                            tool_call_id = getattr(
+                                event.item.raw_item, "tool_call_id", None
+                            )
+                            result = getattr(event.item.raw_item, "content", None)
 
-                        logger.info(f"Tool result for {tool_call_id}: {result_data}")
+                            try:
+                                if isinstance(result, str):
+                                    result_data = json.loads(result)
+                                else:
+                                    result_data = result
+                            except (json.JSONDecodeError, TypeError):
+                                result_data = {"raw": str(result)}
 
-        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+                            self._tool_results.append(
+                                {"tool_call_id": tool_call_id, "result": result_data}
+                            )
+
+                            observability.end_observation(
+                                tool_spans.pop(tool_call_id, None),
+                                output={
+                                    "tool_call_id": tool_call_id,
+                                    "result_preview": _preview(
+                                        json.dumps(result_data, ensure_ascii=False)
+                                    ),
+                                },
+                            )
+
+                            yield (
+                                f"data: {json.dumps({'type': 'tool_result', 'tool_call_id': tool_call_id, 'result': result_data})}\n\n"
+                            )
+
+                            logger.info(f"Tool result for {tool_call_id}: {result_data}")
+
+            observability.end_observation(
+                run_span,
+                output={
+                    "status": "success",
+                    "response_length": len(self._final_response),
+                    "tool_calls": len(self._tool_calls),
+                    "tool_results": len(self._tool_results),
+                },
+            )
+            if self.trace:
+                observability.update_observation(
+                    self.trace,
+                    output={
+                        "status": "success",
+                        "response_length": len(self._final_response),
+                        "tool_calls": len(self._tool_calls),
+                        "tool_results": len(self._tool_results),
+                    },
+                )
+
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+        except Exception as exc:
+            observability.end_observation(
+                run_span,
+                output={
+                    "status": "failed",
+                    "error": str(exc),
+                    "response_length": len(self._final_response),
+                    "tool_calls": len(self._tool_calls),
+                    "tool_results": len(self._tool_results),
+                },
+            )
+            if self.trace:
+                observability.update_observation(
+                    self.trace,
+                    output={
+                        "status": "failed",
+                        "error": str(exc),
+                        "response_length": len(self._final_response),
+                        "tool_calls": len(self._tool_calls),
+                        "tool_results": len(self._tool_results),
+                    },
+                )
+            raise
 
     def get_final_response(self) -> str:
         return self._final_response

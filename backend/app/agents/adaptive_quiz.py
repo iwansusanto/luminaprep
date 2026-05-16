@@ -2,8 +2,7 @@ from typing import Literal
 from app.agents.mcq_quiz import MCQQuestion, MCQQuizAgent
 from app.vector_db.collections import chromadb_collections
 from app.agents.exceptions import QuizGenerationError, VectorDBError
-from app.utils.langfuse_client import langfuse
-from app.core.config import settings
+from app.utils import langfuse_client as observability
 
 
 DIFFICULTY_QUERIES = {
@@ -49,17 +48,30 @@ class AdaptiveQuizAgent:
         difficulty: Literal["easy", "medium", "hard"],
         num_questions: int,
     ) -> list[MCQQuestion]:
-        trace = None
-        if settings.langfuse_enabled:
-            trace = langfuse.trace(
-                name="generate_adaptive_quiz",
-                metadata={
+        trace = observability.safe_trace(
+            "generate_adaptive_quiz",
+            metadata=observability.standard_metadata(
+                "generate_adaptive_quiz",
+                material_id=material_id,
+                difficulty=difficulty,
+                num_questions=num_questions,
+            ),
+            input={
+                "material_id": material_id,
+                "difficulty": difficulty,
+                "num_questions": num_questions,
+            },
+        )
+        try:
+            retrieve_span = observability.span(
+                trace,
+                "retrieve-difficulty-context",
+                input={
                     "material_id": material_id,
                     "difficulty": difficulty,
-                    "num_questions": num_questions,
+                    "n_results": 10,
                 },
             )
-        try:
             context_query = self._get_difficulty_query(difficulty, material_id)
             results = self.collection.query(
                 query_texts=[context_query],
@@ -72,25 +84,75 @@ class AdaptiveQuizAgent:
                 or not results.get("documents")
                 or not results["documents"][0]
             ):
+                observability.end_observation(
+                    retrieve_span,
+                    output={"status": "empty", "material_id": material_id},
+                )
+                observability.update_observation(
+                    trace,
+                    output={
+                        "status": "failed",
+                        "error": f"No content found for material {material_id}",
+                    },
+                )
                 raise QuizGenerationError(
                     f"No content found for material {material_id}"
                 )
 
-            summary_for_quiz = "\n\n".join(results["documents"][0])
+            observability.end_observation(
+                retrieve_span,
+                output={"status": "success", "chunk_count": len(results["documents"][0])},
+            )
 
+            summary_span = observability.span(
+                trace,
+                "build-adaptive-summary",
+                input={
+                    "difficulty": difficulty,
+                    "material_id": material_id,
+                    "chunk_count": len(results["documents"][0]),
+                },
+            )
+            summary_for_quiz = "\n\n".join(results["documents"][0])
+            observability.end_observation(
+                summary_span,
+                output={"summary_length": len(summary_for_quiz)},
+            )
+
+            generation_span = observability.span(
+                trace,
+                "generate-adaptive-questions",
+                input={
+                    "difficulty": difficulty,
+                    "num_questions": num_questions,
+                    "summary_preview": summary_for_quiz[:500],
+                },
+            )
             questions = self.mcq_quiz_agent.generate_quiz(
                 num_questions=num_questions,
                 summary=summary_for_quiz,
                 difficulty=difficulty,
             )
 
-            if trace:
-                trace.update(output={"question_count": len(questions)})
+            observability.end_observation(
+                generation_span,
+                output={"question_count": len(questions)},
+            )
+            observability.update_observation(
+                trace,
+                output={
+                    "status": "success",
+                    "question_count": len(questions),
+                    "difficulty": difficulty,
+                },
+            )
             return questions
 
         except QuizGenerationError:
             raise
         except Exception as e:
-            if trace:
-                trace.update(output={"status": "error", "error": str(e)})
+            observability.update_observation(
+                trace,
+                output={"status": "error", "error": str(e)},
+            )
             raise QuizGenerationError(f"Failed to generate adaptive quiz: {str(e)}")
