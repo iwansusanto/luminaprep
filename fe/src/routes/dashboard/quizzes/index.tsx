@@ -25,6 +25,7 @@ import {
 } from '@tanstack/react-table'
 import { DataTable } from '../../../components/dashboard/DataTable'
 import { QuizGenerationDrawer } from '../../../components/dashboard/QuizGenerationDrawer'
+import { ScoreQuiz } from '../../../components/dashboard/ScoreQuiz'
 
 interface Material {
   id: string
@@ -237,7 +238,7 @@ function QuizzesPage() {
     () => [
       columnHelper.display({
         id: 'name',
-        header: 'Quiz Name',
+        header: 'Quiz Info',
         cell: (info) => (
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500">
@@ -249,9 +250,15 @@ function QuizzesPage() {
                   ? info.row.original.material.file_name.replace(/\.[^/.]+$/, '') // strip extension
                   : `Quiz #${info.row.index + 1}`}
               </p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                {info.row.original.question_count} Questions
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  {info.row.original.question_count} Questions
+                </p>
+                <span className="w-1 h-1 bg-slate-200 rounded-full" />
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  {new Date(info.row.original.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
             </div>
           </div>
         ),
@@ -260,67 +267,26 @@ function QuizzesPage() {
         header: 'Complexity',
         cell: (info) => {
           const val = complexityMap[info.getValue() as keyof typeof complexityMap] || 'Intermediate'
+          const quiz = info.row.original
+          const attempts = quiz.user_attempts
           const colors = {
             Beginner: 'bg-emerald-50 text-emerald-600 border-emerald-100',
             Intermediate: 'bg-amber-50 text-amber-600 border-amber-100',
             Mastery: 'bg-rose-50 text-rose-600 border-rose-100',
           }
           return (
-            <span
-              className={`inline-flex items-center px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${colors[val]}`}
-            >
-              {val}
-            </span>
-          )
-        },
-      }),
-      columnHelper.display({
-        id: 'score',
-        header: 'Score',
-        cell: (info) => {
-          const quiz = info.row.original
-          const attempts = quiz.user_attempts
-          if (attempts && attempts.score_correct !== undefined) {
-            const pct = Math.round((attempts.score_correct / quiz.question_count) * 100)
-            const isGood = pct >= 80
-            const isAvg = pct >= 50 && pct < 80
-            const colorClass = isGood ? 'text-emerald-600' : isAvg ? 'text-amber-600' : 'text-rose-600'
-            const bgClass = isGood ? 'bg-emerald-500' : isAvg ? 'bg-amber-500' : 'bg-rose-500'
-
-            return (
-              <div className="flex flex-col gap-1.5 min-w-[120px]">
-                <div className="flex items-end justify-between gap-2">
-                  <span className={`text-lg font-black leading-none ${colorClass}`}>
-                    {pct}%
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
-                    {attempts.score_correct} / {quiz.question_count}
-                  </span>
-                </div>
-                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${pct}%` }}
-                    transition={{ duration: 1, ease: "easeOut" }}
-                    className={`h-full rounded-full ${bgClass}`}
-                  />
-                </div>
+            <div className='flex flex-col space-y-2'>
+              <div
+                className={`inline-flex items-center px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${colors[val]}`}
+              >
+                {val}
               </div>
-            )
-          }
-          return <span className="text-sm font-medium text-slate-300">—</span>
-        },
-      }),
-      columnHelper.accessor('created_at', {
-        header: 'Created At',
-        cell: (info) => {
-          const date = new Date(info.getValue())
-          return (
-            <div className="flex flex-col">
-              <span className="text-sm font-bold text-slate-700">{date.toLocaleDateString()}</span>
-              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
-                {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
+              {attempts && attempts.score_correct !== undefined && (
+                <ScoreQuiz
+                  scoreCorrect={attempts.score_correct}
+                  totalQuestions={quiz.question_count}
+                />
+              )}
             </div>
           )
         },
