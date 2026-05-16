@@ -101,7 +101,7 @@ function LoginPage() {
                 {/* Header */}
                 <div>
                   <h1 className="text-2xl font-semibold tracking-tight mb-2 text-[#09090B]">
-                    Get Started Free
+                    Continue with Google
                   </h1>
                   <p className="text-sm text-[#71717A]">
                     Transform your learning materials into interactive study suites.
