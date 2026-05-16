@@ -159,6 +159,67 @@ def test_generate_quiz_task_success(db, project, auth_headers, client):
     assert result["status"] in ("completed", "failed")
 
 
+def test_generate_quiz_task_caps_generated_questions_to_requested_count(
+    db, project, auth_headers, client
+):
+    from app.crud.quiz import create_quiz
+    from tests.conftest import _get_user_id
+    import json
+
+    user_id = _get_user_id(client, auth_headers)
+    quiz_obj = create_quiz(
+        db=db,
+        project_id=project["id"],
+        difficulty_level="medium",
+        question_count=1,
+        user_id=user_id,
+    )
+
+    mock_topics_resp = MagicMock()
+    mock_topics_resp.choices[0].message.content = "\n".join(
+        ["Topic A", "Topic B", "Topic C", "Topic D", "Topic E"]
+    )
+
+    mock_summary_resp = MagicMock()
+    mock_summary_resp.choices[0].message.content = "Summary of topic."
+
+    mock_question_resp = MagicMock()
+    mock_question_resp.choices[0].message.content = json.dumps({
+        "question": "What is X?",
+        "correct_answer": "Answer X",
+        "distractors": ["D1", "D2", "D3"],
+        "explanation": "Because X.",
+    })
+
+    mock_collection = MagicMock()
+    mock_collection.query.return_value = {"documents": [["chunk1", "chunk2"]]}
+
+    call_count = [0]
+
+    def side_effect(*args, **kwargs):
+        call_count[0] += 1
+        if call_count[0] == 1:
+            return mock_topics_resp
+        if call_count[0] == 2:
+            return mock_summary_resp
+        return mock_question_resp
+
+    with (
+        patch("app.tasks.quiz_tasks.oa_client") as mock_oa,
+        patch("app.tasks.quiz_tasks.chromadb_collections", return_value=mock_collection),
+        patch("app.tasks.quiz_tasks.SessionLocal", return_value=db),
+    ):
+        mock_oa.chat.completions.create.side_effect = side_effect
+        result = _run_generate_quiz_task(
+            quiz_id=quiz_obj.id,
+            summary="Test summary",
+            num_questions=1,
+            difficulty="medium",
+        )
+
+    assert result == {"status": "completed", "questions_count": 1}
+
+
 def test_generate_quiz_task_no_topics_marks_failed(db, project, auth_headers, client):
     from app.crud.quiz import create_quiz
     from tests.conftest import _get_user_id
