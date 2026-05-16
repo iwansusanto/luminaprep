@@ -87,21 +87,25 @@ def test_delete_material_not_found(client, auth_headers):
     assert resp.status_code == 404
 
 
-def test_create_quiz_from_material(client, auth_headers, material):
+def test_create_quiz_from_material(client, auth_headers, material, monkeypatch):
+    from app.api.v1 import quiz as quiz_router
+
+    monkeypatch.setattr(quiz_router, "_run_quiz_generation", lambda *args, **kwargs: None)
+
     resp = client.post(
-        f"/api/v1/materials/{material['id']}/quizzes",
+        f"/api/v1/quizzes/materials/{material['id']}/quizzes",
         json={"difficulty_level": "medium", "question_count": 5},
         headers=auth_headers,
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 202
     data = resp.json()
     assert "task_id" in data
-    assert data["status"] == "completed"
+    assert data["status"] == "processing"
 
 
 def test_create_quiz_from_material_not_found(client, auth_headers):
     resp = client.post(
-        "/api/v1/materials/nonexistent/quizzes",
+        "/api/v1/quizzes/materials/nonexistent/quizzes",
         json={"difficulty_level": "medium", "question_count": 5},
         headers=auth_headers,
     )

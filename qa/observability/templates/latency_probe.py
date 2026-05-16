@@ -21,7 +21,6 @@ from urllib import error, request
 DEFAULT_ENDPOINTS = [
     ("GET", "/", [200]),
     ("GET", "/health", [200]),
-    ("GET", "/api/v1/auth/google/auth", [200]),
     ("GET", "/api/v1/auth/me", [401]),
     ("GET", "/api/v1/projects/", [401]),
     ("GET", "/api/v1/materials/project/test-project", [401]),

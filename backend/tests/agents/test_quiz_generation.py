@@ -6,12 +6,17 @@ def test_mcq_question_contract():
     question = MCQQuestion(
         question="Apa tujuan QA?",
         correct_answer="Memastikan kualitas",
-        options=["Memastikan kualitas", "Menghapus fitur", "Menambah bug", "Mematikan server"],
+        options={
+            "A": "Memastikan kualitas",
+            "B": "Menghapus fitur",
+            "C": "Menambah bug",
+            "D": "Mematikan server",
+        },
         explanation="QA memvalidasi perilaku sistem terhadap ekspektasi.",
     )
 
     assert question.question
-    assert question.correct_answer in question.options
+    assert question.correct_answer in question.options.values()
     assert len(question.options) == 4
     assert question.explanation
 
@@ -81,5 +86,5 @@ def test_mcq_quiz_agent_generates_questions_with_mocked_llm_and_vector_db(monkey
     )
 
     assert len(questions) == 2
-    assert all(question.correct_answer in question.options for question in questions)
+    assert all(question.correct_answer in question.options.values() for question in questions)
     assert all(question.explanation for question in questions)

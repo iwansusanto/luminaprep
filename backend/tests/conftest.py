@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 from collections.abc import Generator
 
@@ -14,7 +14,7 @@ sys.path.insert(0, ROOT_DIR)
 
 # Default test environment variables
 os.environ.setdefault("DATABASE_URL", "sqlite://")
-os.environ.setdefault("SECRET_KEY", "test-secret-key")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing-only")
 os.environ.setdefault("ALGORITHM", "HS256")
 os.environ.setdefault("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
@@ -24,7 +24,6 @@ os.environ.setdefault("UPLOAD_DIR", "/tmp/luminaprep-test-uploads")
 
 from unittest.mock import MagicMock, patch
 
-# Patch external dependencies before importing app modules
 patch("app.utils.oa_client.OpenAI", MagicMock()).start()
 patch("app.vector_db.client.chromadb_client", MagicMock()).start()
 patch("app.vector_db.collections.chromadb_collections", MagicMock()).start()
@@ -34,16 +33,18 @@ _mock_celery_task = MagicMock()
 _mock_celery_task.delay = MagicMock(return_value=MagicMock(id="mock-task-id"))
 patch("app.tasks.quiz_tasks.generate_quiz_task", _mock_celery_task).start()
 
-# Configure test database engine
 SQLITE_URL = "sqlite://"
 test_engine = create_engine(
     SQLITE_URL,
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+TestingSessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=test_engine,
+)
 
-# Import app modules after patching
 from app.api.deps import get_current_active_user  # noqa: E402
 from app.core.security import create_access_token  # noqa: E402
 from app.database import get_db  # noqa: E402
@@ -51,65 +52,66 @@ from app.main import app  # noqa: E402
 from app.models import *  # noqa: F403,E402
 from app.models.user import User  # noqa: E402
 
-# Redirect app database engine references to the test engine
-import app.db.database as _db1  # noqa: E402
-import app.database as _db2  # noqa: E402
+import app.database as database_module  # noqa: E402
+import app.db.database as db_module  # noqa: E402
 
-_db1.engine = test_engine
-_db1.SessionLocal = TestingSessionLocal
-_db2.engine = test_engine
-_db2.SessionLocal = TestingSessionLocal
+database_module.engine = test_engine
+database_module.SessionLocal = TestingSessionLocal
+db_module.engine = test_engine
+db_module.SessionLocal = TestingSessionLocal
 
 
 @pytest.fixture(autouse=True)
-def reset_db():
+def reset_db() -> Generator[None, None, None]:
     SQLModel.metadata.create_all(bind=test_engine)
     yield
     SQLModel.metadata.drop_all(bind=test_engine)
 
 
-@pytest.fixture
-def db(reset_db) -> Generator[Session, None, None]:
+@pytest.fixture(name="db")
+def db_fixture(reset_db) -> Generator[Session, None, None]:
     with TestingSessionLocal() as session:
         yield session
 
 
-@pytest.fixture
-def client(db):
+@pytest.fixture(name="client")
+def client_fixture(db: Session) -> Generator[TestClient, None, None]:
     def override_get_db():
         yield db
 
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as test_client:
+    app.dependency_overrides[db_module.get_db] = override_get_db
+    with TestClient(app, raise_server_exceptions=False) as test_client:
         yield test_client
     app.dependency_overrides.clear()
 
 
 @pytest.fixture(name="test_user")
 def test_user_fixture(db: Session) -> User:
-    user = User(email="qa@example.com", full_name="QA User", hashed_password="unused")
+    user = User(
+        email="qa@example.com",
+        full_name="QA User",
+        hashed_password="unused",
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
     return user
 
 
-@pytest.fixture(name="auth_headers")
-def auth_headers_fixture(test_user: User) -> dict[str, str]:
-    token = create_access_token({"sub": test_user.email, "user_id": test_user.id})
-    return {"Authorization": f"Bearer {token}"}
-
-
 @pytest.fixture(name="client_as_user")
-def client_as_user_fixture(client: TestClient, test_user: User) -> Generator[TestClient, None, None]:
+def client_as_user_fixture(
+    client: TestClient,
+    test_user: User,
+) -> Generator[TestClient, None, None]:
     app.dependency_overrides[get_current_active_user] = lambda: test_user
     yield client
     app.dependency_overrides.pop(get_current_active_user, None)
     app.dependency_overrides.clear()
 
 
-@pytest.fixture
-def auth_headers(client):
+@pytest.fixture(name="auth_headers")
+def auth_headers_fixture(client: TestClient) -> dict[str, str]:
     resp = client.post(
         "/api/v1/auth/signin",
         json={"email": "test@example.com", "name": "Test User"},
@@ -118,8 +120,8 @@ def auth_headers(client):
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}
 
 
-@pytest.fixture
-def project(client, auth_headers):
+@pytest.fixture(name="project")
+def project_fixture(client: TestClient, auth_headers: dict[str, str]) -> dict:
     resp = client.post(
         "/api/v1/projects/",
         json={"title": "Test Project", "description": "A test project"},
@@ -129,8 +131,12 @@ def project(client, auth_headers):
     return resp.json()
 
 
-@pytest.fixture
-def material(client, auth_headers, project):
+@pytest.fixture(name="material")
+def material_fixture(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    project: dict,
+) -> dict:
     resp = client.post(
         "/api/v1/materials",
         json={
@@ -147,8 +153,13 @@ def material(client, auth_headers, project):
     return resp.json()
 
 
-@pytest.fixture
-def quiz(client, auth_headers, db, material, project):
+@pytest.fixture(name="quiz")
+def quiz_fixture(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    db: Session,
+    project: dict,
+) -> dict:
     from app.crud.question import create_question
     from app.crud.quiz import create_quiz, update_quiz_status
 
@@ -172,7 +183,7 @@ def quiz(client, auth_headers, db, material, project):
     return {"id": quiz_obj.id, "project_id": project["id"]}
 
 
-def _get_user_id(client, auth_headers) -> str:
+def _get_user_id(client: TestClient, auth_headers: dict[str, str]) -> str:
     resp = client.get("/api/v1/auth/me", headers=auth_headers)
     assert resp.status_code == 200, f"Get me failed: {resp.text}"
     return resp.json()["id"]

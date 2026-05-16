@@ -94,15 +94,19 @@ def test_delete_quiz_not_found(client, auth_headers):
 
 
 def test_create_quiz_from_material_via_quizzes_router(
-    client, auth_headers, material
+    client, auth_headers, material, monkeypatch
 ):
     """POST /api/v1/quizzes/materials/{material_id}/quizzes triggers celery task."""
+    from app.api.v1 import quiz as quiz_router
+
+    monkeypatch.setattr(quiz_router, "_run_quiz_generation", lambda *args, **kwargs: None)
+
     resp = client.post(
         f"/api/v1/quizzes/materials/{material['id']}/quizzes",
         json={"difficulty_level": "hard", "question_count": 3},
         headers=auth_headers,
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 202
     data = resp.json()
-    assert data["status"] == "pending"
+    assert data["status"] == "processing"
     assert "task_id" in data

@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "generate": "tsr generate",
+    "test:e2e": "playwright test",
     "start": "pm2 start ecosystem.config.cjs --env production",
     "stop": "pm2 stop ecosystem.config.cjs",
     "serve": "node server.js"
@@ -40,6 +41,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.60.0",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
