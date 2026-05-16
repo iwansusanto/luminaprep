@@ -484,7 +484,7 @@ function QuizzesPage() {
         },
       }),
     ],
-    [fetchData],
+    [fetchData, publishedQuizIds],
   )
 
   const table = useReactTable({
