@@ -18,6 +18,7 @@ from app.schemas.public_quiz import (
 )
 from app.api.deps import get_current_active_user
 from app.models.user import User
+from app.models.quiz_session import QuizSessionRead
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -136,7 +137,7 @@ def get_public_quiz_detail(
         )
 
 
-@router.post("/{quiz_id}/sessions", status_code=status.HTTP_201_CREATED)
+@router.post("/{quiz_id}/sessions", response_model=QuizSessionRead, status_code=status.HTTP_201_CREATED)
 def start_public_quiz_session(
     quiz_id: str,
     db: Session = Depends(get_db),

@@ -151,7 +151,8 @@ def get_project_quizzes(
         QuizSession, UserAttempt.quiz_session_id == QuizSession.id
     ).filter(
         UserAttempt.quiz_id.in_(quiz_ids),
-        UserAttempt.quiz_session_id.isnot(None)
+        UserAttempt.quiz_session_id.isnot(None),
+        UserAttempt.user_id == current_user.id
     ).group_by(
         UserAttempt.quiz_id,
         UserAttempt.quiz_session_id,
@@ -159,7 +160,7 @@ def get_project_quizzes(
     ).order_by(
         func.max(UserAttempt.created_at).desc()
     ).all()
-    
+
     attempts_by_quiz = {qid: [] for qid in quiz_ids}
     for row in attempts_agg:
         attempts_by_quiz[row.quiz_id].append({
@@ -170,7 +171,7 @@ def get_project_quizzes(
             "total_questions": int(row.total_questions or 0),
             "status_session": row.status_session
         })
-    
+
     result = []
     for quiz in quizzes:
         quiz_dict = quiz.model_dump()
@@ -239,7 +240,8 @@ def get_my_quiz_list(
         QuizSession, UserAttempt.quiz_session_id == QuizSession.id
     ).filter(
         UserAttempt.quiz_id.in_(quiz_ids),
-        UserAttempt.quiz_session_id.isnot(None)
+        UserAttempt.quiz_session_id.isnot(None),
+        UserAttempt.user_id == current_user.id
     ).group_by(
         UserAttempt.quiz_id,
         UserAttempt.quiz_session_id,

@@ -16,6 +16,7 @@ from typing import AsyncGenerator, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 
@@ -28,6 +29,8 @@ from app.crud.question import get_question_by_id
 from app.utils.oa_client import oa_client
 from app.utils import langfuse_client as observability
 from app.core.config import settings
+
+security_optional = HTTPBearer(auto_error=False)
 
 router = APIRouter()
 
@@ -187,23 +190,34 @@ async def stream_feedback(
     question_id: str,
     token: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_active_user),
+    bearer: Optional[str] = Depends(security_optional),
 ):
     """
     Stream AI feedback for a specific question in a quiz session.
     Accepts auth via Bearer header OR ?token= query param (for EventSource).
     """
-    # Prefer header auth, fall back to query param token
-    user = current_user
+    # Manually resolve user: Bearer header first, then ?token= fallback
+    user = None
+    if bearer is not None:
+        try:
+            payload = jwt.decode(bearer.credentials, settings.secret_key, algorithms=[settings.algorithm])
+            user_id: str = payload.get("user_id")
+            email: str = payload.get("sub")
+            if user_id:
+                user = db.query(User).filter(User.id == user_id, User.deleted_at.is_(None)).first()
+            elif email:
+                user = db.query(User).filter(User.email == email, User.deleted_at.is_(None)).first()
+        except JWTError:
+            pass
     if user is None and token:
         user = _get_user_from_token(token, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    quiz_session = get_quiz_session_by_id(db, session_id, current_user.id)
+    quiz_session = get_quiz_session_by_id(db, session_id, user.id)
     if not quiz_session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quiz session not found")
 
-    question = get_question_by_id(db, question_id, current_user.id)
+    question = get_question_by_id(db, question_id, user.id)
     if not question or question.quiz_id != quiz_session.quiz_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Question not found")
 
@@ -214,7 +228,7 @@ async def stream_feedback(
         .filter(
             UserAttempt.quiz_session_id == session_id,
             UserAttempt.question_id == question_id,
-            UserAttempt.user_id == current_user.id,
+            UserAttempt.user_id == user.id,
             UserAttempt.deleted_at.is_(None),
         )
         .first()
