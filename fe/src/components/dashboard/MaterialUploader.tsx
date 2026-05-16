@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react'
 import { motion, type Variants } from 'framer-motion'
+import { useNavigate } from '@tanstack/react-router'
 import {
   UploadCloud,
   FileText,
@@ -19,6 +20,7 @@ interface MaterialUploaderProps {
 }
 
 export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, className, projectId, currentCount, onUploadSuccess }) => {
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -83,6 +85,7 @@ export const MaterialUploader: React.FC<MaterialUploaderProps> = ({ variants, cl
           className: 'premium-notification',
         });
         if (onUploadSuccess) onUploadSuccess();
+        navigate({ to: '/dashboard/materials' });
       } else {
         notification.error({
           message: 'Upload Failed',
