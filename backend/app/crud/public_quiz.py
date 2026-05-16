@@ -24,12 +24,12 @@ def create_public_quiz(
         .where(Quiz.deleted_at == None)
         .where(Project.deleted_at == None)
     )
-    quiz = db.exec(statement).first()
+    quiz = db.execute(statement).scalar_one_or_none()
     if not quiz:
         return None
 
     existing_statement = select(PublicQuiz).where(PublicQuiz.quiz_id == quiz_id)
-    existing = db.exec(existing_statement).first()
+    existing = db.execute(existing_statement).scalar_one_or_none()
     if existing:
         return None
 
@@ -56,12 +56,12 @@ def delete_public_quiz(db: Session, quiz_id: str, user_id: str) -> bool:
         .where(Quiz.deleted_at == None)
         .where(Project.deleted_at == None)
     )
-    quiz = db.exec(statement).first()
+    quiz = db.execute(statement).scalar_one_or_none()
     if not quiz:
         return False
 
     public_quiz_statement = select(PublicQuiz).where(PublicQuiz.quiz_id == quiz_id)
-    public_quiz = db.exec(public_quiz_statement).first()
+    public_quiz = db.execute(public_quiz_statement).scalar_one_or_none()
     if not public_quiz:
         return False
 
@@ -78,7 +78,7 @@ def get_public_quizzes(db: Session) -> List[tuple]:
         .where(Quiz.deleted_at == None)
         .order_by(PublicQuiz.created_at.desc())
     )
-    results = db.exec(statement).all()
+    results = db.execute(statement).all()
     return results
 
 
@@ -90,5 +90,5 @@ def get_public_quiz(db: Session, quiz_id: str) -> Optional[tuple]:
         .where(PublicQuiz.quiz_id == quiz_id)
         .where(Quiz.deleted_at == None)
     )
-    result = db.exec(statement).first()
+    result = db.execute(statement).first()
     return result
