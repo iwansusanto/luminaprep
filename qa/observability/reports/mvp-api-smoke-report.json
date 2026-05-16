@@ -1,0 +1,7 @@
+{
+  "generated_at": "2026-05-16T10:12:43.481764+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "steps": [],
+  "status": "failed",
+  "error": "<urlopen error [Errno 111] Connection refused>"
+}
