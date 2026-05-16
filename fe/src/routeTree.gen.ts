@@ -19,10 +19,12 @@ import { Route as DashboardQuizzesRouteImport } from './routes/dashboard/quizzes
 import { Route as DashboardMaterialsRouteImport } from './routes/dashboard/materials'
 import { Route as DashboardChatRouteImport } from './routes/dashboard/chat'
 import { Route as DashboardQuizzesIndexRouteImport } from './routes/dashboard/quizzes/index'
+import { Route as DashboardPublicQuizzesIndexRouteImport } from './routes/dashboard/public-quizzes/index'
 import { Route as DashboardQuizzesStartUuidRouteImport } from './routes/dashboard/quizzes/start.$uuid'
 import { Route as DashboardQuizzesRetakeUuidRouteImport } from './routes/dashboard/quizzes/retake.$uuid'
 import { Route as DashboardQuizzesResultSessionIdRouteImport } from './routes/dashboard/quizzes/result.$sessionId'
 import { Route as DashboardQuizzesContinueUuidRouteImport } from './routes/dashboard/quizzes/continue.$uuid'
+import { Route as DashboardPublicQuizzesAttemptUuidRouteImport } from './routes/dashboard/public-quizzes/attempt.$uuid'
 
 const TermOfServiceRoute = TermOfServiceRouteImport.update({
   id: '/term-of-service',
@@ -74,6 +76,12 @@ const DashboardQuizzesIndexRoute = DashboardQuizzesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardQuizzesRoute,
 } as any)
+const DashboardPublicQuizzesIndexRoute =
+  DashboardPublicQuizzesIndexRouteImport.update({
+    id: '/public-quizzes/',
+    path: '/public-quizzes/',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardQuizzesStartUuidRoute =
   DashboardQuizzesStartUuidRouteImport.update({
     id: '/start/$uuid',
@@ -98,6 +106,12 @@ const DashboardQuizzesContinueUuidRoute =
     path: '/continue/$uuid',
     getParentRoute: () => DashboardQuizzesRoute,
   } as any)
+const DashboardPublicQuizzesAttemptUuidRoute =
+  DashboardPublicQuizzesAttemptUuidRouteImport.update({
+    id: '/public-quizzes/attempt/$uuid',
+    path: '/public-quizzes/attempt/$uuid',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -109,7 +123,9 @@ export interface FileRoutesByFullPath {
   '/dashboard/materials': typeof DashboardMaterialsRoute
   '/dashboard/quizzes': typeof DashboardQuizzesRouteWithChildren
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/public-quizzes/': typeof DashboardPublicQuizzesIndexRoute
   '/dashboard/quizzes/': typeof DashboardQuizzesIndexRoute
+  '/dashboard/public-quizzes/attempt/$uuid': typeof DashboardPublicQuizzesAttemptUuidRoute
   '/dashboard/quizzes/continue/$uuid': typeof DashboardQuizzesContinueUuidRoute
   '/dashboard/quizzes/result/$sessionId': typeof DashboardQuizzesResultSessionIdRoute
   '/dashboard/quizzes/retake/$uuid': typeof DashboardQuizzesRetakeUuidRoute
@@ -123,7 +139,9 @@ export interface FileRoutesByTo {
   '/dashboard/chat': typeof DashboardChatRoute
   '/dashboard/materials': typeof DashboardMaterialsRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/public-quizzes': typeof DashboardPublicQuizzesIndexRoute
   '/dashboard/quizzes': typeof DashboardQuizzesIndexRoute
+  '/dashboard/public-quizzes/attempt/$uuid': typeof DashboardPublicQuizzesAttemptUuidRoute
   '/dashboard/quizzes/continue/$uuid': typeof DashboardQuizzesContinueUuidRoute
   '/dashboard/quizzes/result/$sessionId': typeof DashboardQuizzesResultSessionIdRoute
   '/dashboard/quizzes/retake/$uuid': typeof DashboardQuizzesRetakeUuidRoute
@@ -140,7 +158,9 @@ export interface FileRoutesById {
   '/dashboard/materials': typeof DashboardMaterialsRoute
   '/dashboard/quizzes': typeof DashboardQuizzesRouteWithChildren
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/public-quizzes/': typeof DashboardPublicQuizzesIndexRoute
   '/dashboard/quizzes/': typeof DashboardQuizzesIndexRoute
+  '/dashboard/public-quizzes/attempt/$uuid': typeof DashboardPublicQuizzesAttemptUuidRoute
   '/dashboard/quizzes/continue/$uuid': typeof DashboardQuizzesContinueUuidRoute
   '/dashboard/quizzes/result/$sessionId': typeof DashboardQuizzesResultSessionIdRoute
   '/dashboard/quizzes/retake/$uuid': typeof DashboardQuizzesRetakeUuidRoute
@@ -158,7 +178,9 @@ export interface FileRouteTypes {
     | '/dashboard/materials'
     | '/dashboard/quizzes'
     | '/dashboard/'
+    | '/dashboard/public-quizzes/'
     | '/dashboard/quizzes/'
+    | '/dashboard/public-quizzes/attempt/$uuid'
     | '/dashboard/quizzes/continue/$uuid'
     | '/dashboard/quizzes/result/$sessionId'
     | '/dashboard/quizzes/retake/$uuid'
@@ -172,7 +194,9 @@ export interface FileRouteTypes {
     | '/dashboard/chat'
     | '/dashboard/materials'
     | '/dashboard'
+    | '/dashboard/public-quizzes'
     | '/dashboard/quizzes'
+    | '/dashboard/public-quizzes/attempt/$uuid'
     | '/dashboard/quizzes/continue/$uuid'
     | '/dashboard/quizzes/result/$sessionId'
     | '/dashboard/quizzes/retake/$uuid'
@@ -188,7 +212,9 @@ export interface FileRouteTypes {
     | '/dashboard/materials'
     | '/dashboard/quizzes'
     | '/dashboard/'
+    | '/dashboard/public-quizzes/'
     | '/dashboard/quizzes/'
+    | '/dashboard/public-quizzes/attempt/$uuid'
     | '/dashboard/quizzes/continue/$uuid'
     | '/dashboard/quizzes/result/$sessionId'
     | '/dashboard/quizzes/retake/$uuid'
@@ -275,6 +301,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardQuizzesIndexRouteImport
       parentRoute: typeof DashboardQuizzesRoute
     }
+    '/dashboard/public-quizzes/': {
+      id: '/dashboard/public-quizzes/'
+      path: '/public-quizzes'
+      fullPath: '/dashboard/public-quizzes/'
+      preLoaderRoute: typeof DashboardPublicQuizzesIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/quizzes/start/$uuid': {
       id: '/dashboard/quizzes/start/$uuid'
       path: '/start/$uuid'
@@ -303,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardQuizzesContinueUuidRouteImport
       parentRoute: typeof DashboardQuizzesRoute
     }
+    '/dashboard/public-quizzes/attempt/$uuid': {
+      id: '/dashboard/public-quizzes/attempt/$uuid'
+      path: '/public-quizzes/attempt/$uuid'
+      fullPath: '/dashboard/public-quizzes/attempt/$uuid'
+      preLoaderRoute: typeof DashboardPublicQuizzesAttemptUuidRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
@@ -330,6 +370,8 @@ interface DashboardRouteChildren {
   DashboardMaterialsRoute: typeof DashboardMaterialsRoute
   DashboardQuizzesRoute: typeof DashboardQuizzesRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardPublicQuizzesIndexRoute: typeof DashboardPublicQuizzesIndexRoute
+  DashboardPublicQuizzesAttemptUuidRoute: typeof DashboardPublicQuizzesAttemptUuidRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
@@ -337,6 +379,9 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardMaterialsRoute: DashboardMaterialsRoute,
   DashboardQuizzesRoute: DashboardQuizzesRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardPublicQuizzesIndexRoute: DashboardPublicQuizzesIndexRoute,
+  DashboardPublicQuizzesAttemptUuidRoute:
+    DashboardPublicQuizzesAttemptUuidRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(

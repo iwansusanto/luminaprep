@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useAuth } from '../../../context/AuthContext'
 import { api } from '../../../lib/api'
-import { Skeleton, message, Modal, Dropdown } from 'antd'
+import { Skeleton, message, Modal, Dropdown, Menu } from 'antd'
 import {
   Search,
   Filter,
@@ -105,6 +105,7 @@ function QuizzesPage() {
   const [quizDrawerVisible, setQuizDrawerVisible] = useState(false)
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [publishedQuizIds, setPublishedQuizIds] = useState<Set<string>>(new Set())
   const prevQuizzesRef = useRef<Quiz[]>([])
 
   const projectId = auth?.user?.projects?.[0]?.id
@@ -114,9 +115,10 @@ function QuizzesPage() {
       if (!projectId) return
       if (!silent) setLoading(true)
       try {
-        const [quizzesData, materialsData] = await Promise.all([
+        const [quizzesData, materialsData, publicQuizzesData] = await Promise.all([
           api.get<Quiz[]>(`/quizzes/projects/${projectId}/quizzes`),
           api.get<{ materials: Material[] }>(`/materials/project/${projectId}`),
+          api.get<Array<{ quiz_id: string }>>('/public_quizzes'),
         ])
         const newQuizzes = Array.isArray(quizzesData) ? quizzesData : []
 
@@ -131,6 +133,10 @@ function QuizzesPage() {
 
         setQuizzes(newQuizzes)
         setMaterials(Array.isArray(materialsData.materials) ? materialsData.materials : [])
+
+        // Set published quiz IDs
+        const published = new Set(publicQuizzesData.map((pq) => pq.quiz_id))
+        setPublishedQuizIds(published)
       } catch (error) {
         console.error('Failed to fetch data:', error)
         if (!silent) message.error('Failed to load dashboard data')
@@ -186,6 +192,42 @@ function QuizzesPage() {
     }
     setSelectedMaterial(completedMaterials[0])
     setQuizDrawerVisible(true)
+  }
+
+  const handlePublishQuiz = async (quizId: string, projectId: string) => {
+    try {
+      const material = materials.find((m) => m.project_id === projectId)
+      if (!material) {
+        message.error('No material found for this quiz')
+        return
+      }
+
+      await api.post('/public_quizzes', {
+        quiz_id: quizId,
+        material_id: material.id,
+      })
+
+      message.success('Quiz published successfully!')
+      setPublishedQuizIds((prev) => new Set([...prev, quizId]))
+    } catch (error) {
+      message.error('Failed to publish quiz')
+      console.error(error)
+    }
+  }
+
+  const handleUnpublishQuiz = async (quizId: string) => {
+    try {
+      await api.delete(`/public_quizzes/${quizId}`)
+      message.success('Quiz unpublished successfully!')
+      setPublishedQuizIds((prev) => {
+        const updated = new Set(prev)
+        updated.delete(quizId)
+        return updated
+      })
+    } catch (error) {
+      message.error('Failed to unpublish quiz')
+      console.error(error)
+    }
   }
 
   const filteredQuizzes = useMemo(() => {
@@ -330,6 +372,25 @@ function QuizzesPage() {
         },
       }),
       columnHelper.display({
+        id: 'visibility',
+        header: 'Visibility',
+        cell: (info) => {
+          const quizId = info.row.original.id
+          const isPublished = publishedQuizIds.has(quizId)
+          return (
+            <span
+              className={`inline-flex items-center px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${
+                isPublished
+                  ? 'bg-violet-50 text-violet-600 border-violet-100'
+                  : 'bg-slate-50 text-slate-400 border-slate-100'
+              }`}
+            >
+              {isPublished ? 'PUBLIC' : 'PRIVATE'}
+            </span>
+          )
+        },
+      }),
+      columnHelper.display({
         id: 'actions',
         header: () => <span className="text-right block">Actions</span>,
         cell: (info) => {
@@ -399,6 +460,21 @@ function QuizzesPage() {
                 trigger={['click']}
                 menu={{
                   items: [
+                    {
+                      key: 'publish',
+                      label: 'Publish',
+                      onClick: () => handlePublishQuiz(quiz.id, quiz.project_id),
+                      disabled: quiz.status !== 'completed' || publishedQuizIds.has(quiz.id),
+                    },
+                    {
+                      key: 'unpublish',
+                      label: 'Unpublish',
+                      onClick: () => handleUnpublishQuiz(quiz.id),
+                      disabled: !publishedQuizIds.has(quiz.id),
+                    },
+                    {
+                      type: 'divider',
+                    },
                     {
                       key: 'refresh',
                       icon: <RefreshCw className="w-3.5 h-3.5" />,

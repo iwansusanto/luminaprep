@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Sparkles,
   MessageSquare,
+  Globe,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
@@ -28,6 +29,7 @@ const Sidebar = () => {
     { name: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
     { name: 'My Materials', icon: BookOpen, to: '/dashboard/materials' },
     { name: 'My Quizzes', icon: BrainCircuit, to: '/dashboard/quizzes' },
+    { name: 'Explore', icon: Globe, to: '/dashboard/public-quizzes' },
     { name: 'AI Assistant', icon: MessageSquare, to: '/dashboard/chat' },
   ];
 
