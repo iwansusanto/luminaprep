@@ -134,8 +134,13 @@ function QuizzesPage() {
         setQuizzes(newQuizzes)
         setMaterials(Array.isArray(materialsData.materials) ? materialsData.materials : [])
 
-        // Set published quiz IDs
-        const published = new Set(publicQuizzesData.map((pq) => pq.quiz_id))
+        // Build set of published quiz IDs — filter to only user's own quizzes
+        const userQuizIds = new Set(newQuizzes.map(q => q.id))
+        const published = new Set(
+          publicQuizzesData
+            .map((pq) => pq.quiz_id)
+            .filter((id) => userQuizIds.has(id))
+        )
         setPublishedQuizIds(published)
       } catch (error) {
         console.error('Failed to fetch data:', error)
@@ -194,22 +199,14 @@ function QuizzesPage() {
     setQuizDrawerVisible(true)
   }
 
-  const handlePublishQuiz = async (quizId: string, materialId: string | null) => {
+  const handlePublishQuiz = async (quizId: string) => {
     try {
-      if (!materialId) {
-        message.error('No material found for this quiz')
-        return
-      }
-
-      await api.post('/public_quizzes', {
-        quiz_id: quizId,
-        material_id: materialId,
-      })
-
-      message.success('Quiz published successfully!')
-      setPublishedQuizIds((prev) => new Set([...prev, quizId]))
-    } catch (error) {
-      message.error('Failed to publish quiz')
+      await api.post('/public_quizzes', { quiz_id: quizId })
+      message.success('Quiz published! Now visible in Explore.')
+      // Re-fetch to sync published state from server
+      await fetchData(true)
+    } catch (error: any) {
+      message.error(error.message || 'Failed to publish quiz')
       console.error(error)
     }
   }
@@ -217,14 +214,11 @@ function QuizzesPage() {
   const handleUnpublishQuiz = async (quizId: string) => {
     try {
       await api.delete(`/public_quizzes/${quizId}`)
-      message.success('Quiz unpublished successfully!')
-      setPublishedQuizIds((prev) => {
-        const updated = new Set(prev)
-        updated.delete(quizId)
-        return updated
-      })
-    } catch (error) {
-      message.error('Failed to unpublish quiz')
+      message.success('Quiz unpublished. Now private.')
+      // Re-fetch to sync published state from server
+      await fetchData(true)
+    } catch (error: any) {
+      message.error(error.message || 'Failed to unpublish quiz')
       console.error(error)
     }
   }
@@ -460,18 +454,10 @@ function QuizzesPage() {
                   items: [
                     {
                       key: 'publish',
-                      label: 'Publish',
-                      onClick: () => handlePublishQuiz(quiz.id, quiz.material_id),
-                      disabled: quiz.status !== 'completed' || publishedQuizIds.has(quiz.id),
-                    },
-                    {
-                      key: 'unpublish',
-                      label: 'Unpublish',
-                      onClick: () => handleUnpublishQuiz(quiz.id),
-                      disabled: !publishedQuizIds.has(quiz.id),
-                    },
-                    {
-                      type: 'divider',
+                      label: publishedQuizIds.has(quiz.id) ? '🌐 Unpublish' : '🌐 Publish',
+                      onClick: () => publishedQuizIds.has(quiz.id)
+                        ? handleUnpublishQuiz(quiz.id)
+                        : handlePublishQuiz(quiz.id),
                     },
                     {
                       key: 'refresh',

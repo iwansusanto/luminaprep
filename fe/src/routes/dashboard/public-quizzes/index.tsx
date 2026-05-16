@@ -39,6 +39,7 @@ const item: Variants = {
 type PublicQuiz = {
   quiz_id: string
   topic: string | null
+  material_file_name: string | null
   difficulty_level: string
   question_count: number
   created_at: string
@@ -78,7 +79,7 @@ function PublicQuizzesPage() {
       header: 'Topic',
       cell: info => (
         <span className="font-semibold text-slate-700">
-          {info.getValue() || 'Untitled'}
+          {info.getValue() || info.row.original.material_file_name || `Quiz · ${info.row.original.difficulty_level}`}
         </span>
       ),
     }),
