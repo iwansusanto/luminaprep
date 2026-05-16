@@ -12,8 +12,21 @@ from alembic import context
 sys.path.append(str(Path(__file__).parent.parent))
 
 from app.core.config import settings
-from app.db.database import Base
-from app.models import User, Project, UserQuiz  # Import all models
+from sqlmodel import SQLModel
+from app.models import (  # noqa: F401 – register all tables
+    User,
+    Project,
+    Material,
+    Quiz,
+    Question,
+    QuizSession,
+    UserAttempt,
+    AgentMetric,
+    ChatSession,
+    ChatMessage,
+    UserQuiz,
+    PublicQuiz,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -29,7 +42,7 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-target_metadata = Base.metadata
+target_metadata = SQLModel.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

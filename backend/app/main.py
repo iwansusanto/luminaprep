@@ -18,6 +18,7 @@ from app.models import (  # noqa: F401 – register all SQLModel tables
     ChatSession,
     ChatMessage,
     UserQuiz,
+    PublicQuiz,
 )
 from scalar_fastapi import get_scalar_api_reference
 

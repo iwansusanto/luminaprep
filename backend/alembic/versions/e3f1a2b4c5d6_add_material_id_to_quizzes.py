@@ -41,6 +41,24 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Remove material_id column from quizzes table."""
-    op.drop_constraint('quizzes_material_id_fk', 'quizzes', type_='foreignkey')
+    conn = op.get_bind()
+    if conn.dialect.name == 'mysql':
+        fk_exists = conn.execute(
+            sa.text(
+                """
+                SELECT CONSTRAINT_NAME
+                FROM information_schema.TABLE_CONSTRAINTS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'quizzes'
+                  AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+                  AND CONSTRAINT_NAME = 'quizzes_material_id_fk'
+                """
+            )
+        ).first()
+        if fk_exists:
+            op.drop_constraint('quizzes_material_id_fk', 'quizzes', type_='foreignkey')
+    else:
+        op.drop_constraint('quizzes_material_id_fk', 'quizzes', type_='foreignkey')
+
     op.drop_index(op.f('ix_quizzes_material_id'), table_name='quizzes')
     op.drop_column('quizzes', 'material_id')
