@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import Optional, AsyncGenerator, Any
 
 from agents import Agent, Runner, RunContextWrapper, function_tool, ModelSettings
+from agents.tracing import set_tracing_disabled
 from starlette.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -25,6 +26,11 @@ logger = logging.getLogger(__name__)
 
 os.environ.setdefault("OPENAI_BASE_URL", settings.OPENAI_BASE_URL)
 os.environ.setdefault("OPENAI_API_KEY", settings.OPENAI_API_KEY)
+
+# The chatbot relies on our manual Langfuse trace/span instrumentation.
+# Disable the Agents SDK tracing layer here to avoid duplicate/unsupported
+# exports while keeping the OpenAI request itself functional.
+set_tracing_disabled(True)
 
 
 @dataclass
