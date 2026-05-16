@@ -5,8 +5,10 @@ from app.database import SessionLocal
 from app.crud.quiz import update_quiz_status
 from app.crud.question import create_question
 from app.utils.oa_client import oa_client
+from app.utils import langfuse_client as observability
 from app.utils.sanitize import sanitize_prompt_field
 from app.vector_db.collections import chromadb_collections
+from app.models.quiz import Quiz
 from pydantic import BaseModel
 
 
@@ -209,29 +211,141 @@ def _run_task_body(
     topic = sanitize_prompt_field(topic, max_length=255)
     custom_request = sanitize_prompt_field(custom_request, max_length=500)
 
-    try:
-        update_quiz_status(db, quiz_id, "processing")
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    metadata = observability.standard_metadata(
+        "quiz-generation",
+        user_id=quiz.project.user_id if quiz and quiz.project else None,
+        project_id=quiz.project_id if quiz else None,
+        material_id=quiz.material_id if quiz else None,
+        quiz_id=quiz_id,
+        difficulty=difficulty,
+        question_count_requested=num_questions,
+        topic=topic or None,
+    )
+    trace = observability.safe_trace(
+        "quiz-generation",
+        metadata=metadata,
+        input={
+            "quiz_id": quiz_id,
+            "difficulty": difficulty,
+            "question_count": num_questions,
+            "topic": topic or None,
+            "custom_request_present": bool(custom_request),
+        },
+    )
 
+    try:
+        status_span = observability.span(trace, "update-quiz-status-processing")
+        update_quiz_status(db, quiz_id, "processing")
+        observability.end_observation(status_span, output={"status": "processing"})
+
+        topics_span = observability.span(trace, "generate-topics")
         topics = generate_topics(
             num_questions, summary, difficulty,
             topic=topic, custom_request=custom_request,
         )
+        observability.end_observation(
+            topics_span,
+            output={"topic_count": len(topics), "topics": topics[:10]},
+        )
         if not topics:
             update_quiz_status(db, quiz_id, "failed")
+            observability.update_observation(
+                trace,
+                output={"status": "failed", "error": "No topics generated"},
+            )
             return {"status": "failed", "error": "No topics generated"}
 
         questions = []
         for t in topics:
-            q = generate_single_question_for_topic(
-                t, difficulty, collection, custom_request=custom_request
+            topic_span = observability.span(
+                trace,
+                "topic-loop",
+                metadata={"topic": t},
             )
-            if q:
-                questions.append(q)
+            try:
+                retrieval_span = observability.span(
+                    trace,
+                    "retrieve-related-chunks",
+                    metadata={"topic": t},
+                )
+                search_query = t if t else "key concepts"
+                chunks = get_related_chunks(search_query, collection)
+                observability.end_observation(
+                    retrieval_span,
+                    output={"chunk_count": len(chunks)},
+                )
+
+                if not chunks:
+                    observability.end_observation(
+                        topic_span,
+                        output={"status": "skipped", "reason": "no chunks"},
+                    )
+                    continue
+
+                summary_span = observability.span(
+                    trace,
+                    "build-complete-summary",
+                    metadata={"topic": t},
+                )
+                complete_summary = build_complete_summary(chunks)
+                observability.end_observation(
+                    summary_span,
+                    output={
+                        "summary_length": len(complete_summary)
+                        if complete_summary
+                        else 0
+                    },
+                )
+
+                if not complete_summary:
+                    observability.end_observation(
+                        topic_span,
+                        output={"status": "skipped", "reason": "empty summary"},
+                    )
+                    continue
+
+                question_span = observability.span(
+                    trace,
+                    "generate-question",
+                    metadata={"topic": t, "model": "gpt-4o-mini"},
+                )
+                q = generate_question(
+                    complete_summary,
+                    difficulty,
+                    topic=t,
+                    custom_request=custom_request,
+                )
+                observability.end_observation(
+                    question_span,
+                    output={"valid": q is not None},
+                )
+                if q:
+                    questions.append(q)
+                    observability.end_observation(
+                        topic_span,
+                        output={"status": "success"},
+                    )
+                else:
+                    observability.end_observation(
+                        topic_span,
+                        output={"status": "skipped", "reason": "invalid question"},
+                    )
+            except Exception as topic_error:
+                observability.end_observation(
+                    topic_span,
+                    output={"status": "error", "error": str(topic_error)},
+                )
 
         if not questions:
             update_quiz_status(db, quiz_id, "failed")
+            observability.update_observation(
+                trace,
+                output={"status": "failed", "error": "No questions generated"},
+            )
             return {"status": "failed", "error": "No questions generated"}
 
+        persist_span = observability.span(trace, "persist-questions")
         for q in questions:
             create_question(
                 db=db,
@@ -246,12 +360,24 @@ def _run_task_body(
                     "custom_request": custom_request,
                 },
             )
+        observability.end_observation(
+            persist_span,
+            output={"questions_count": len(questions)},
+        )
 
+        completed_span = observability.span(trace, "update-quiz-status-completed")
         update_quiz_status(db, quiz_id, "completed")
-        return {"status": "completed", "questions_count": len(questions)}
+        observability.end_observation(completed_span, output={"status": "completed"})
+        result = {"status": "completed", "questions_count": len(questions)}
+        observability.update_observation(trace, output=result)
+        return result
 
     except Exception as e:
         update_quiz_status(db, quiz_id, "failed")
+        observability.update_observation(
+            trace,
+            output={"status": "failed", "error": str(e)},
+        )
         return {"status": "failed", "error": str(e)}
     finally:
         db.close()

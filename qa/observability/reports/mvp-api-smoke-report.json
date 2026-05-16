@@ -1,7 +1,37 @@
 {
-  "generated_at": "2026-05-16T10:12:43.481764+00:00",
+  "generated_at": "2026-05-16T10:58:10.915153+00:00",
   "base_url": "http://127.0.0.1:8000",
-  "steps": [],
-  "status": "failed",
-  "error": "<urlopen error [Errno 111] Connection refused>"
+  "steps": [
+    {
+      "step": "signin",
+      "status": 200,
+      "duration_ms": 798.68,
+      "user_id": "e9bf1175-4861-4ea3-b28c-c45ee1b7fd12"
+    },
+    {
+      "step": "create_project",
+      "status": 200,
+      "duration_ms": 1379.67,
+      "project_id": "08a6f3d9-cbd8-4bfd-a16b-f0234280e689"
+    },
+    {
+      "step": "upload_material",
+      "status": 200,
+      "duration_ms": 1655.86,
+      "material_id": "54d870b4-ad00-41b0-a707-f8954b549129"
+    },
+    {
+      "step": "material_completed",
+      "status": 200,
+      "duration_ms": 4649.12,
+      "material_id": "54d870b4-ad00-41b0-a707-f8954b549129"
+    },
+    {
+      "step": "trigger_quiz_generation",
+      "status": 202,
+      "duration_ms": 365.41,
+      "quiz_id": "16e4b9fa-7b1d-421b-9534-856162630ef0"
+    }
+  ],
+  "status": "partial_pass"
 }
