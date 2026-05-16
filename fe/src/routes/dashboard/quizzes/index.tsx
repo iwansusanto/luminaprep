@@ -194,17 +194,16 @@ function QuizzesPage() {
     setQuizDrawerVisible(true)
   }
 
-  const handlePublishQuiz = async (quizId: string, projectId: string) => {
+  const handlePublishQuiz = async (quizId: string, materialId: string | null) => {
     try {
-      const material = materials.find((m) => m.project_id === projectId)
-      if (!material) {
+      if (!materialId) {
         message.error('No material found for this quiz')
         return
       }
 
       await api.post('/public_quizzes', {
         quiz_id: quizId,
-        material_id: material.id,
+        material_id: materialId,
       })
 
       message.success('Quiz published successfully!')
@@ -380,8 +379,8 @@ function QuizzesPage() {
           return (
             <span
               className={`inline-flex items-center px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${isPublished
-                  ? 'bg-violet-50 text-violet-600 border-violet-100'
-                  : 'bg-slate-50 text-slate-400 border-slate-100'
+                ? 'bg-violet-50 text-violet-600 border-violet-100'
+                : 'bg-slate-50 text-slate-400 border-slate-100'
                 }`}
             >
               {isPublished ? 'PUBLIC' : 'PRIVATE'}
@@ -462,7 +461,7 @@ function QuizzesPage() {
                     {
                       key: 'publish',
                       label: 'Publish',
-                      onClick: () => handlePublishQuiz(quiz.id, quiz.project_id),
+                      onClick: () => handlePublishQuiz(quiz.id, quiz.material_id),
                       disabled: quiz.status !== 'completed' || publishedQuizIds.has(quiz.id),
                     },
                     {
