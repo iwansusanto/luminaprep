@@ -135,18 +135,22 @@ function ToolCallAccordion({ toolCall }: { toolCall: ToolCall }) {
 function renderToolResult(result: Record<string, unknown>): React.ReactNode {
   // Handle get_context results
   if ('projects' in result || 'materials' in result || 'quizzes' in result) {
+    const projects = result.projects as any[];
+    const materials = result.materials as any[];
+    const quizzes = result.quizzes as any[];
+
     return (
       <div className="space-y-3">
-        {result.projects && Array.isArray(result.projects) && (
+        {Array.isArray(projects) && (
           <div>
             <p className="font-semibold text-slate-700 mb-1">
-              Projects ({result.projects.length})
+              Projects ({projects.length})
             </p>
-            {result.projects.length === 0 ? (
+            {projects.length === 0 ? (
               <p className="text-slate-500 italic">No projects found</p>
             ) : (
               <ul className="list-disc list-inside space-y-1">
-                {result.projects.map((p: any, i: number) => (
+                {projects.map((p: any, i: number) => (
                   <li key={i} className="text-slate-600">
                     {p.title} <span className="text-slate-400">({p.status})</span>
                   </li>
@@ -156,23 +160,23 @@ function renderToolResult(result: Record<string, unknown>): React.ReactNode {
           </div>
         )}
         
-        {result.materials && Array.isArray(result.materials) && (
+        {Array.isArray(materials) && (
           <div>
             <p className="font-semibold text-slate-700 mb-1">
-              Materials ({result.materials.length})
+              Materials ({materials.length})
             </p>
-            {result.materials.length === 0 ? (
+            {materials.length === 0 ? (
               <p className="text-slate-500 italic">No materials found</p>
             ) : (
               <ul className="list-disc list-inside space-y-1">
-                {result.materials.slice(0, 10).map((m: any, i: number) => (
+                {materials.slice(0, 10).map((m: any, i: number) => (
                   <li key={i} className="text-slate-600">
                     {m.file_name} <span className="text-slate-400">({m.status})</span>
                   </li>
                 ))}
-                {result.materials.length > 10 && (
+                {materials.length > 10 && (
                   <li className="text-slate-500 italic">
-                    ... and {result.materials.length - 10} more
+                    ... and {materials.length - 10} more
                   </li>
                 )}
               </ul>
@@ -180,23 +184,23 @@ function renderToolResult(result: Record<string, unknown>): React.ReactNode {
           </div>
         )}
         
-        {result.quizzes && Array.isArray(result.quizzes) && (
+        {Array.isArray(quizzes) && (
           <div>
             <p className="font-semibold text-slate-700 mb-1">
-              Quizzes ({result.quizzes.length})
+              Quizzes ({quizzes.length})
             </p>
-            {result.quizzes.length === 0 ? (
+            {quizzes.length === 0 ? (
               <p className="text-slate-500 italic">No quizzes found</p>
             ) : (
               <ul className="list-disc list-inside space-y-1">
-                {result.quizzes.slice(0, 10).map((q: any, i: number) => (
+                {quizzes.slice(0, 10).map((q: any, i: number) => (
                   <li key={i} className="text-slate-600">
                     {q.topic || 'Untitled'} - {q.question_count} questions
                   </li>
                 ))}
-                {result.quizzes.length > 10 && (
+                {quizzes.length > 10 && (
                   <li className="text-slate-500 italic">
-                    ... and {result.quizzes.length - 10} more
+                    ... and {quizzes.length - 10} more
                   </li>
                 )}
               </ul>
