@@ -26,6 +26,7 @@ from app.crud.quiz_session import get_quiz_session_by_id
 from app.crud.material import get_material_by_id
 from app.crud.question import get_question_by_id
 from app.utils.oa_client import oa_client
+from app.utils import langfuse_client as observability
 from app.core.config import settings
 
 router = APIRouter()
@@ -35,6 +36,13 @@ _SSE_HEADERS = {
     "Connection": "keep-alive",
     "X-Accel-Buffering": "no",
 }
+
+MODEL_NAME = "gpt-4o-mini"
+PROMPT_VERSION = "v1"
+
+
+def _preview(text: str, limit: int = 500) -> str:
+    return " ".join(text.split())[:limit]
 
 
 # ── Auth helper for SSE (token via query param) ───────────────────────────────
@@ -66,6 +74,10 @@ async def _real_feedback_stream(
     user_answer: str,
     explanation: str | None,
     is_correct: bool,
+    trace=None,
+    question_id: str | None = None,
+    quiz_id: str | None = None,
+    session_id: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """Stream AI feedback token-by-token via OpenAI chat completions."""
 
@@ -90,9 +102,24 @@ async def _real_feedback_stream(
     # Send start event
     yield _sse({"type": "start", "is_correct": is_correct})
 
+    generation = observability.generation(
+        trace,
+        name="feedback-generation-stream",
+        model=MODEL_NAME,
+        input_data={
+            "operation": "feedback-generation-stream",
+            "prompt_version": PROMPT_VERSION,
+            "question_id": question_id,
+            "quiz_id": quiz_id,
+            "session_id": session_id,
+            "is_correct": is_correct,
+            "prompt_preview": _preview(user_prompt),
+        },
+    )
+    token_count = 0
     try:
         stream = oa_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=MODEL_NAME,
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": user_prompt},
@@ -104,12 +131,29 @@ async def _real_feedback_stream(
         for chunk in stream:
             delta = chunk.choices[0].delta
             if delta.content:
+                token_count += 1
                 yield _sse({"type": "token", "content": delta.content})
                 await asyncio.sleep(0)  # yield control to event loop
 
+        observability.end_observation(
+            generation,
+            output={"status": "success", "stream_chunks": token_count},
+        )
+        observability.update_observation(
+            trace,
+            output={"status": "success", "stream_chunks": token_count},
+        )
         yield _sse({"type": "done", "completed": True})
 
     except Exception as e:
+        observability.end_observation(
+            generation,
+            output={"status": "failed", "error": str(e)},
+        )
+        observability.update_observation(
+            trace,
+            output={"status": "failed", "error": str(e)},
+        )
         yield _sse({"type": "error", "message": str(e)})
 
     yield "data: [DONE]\n\n"
@@ -178,6 +222,26 @@ async def stream_feedback(
 
     user_answer = attempt.user_answer if attempt else "Tidak dijawab"
     is_correct = attempt.is_correct if attempt else False
+    trace = observability.safe_trace(
+        "feedback-generation",
+        metadata=observability.standard_metadata(
+            "feedback-generation",
+            user_id=user.id,
+            project_id=question.quiz.project_id if question.quiz else None,
+            quiz_id=quiz_session.quiz_id,
+            session_id=session_id,
+            question_id=question_id,
+            is_correct=is_correct,
+            mode="stream",
+        ),
+        input={
+            "quiz_id": quiz_session.quiz_id,
+            "session_id": session_id,
+            "question_id": question_id,
+            "is_correct": is_correct,
+            "mode": "stream",
+        },
+    )
 
     return StreamingResponse(
         _real_feedback_stream(
@@ -186,6 +250,10 @@ async def stream_feedback(
             user_answer=user_answer,
             explanation=question.explanation,
             is_correct=is_correct,
+            trace=trace,
+            question_id=question_id,
+            quiz_id=quiz_session.quiz_id,
+            session_id=session_id,
         ),
         media_type="text/event-stream",
         headers=_SSE_HEADERS,

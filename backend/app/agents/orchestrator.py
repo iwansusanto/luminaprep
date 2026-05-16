@@ -202,6 +202,7 @@ class AgentOrchestrator:
                 quiz_id=quiz_id,
                 selected_answer=selected_answer,
                 is_correct=is_correct,
+                user_id=user_id,
             )
 
             if trace:
