@@ -4,7 +4,7 @@ import {
   ArrowRight,
   FileText,
   Brain,
-  BarChart,
+  BarChart3,
   Zap,
   ChevronRight
 } from 'lucide-react'
@@ -13,12 +13,6 @@ import heroImage from '@/assets/hero-ai.png'
 export const Route = createFileRoute('/')({
   component: LandingPage,
 })
-
-const fadeIn = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.6 }
-}
 
 function LandingPage() {
   return (
@@ -199,7 +193,7 @@ function LandingPage() {
               >
                 <div className="flex items-start gap-4 mb-4">
                   <div className="w-10 h-10 bg-white border border-[#E4E4E7] rounded-lg flex items-center justify-center flex-shrink-0">
-                    <BarChart className="w-5 h-5 text-[#09090B]" />
+                    <BarChart3 className="w-5 h-5 text-[#09090B]" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-[#09090B] mb-1">Progress Analytics</h3>
