@@ -106,7 +106,10 @@ function DashboardIndexPage() {
   }
 
   const fetchMaterials = useCallback(async (silent = false) => {
-    if (!projectId) return;
+    if (!projectId) {
+      if (!silent) setLoading(false);
+      return;
+    }
     if (!silent) setLoading(true)
     try {
       const response = await authFetch(`/api/v1/materials/project/${projectId}`)
@@ -255,6 +258,7 @@ function DashboardIndexPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-7 space-y-8">
             <KnowledgeVault
+              key={`vault-${materials.length}`}
               materials={materials}
               loading={loading}
               onAddMaterial={() => setIsUploadModalVisible(true)}
@@ -415,8 +419,11 @@ function DashboardIndexPage() {
               projectId={projectId}
               currentCount={materials.length}
               onUploadSuccess={() => {
-                fetchMaterials()
-                setIsUploadModalVisible(false)
+                // Small delay to ensure DB consistency
+                setTimeout(() => {
+                  fetchMaterials()
+                  setIsUploadModalVisible(false)
+                }, 500)
               }}
               className="bg-transparent border-none shadow-none p-0"
             />
