@@ -164,7 +164,7 @@ function QuizzesPage() {
     return () => clearInterval(interval)
   }, [fetchData, quizzes])
 
-  const handleDeleteQuiz = (quiz: Quiz, index: number) => {
+  const handleDeleteQuiz = (quiz: Quiz) => {
     Modal.confirm({
       title: 'Remove Quiz',
       content: `This will remove the quiz from your view only${quiz.is_owner ? '. Other users who have taken this quiz will still see it.' : '.'}`,
@@ -359,7 +359,6 @@ function QuizzesPage() {
         header: () => <span className="text-right block">Actions</span>,
         cell: (info) => {
           const quiz = info.row.original
-          const idx = info.row.index
           const isDisabled = quiz.status === 'failed' || quiz.status === 'processing'
           const startPath =
             quiz.status === 'completed'
@@ -442,7 +441,7 @@ function QuizzesPage() {
                       icon: <Trash2 className="w-3.5 h-3.5" />,
                       label: 'Remove from My Quiz',
                       danger: true,
-                      onClick: () => handleDeleteQuiz(quiz, idx),
+                      onClick: () => handleDeleteQuiz(quiz),
                     },
                   ],
                 }}
