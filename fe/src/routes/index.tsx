@@ -1,17 +1,14 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
 import {
-  BrainCircuit,
-  Target,
-  MessageSquare,
-  Zap,
-  BarChart3,
-  ShieldCheck,
   ArrowRight,
-  CheckCircle2
+  FileText,
+  Brain,
+  BarChart,
+  Zap,
+  ChevronRight
 } from 'lucide-react'
 import heroImage from '@/assets/hero-ai.png'
-import bgImage from '@/assets/bg-abstract.png'
 
 export const Route = createFileRoute('/')({
   component: LandingPage,
@@ -23,43 +20,34 @@ const fadeIn = {
   transition: { duration: 0.6 }
 }
 
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-}
-
 function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100 selection:bg-primary/30 relative font-sans">
-      {/* Background Image Layer */}
-      <div
-        className="fixed inset-0 z-0 opacity-40 pointer-events-none bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${bgImage})` }}
-      ></div>
-      <div className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-b from-transparent via-[#020617]/50 to-[#020617]"></div>
+    <div className="min-h-screen bg-[#FAFAFA] text-[#09090B] font-sans">
+      {/* Structured Grid Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `
+            linear-gradient(to right, #E4E4E7 1px, transparent 1px),
+            linear-gradient(to bottom, #E4E4E7 1px, transparent 1px)
+          `,
+          backgroundSize: '64px 64px',
+          opacity: 0.4
+        }}></div>
+      </div>
 
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 border-b border-white/[0.05] bg-[#020617]/60 backdrop-blur-2xl">
+      <nav className="fixed top-0 w-full z-50 border-b border-[#E4E4E7] bg-[#FAFAFA]/80 backdrop-blur-xl">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-            <img src="/logo.jpg" alt="LuminaPrep Logo" className="w-8 h-8 rounded-lg shadow-lg shadow-blue-600/20 object-cover" />
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+            <img src="https://res.cloudinary.com/dfwutfkbn/image/upload/v1778865007/c53281de-f18c-45fa-ae3d-bdd4cbb95e85.png" alt="LuminaPrep Logo" className="w-8 h-8 rounded-lg object-cover" />
+            <span className="text-lg font-semibold tracking-tight text-[#09090B]">
               LuminaPrep
             </span>
           </Link>
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-            <a href="#features" className="text-slate-300 hover:text-white transition-colors">Features</a>
-            <a href="#how-it-works" className="text-slate-300 hover:text-white transition-colors">How it Works</a>
-            <a href="#metrics" className="text-slate-300 hover:text-white transition-colors">Metrics</a>
-            <a href="https://github.com/iwansusanto/luminaprep" target="_blank" rel="noreferrer" className="text-slate-300 hover:text-white transition-colors flex items-center gap-1">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-github"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.28 1.15-.28 2.35 0 3.5-.73 1.02-1.08 2.25-1 3.5 0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></svg>
-              GitHub
-            </a>
-            <Link to="/login" className="bg-blue-600 text-white px-5 py-2 rounded-full hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-95">
-              Get Started
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-[#71717A]">
+            <Link to="/login" className="hover:text-[#09090B] transition-colors">Sign in</Link>
+            <Link to="/login" className="bg-[#09090B] text-white px-5 py-2 rounded-lg hover:bg-[#18181B] transition-colors">
+              Get Started free
             </Link>
           </div>
         </div>
@@ -68,206 +56,298 @@ function LandingPage() {
       {/* Main Content */}
       <div className="relative z-10">
         {/* Hero Section */}
-        <section className="pt-40 pb-20 overflow-hidden">
+        <section className="min-h-screen flex items-center pt-16">
           <div className="container mx-auto px-4">
-            <div className="flex flex-col lg:flex-row items-center gap-12 text-center lg:text-left">
+            <div className="flex flex-col lg:flex-row items-center gap-16">
               <motion.div
-                className="flex-1"
-                initial={{ opacity: 0, x: -50 }}
+                className="flex-1 max-w-2xl"
+                initial={{ opacity: 0, x: -30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
               >
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold mb-6">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                  </span>
-                  AI-Native Learning Platform
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#FAFAFA] border border-[#E4E4E7] text-[#71717A] text-xs font-mono mb-6">
+                  <span className="w-2 h-2 bg-[#0066FF] rounded-full"></span>
+                  Free to Use
                 </div>
-                <h1 className="text-6xl lg:text-8xl font-black tracking-tight mb-6 leading-[1] text-white">
-                  Master Your <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 animate-gradient">
-                    Potential.
-                  </span>
+                <h1 className="text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-[1.1] text-[#09090B]">
+                  Turn Complex Documents into <br />
+                  <span className="text-[#0066FF]">High-Fidelity Study Suites.</span>
                 </h1>
-                <p className="text-xl text-slate-400 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                  LuminaPrep redefines education through intelligent personalization. Experience a platform that learns how you learn.
+                <p className="text-lg text-[#71717A] mb-8 leading-relaxed max-w-xl">
+                  LuminaPrep leverages context-aware RAG to ingest dense learning materials, instantly generating adaptive active-recall evaluations. Built for high-achievers who value depth.
                 </p>
-                <div className="flex flex-col sm:flex-row items-center gap-6 justify-center lg:justify-start">
-                  <Link to="/login" className="group bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-blue-500 transition-all shadow-2xl shadow-blue-600/40 flex items-center gap-2 active:scale-95">
-                    Start Learning Now
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <Link to="/login" className="group bg-[#09090B] text-white px-6 py-3 rounded-lg font-medium text-sm hover:bg-[#18181B] transition-colors flex items-center gap-2">
+                    Get Started Free
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </Link>
-                  <div className="flex items-center gap-4">
-                    <div className="flex -space-x-3">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="w-10 h-10 rounded-full border-2 border-slate-900 bg-slate-800 overflow-hidden">
-                          <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + 20}`} alt="User" />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="text-sm text-slate-400">
-                      <span className="font-bold text-white">10k+</span> Students joined
-                    </div>
-                  </div>
+                  <a href="https://github.com/iwansusanto/luminaprep" target="_blank" rel="noreferrer" className="text-sm text-[#71717A] hover:text-[#09090B] transition-colors">
+                    View Documentation →
+                  </a>
                 </div>
               </motion.div>
 
               <motion.div
-                className="flex-1 relative w-full max-w-2xl"
-                initial={{ opacity: 0, scale: 0.9 }}
+                className="flex-1 relative w-full max-w-xl"
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 1, ease: "easeOut" }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
               >
-                <div className="relative z-10 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(37,99,235,0.2)] border border-white/10 group">
+                <div className="relative rounded-xl overflow-hidden border border-[#E4E4E7] bg-white shadow-sm">
                   <img
                     src={heroImage}
-                    alt="LuminaPrep AI Interface"
-                    className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700"
+                    alt="LuminaPrep Interface"
+                    className="w-full h-auto"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
                 </div>
-
-                {/* Floating Glass Cards */}
-                <motion.div
-                  className="absolute -top-6 -left-6 bg-slate-900/60 backdrop-blur-xl p-4 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-4 z-20"
-                  animate={{ y: [0, 10, 0] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <div className="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center">
-                    <BrainCircuit className="text-indigo-400 w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">AI Optimizer</div>
-                    <div className="font-bold text-sm">Path Synchronized</div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  className="absolute -bottom-6 -right-6 bg-slate-900/60 backdrop-blur-xl p-4 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-4 z-20"
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
-                    <Target className="text-green-400 w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Mastery</div>
-                    <div className="font-bold text-sm">94% Accuracy</div>
-                  </div>
-                </motion.div>
               </motion.div>
             </div>
           </div>
         </section>
 
-        {/* Features Section */}
-        <section id="features" className="py-32">
-          <div className="container mx-auto px-4 text-center">
-            <div className="max-w-3xl mx-auto mb-20">
-              <h2 className="text-4xl font-bold mb-6 text-white">Intelligent Infrastructure</h2>
-              <p className="text-slate-400">Everything you need to master your future, powered by state-of-the-art AI models.</p>
+        {/* Features Section - Bento Grid */}
+        <section id="features" className="py-32 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto mb-16">
+              <h2 className="text-3xl font-bold tracking-tight mb-4 text-[#09090B]">
+                Infrastructure for Advanced Learning
+              </h2>
+              <p className="text-[#71717A]">
+                Purpose-built components that transform static content into interactive learning experiences.
+              </p>
             </div>
 
-            <motion.div
-              className="grid md:grid-cols-3 gap-6"
-              variants={staggerContainer}
-              initial="initial"
-              whileInView="animate"
-              viewport={{ once: true }}
-            >
-              {[
-                { title: "Personalized Pathways", desc: "Adaptive study plans that evolve with your progress.", icon: <Target className="text-blue-400" /> },
-                { title: "AI Tutor Chat", desc: "24/7 instant guidance for complex concepts.", icon: <MessageSquare className="text-purple-400" /> },
-                { title: "Smart Retention", desc: "Memory-optimized flashcards based on spaced repetition.", icon: <Zap className="text-yellow-400" /> },
-                { title: "Live Analytics", desc: "Granular data insights into your learning velocity.", icon: <BarChart3 className="text-green-400" /> },
-                { title: "Adaptive Assessment", desc: "Tests that find and bridge your specific knowledge gaps.", icon: <BrainCircuit className="text-pink-400" /> },
-                { title: "Enterprise Security", desc: "Privacy-first architecture to keep your data safe.", icon: <ShieldCheck className="text-indigo-400" /> }
-              ].map((feature, i) => (
-                <motion.div
-                  key={i}
-                  className="group p-8 rounded-3xl bg-slate-900/40 backdrop-blur-md border border-white/5 hover:border-blue-500/30 transition-all duration-500 hover:bg-slate-800/40"
-                  variants={fadeIn}
-                >
-                  <div className="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center mb-8 border border-white/5 group-hover:scale-110 group-hover:bg-blue-600/10 transition-all duration-500">
-                    {feature.icon}
+            <div className="grid md:grid-cols-3 gap-4">
+              {/* RAG Ingestion Card */}
+              <motion.div
+                className="col-span-2 bg-[#FAFAFA] border border-[#E4E4E7] rounded-xl p-6 hover:border-[#0066FF] hover:shadow-sm transition-all duration-300"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-10 h-10 bg-white border border-[#E4E4E7] rounded-lg flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-5 h-5 text-[#09090B]" />
                   </div>
-                  <h3 className="text-xl font-bold mb-4 text-white">{feature.title}</h3>
-                  <p className="text-slate-400 leading-relaxed text-sm">
-                    {feature.desc}
-                  </p>
-                </motion.div>
-              ))}
-            </motion.div>
+                  <div>
+                    <h3 className="font-semibold text-[#09090B] mb-1">RAG-Powered Ingestion</h3>
+                    <p className="text-sm text-[#71717A]">Context-aware document processing with vector embeddings</p>
+                  </div>
+                </div>
+                {/* UI Snippet */}
+                <div className="bg-white border border-[#E4E4E7] rounded-lg p-4 font-mono text-xs">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-3 h-3 rounded-full bg-[#E4E4E7]"></div>
+                    <div className="w-3 h-3 rounded-full bg-[#E4E4E7]"></div>
+                    <div className="w-3 h-3 rounded-full bg-[#E4E4E7]"></div>
+                  </div>
+                  <div className="space-y-2 text-[#71717A]">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#0066FF]">→</span>
+                      <span>lecture_notes.pdf</span>
+                      <span className="text-[#0066FF] ml-auto">processing...</span>
+                    </div>
+                    <div className="h-1 bg-[#E4E4E7] rounded overflow-hidden">
+                      <div className="h-full bg-[#0066FF] w-3/4 animate-pulse"></div>
+                    </div>
+                    <div className="text-[10px] text-[#71717A]">Vector embeddings generated: 1,247 chunks</div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Quiz Generation Card */}
+              <motion.div
+                className="bg-[#FAFAFA] border border-[#E4E4E7] rounded-xl p-6 hover:border-[#0066FF] hover:shadow-sm transition-all duration-300"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                viewport={{ once: true }}
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-10 h-10 bg-white border border-[#E4E4E7] rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Brain className="w-5 h-5 text-[#09090B]" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-[#09090B] mb-1">Adaptive Quizzes</h3>
+                    <p className="text-sm text-[#71717A]">AI-generated assessments with difficulty calibration</p>
+                  </div>
+                </div>
+                {/* UI Snippet */}
+                <div className="bg-white border border-[#E4E4E7] rounded-lg p-4">
+                  <div className="text-xs font-mono text-[#71717A] mb-3">
+                    <span className="text-[#09090B]">Q:</span> What is the primary function...
+                  </div>
+                  <div className="space-y-2">
+                    {['A. To process data', 'B. To store information', 'C. To analyze patterns'].map((opt, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs font-mono text-[#71717A] p-2 rounded hover:bg-[#FAFAFA] cursor-pointer">
+                        <span className="text-[#0066FF]">{opt[0]}</span>
+                        <span>{opt.slice(3)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Analytics Card */}
+              <motion.div
+                className="bg-[#FAFAFA] border border-[#E4E4E7] rounded-xl p-6 hover:border-[#0066FF] hover:shadow-sm transition-all duration-300"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                viewport={{ once: true }}
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-10 h-10 bg-white border border-[#E4E4E7] rounded-lg flex items-center justify-center flex-shrink-0">
+                    <BarChart className="w-5 h-5 text-[#09090B]" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-[#09090B] mb-1">Progress Analytics</h3>
+                    <p className="text-sm text-[#71717A]">Real-time performance tracking and insights</p>
+                  </div>
+                </div>
+                {/* UI Snippet */}
+                <div className="bg-white border border-[#E4E4E7] rounded-lg p-4">
+                  <div className="flex items-end gap-1 h-16 mb-2">
+                    {[40, 65, 45, 80, 55, 90, 75].map((h, i) => (
+                      <div key={i} className="flex-1 bg-[#0066FF] rounded-sm" style={{ height: `${h}%`, opacity: 0.6 + (i * 0.06) }}></div>
+                    ))}
+                  </div>
+                  <div className="text-xs font-mono text-[#71717A]">
+                    <span className="text-[#0066FF]">▲</span> 23% improvement this week
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Performance Card */}
+              <motion.div
+                className="col-span-2 bg-[#FAFAFA] border border-[#E4E4E7] rounded-xl p-6 hover:border-[#0066FF] hover:shadow-sm transition-all duration-300"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                viewport={{ once: true }}
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-10 h-10 bg-white border border-[#E4E4E7] rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Zap className="w-5 h-5 text-[#09090B]" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-[#09090B] mb-1">Performance Optimization</h3>
+                    <p className="text-sm text-[#71717A]">Sub-second response times with edge deployment</p>
+                  </div>
+                </div>
+                {/* UI Snippet */}
+                <div className="grid grid-cols-3 gap-4">
+                  {[
+                    { label: 'Ingestion', value: '0.8s' },
+                    { label: 'Quiz Gen', value: '1.2s' },
+                    { label: 'Analytics', value: '0.3s' }
+                  ].map((metric, i) => (
+                    <div key={i} className="bg-white border border-[#E4E4E7] rounded-lg p-3 text-center">
+                      <div className="text-lg font-bold text-[#09090B] font-mono">{metric.value}</div>
+                      <div className="text-xs text-[#71717A]">{metric.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
           </div>
         </section>
 
-        {/* Success Stories / Metrics */}
-        <section id="metrics" className="py-20 relative">
+        {/* How It Works */}
+        <section id="how-it-works" className="py-32 bg-[#FAFAFA]">
           <div className="container mx-auto px-4">
-            <div className="p-12 rounded-[2rem] bg-gradient-to-r from-blue-900/40 to-indigo-900/40 backdrop-blur-2xl border border-white/5 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-12 opacity-5">
-                <BrainCircuit className="w-60 h-60 text-white" />
-              </div>
-              <div className="grid md:grid-cols-4 gap-12 text-center relative z-10">
-                {[
-                  { value: "45%", label: "Learning Boost" },
-                  { value: "92%", label: "Pass Rate" },
-                  { value: "10k+", label: "Daily Users" },
-                  { value: "24/7", label: "AI Tutor" }
-                ].map((metric, i) => (
-                  <div key={i}>
-                    <div className="text-5xl font-black text-white mb-2 tracking-tighter">{metric.value}</div>
-                    <div className="text-xs text-blue-400 uppercase font-bold tracking-[0.2em]">{metric.label}</div>
+            <div className="max-w-3xl mx-auto mb-16">
+              <h2 className="text-3xl font-bold tracking-tight mb-4 text-[#09090B]">
+                Workflow
+              </h2>
+              <p className="text-[#71717A]">
+                Three-step process from document to mastery.
+              </p>
+            </div>
+
+            <div className="max-w-4xl mx-auto">
+              {[
+                {
+                  step: '01',
+                  title: 'Upload Materials',
+                  description: 'Drag and drop PDFs, slides, or any learning documents. Our RAG pipeline processes and indexes content automatically.'
+                },
+                {
+                  step: '02',
+                  title: 'Generate Assessments',
+                  description: 'AI creates personalized quizzes based on your materials, calibrated to your current knowledge level.'
+                },
+                {
+                  step: '03',
+                  title: 'Track Progress',
+                  description: 'Monitor your learning trajectory with detailed analytics and adaptive recommendations.'
+                }
+              ].map((item, i) => (
+                <motion.div
+                  key={i}
+                  className="flex gap-6 py-8 border-b border-[#E4E4E7] last:border-0"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <div className="flex-shrink-0 w-12 h-12 bg-white border border-[#E4E4E7] rounded-lg flex items-center justify-center font-mono text-sm text-[#71717A]">
+                    {item.step}
                   </div>
-                ))}
-              </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-[#09090B] mb-2">{item.title}</h3>
+                    <p className="text-[#71717A]">{item.description}</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-[#E4E4E7] flex-shrink-0" />
+                </motion.div>
+              ))}
             </div>
           </div>
         </section>
 
         {/* CTA Section */}
-        <section className="py-32">
+        <section className="py-32 bg-white border-t border-[#E4E4E7]">
           <div className="container mx-auto px-4 text-center">
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
+              transition={{ duration: 0.6 }}
               viewport={{ once: true }}
-              className="max-w-4xl mx-auto p-16 rounded-[3rem] bg-white text-slate-950 relative shadow-[0_0_100px_rgba(255,255,255,0.1)]"
+              className="max-w-2xl mx-auto"
             >
-              <h2 className="text-4xl md:text-6xl font-black mb-8 leading-[1.1]">Ready to Start Your <br /> AI Journey?</h2>
-              <p className="text-lg mb-10 text-slate-600 max-w-2xl mx-auto">
-                Join the next generation of learners mastering complex subjects through personalized intelligence. No commitment required.
+              <h2 className="text-3xl font-bold tracking-tight mb-4 text-[#09090B]">
+                Get Started Free
+              </h2>
+              <p className="text-[#71717A] mb-8">
+                Transform your learning materials into interactive study suites. No credit card required.
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                <Link to="/login" className="w-full sm:w-auto bg-blue-600 text-white px-10 py-5 rounded-2xl font-bold text-xl hover:bg-blue-700 transition-all shadow-2xl active:scale-95 inline-flex justify-center">
-                  Get Started Free
-                </Link>
-                <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
-                  <CheckCircle2 className="text-green-500 w-5 h-5" />
-                  No credit card required
-                </div>
-              </div>
+              <Link to="/login" className="inline-flex items-center gap-2 bg-[#09090B] text-white px-6 py-3 rounded-lg font-medium text-sm hover:bg-[#18181B] transition-colors">
+                Start Learning
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </motion.div>
           </div>
         </section>
 
         {/* Footer */}
-        <footer className="py-16 border-t border-white/5 bg-slate-950/80 backdrop-blur-md">
+        <footer className="py-12 border-t border-[#E4E4E7] bg-[#FAFAFA]">
           <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row justify-between items-center gap-8">
               <div className="flex items-center gap-2">
-                <img src="/logo.jpg" alt="LuminaPrep Logo" className="w-6 h-6 rounded-md object-cover" />
-                <span className="text-xl font-bold text-white">LuminaPrep</span>
+                <img src="https://res.cloudinary.com/dfwutfkbn/image/upload/v1778865007/c53281de-f18c-45fa-ae3d-bdd4cbb95e85.png" alt="LuminaPrep Logo" className="w-6 h-6 rounded object-cover" />
+                <span className="text-sm font-semibold text-[#09090B]">LuminaPrep</span>
               </div>
-              <div className="flex gap-10 text-sm font-medium text-slate-400">
-                <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy</Link>
-                <Link to="/term-of-service" className="hover:text-white transition-colors">Terms</Link>
-                <a href="#" className="hover:text-white transition-colors">Help</a>
+              <div className="hidden md:flex items-center gap-8 text-sm font-medium text-[#71717A]">
+                <a href="#features" className="hover:text-[#09090B] transition-colors">Features</a>
+                <a href="#how-it-works" className="hover:text-[#09090B] transition-colors">How it Works</a>
+                <a href="https://github.com/iwansusanto/luminaprep" target="_blank" rel="noreferrer" className="hover:text-[#09090B] transition-colors">GitHub</a>
+                <Link to="/login" className="bg-[#09090B] text-white px-5 py-2 rounded-lg hover:bg-[#18181B] transition-colors">
+                  Get Started
+                </Link>
               </div>
-              <p className="text-sm text-slate-500">
-                © 2026 LuminaPrep Inc. Future of Education.
+              <p className="text-sm text-[#71717A]">
+                2026 LuminaPrep Inc.
               </p>
             </div>
           </div>

@@ -90,7 +90,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isVisible }) =
         >
           <div className="w-24 h-24 bg-white rounded-[2.25rem] flex items-center justify-center shadow-2xl shadow-indigo-600/10 mb-8 relative group overflow-hidden border border-slate-100">
             <img
-              src="/logo.jpg"
+              src="https://res.cloudinary.com/dfwutfkbn/image/upload/v1778865007/c53281de-f18c-45fa-ae3d-bdd4cbb95e85.png"
               alt="LuminaPrep Logo"
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
             />

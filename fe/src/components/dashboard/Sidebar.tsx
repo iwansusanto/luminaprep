@@ -38,7 +38,7 @@ const Sidebar = () => {
         <div className="relative group">
           <div className="absolute -inset-2 bg-indigo-500/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <img
-            src="/logo.jpg"
+            src="https://res.cloudinary.com/dfwutfkbn/image/upload/v1778865007/c53281de-f18c-45fa-ae3d-bdd4cbb95e85.png"
             alt="LuminaPrep Logo"
             className="w-10 h-10 rounded-2xl shadow-xl object-cover relative z-10 border border-white/50 group-hover/logo:scale-105 transition-transform duration-500"
           />

@@ -3,7 +3,6 @@ import { motion } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../context/AuthContext'
-import bgImage from '@/assets/bg-abstract.png'
 
 export const Route = createFileRoute('/login')({
   beforeLoad: ({ context }) => {
@@ -41,17 +40,22 @@ function LoginPage() {
   })
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100 flex flex-col relative font-sans overflow-hidden">
-      {/* Background Image Layer */}
-      <div
-        className="fixed inset-0 z-0 opacity-30 pointer-events-none bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${bgImage})` }}
-      ></div>
-      <div className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#020617]/80 via-[#020617] to-[#020617]"></div>
+    <div className="min-h-screen bg-[#FAFAFA] text-[#09090B] font-sans">
+      {/* Structured Grid Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `
+            linear-gradient(to right, #E4E4E7 1px, transparent 1px),
+            linear-gradient(to bottom, #E4E4E7 1px, transparent 1px)
+          `,
+          backgroundSize: '64px 64px',
+          opacity: 0.4
+        }}></div>
+      </div>
 
-      {/* Navigation Bar (Minimal) */}
+      {/* Navigation Bar */}
       <nav className="relative z-10 w-full p-6">
-        <Link to="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+        <Link to="/" className="inline-flex items-center gap-2 text-[#71717A] hover:text-[#09090B] transition-colors font-medium">
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Home</span>
         </Link>
@@ -59,40 +63,57 @@ function LoginPage() {
 
       {/* Login Container */}
       <div className="relative z-10 flex-1 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
-        >
-          {/* Glass Card */}
-          <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-            {/* Glow effects */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-blue-500/10 blur-[50px] rounded-full pointer-events-none"></div>
-
-            <div className="flex flex-col items-center text-center space-y-6">
-              {/* Logo */}
-              <div className="flex items-center gap-3 mb-2">
-                <img src="/logo.jpg" alt="LuminaPrep Logo" className="w-10 h-10 rounded-xl shadow-lg shadow-blue-600/30 object-cover" />
-                <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                  LuminaPrep
-                </span>
+        <div className="w-full max-w-5xl flex flex-col lg:flex-row gap-12">
+          {/* Left Side - Brand Identity */}
+          <motion.div
+            className="flex-1 hidden lg:flex flex-col justify-center"
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="space-y-12">
+              <div>
+                <div className="flex items-center gap-3 mb-8">
+                  <img src="https://res.cloudinary.com/dfwutfkbn/image/upload/v1778865007/c53281de-f18c-45fa-ae3d-bdd4cbb95e85.png" alt="LuminaPrep Logo" className="w-12 h-12 rounded-lg object-cover" />
+                  <span className="text-2xl font-semibold tracking-tight text-[#09090B]">
+                    LuminaPrep
+                  </span>
+                </div>
+                <blockquote className="text-3xl font-light leading-relaxed text-[#09090B]">
+                  "The best way to predict the future is to create it."
+                </blockquote>
+                <cite className="block mt-4 text-sm text-[#71717A] not-italic">
+                  — Peter Drucker
+                </cite>
               </div>
+            </div>
+          </motion.div>
 
-              <div className="space-y-2">
-                <h1 className="text-2xl font-bold text-white tracking-tight">Welcome Back</h1>
-                <p className="text-sm text-slate-400">
-                  Log in to access your personalized learning dashboard
-                </p>
-              </div>
+          {/* Right Side - Login Form */}
+          <motion.div
+            className="flex-1 w-full max-w-md"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <div className="bg-white border border-[#E4E4E7] rounded-xl p-8 shadow-sm">
+              <div className="space-y-8">
+                {/* Header */}
+                <div>
+                  <h1 className="text-2xl font-semibold tracking-tight mb-2 text-[#09090B]">
+                    Get Started Free
+                  </h1>
+                  <p className="text-sm text-[#71717A]">
+                    Transform your learning materials into interactive study suites.
+                  </p>
+                </div>
 
-              {/* Login Button */}
-              <div className="w-full pt-4">
+                {/* Google Login Button */}
                 <button 
                   onClick={() => handleGoogleLogin()}
-                  className="w-full relative group flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-900 px-6 py-3.5 rounded-2xl font-medium transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] active:scale-[0.98]"
+                  className="w-full flex items-center justify-center gap-3 bg-white hover:bg-[#FAFAFA] text-[#09090B] px-4 py-3 rounded-lg font-medium text-sm border border-[#E4E4E7] hover:border-[#09090B] transition-all duration-200"
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
@@ -100,18 +121,42 @@ function LoginPage() {
                   </svg>
                   <span>Continue with Google</span>
                 </button>
-              </div>
 
-              {/* Terms */}
-              <p className="text-xs text-slate-500 pt-4">
-                By continuing, you agree to LuminaPrep's{' '}
-                <Link to="/term-of-service" className="text-slate-400 hover:text-white underline decoration-slate-600 underline-offset-2">Terms of Service</Link>
-                {' '}and{' '}
-                <Link to="/privacy-policy" className="text-slate-400 hover:text-white underline decoration-slate-600 underline-offset-2">Privacy Policy</Link>.
-              </p>
+                {/* Divider */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-[#E4E4E7]"></div>
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="px-2 bg-white text-[#71717A]">or</span>
+                  </div>
+                </div>
+
+                {/* Features */}
+                <div className="space-y-4">
+                  {[
+                    "Context-aware RAG ingestion",
+                    "Adaptive quiz generation",
+                    "Real-time progress analytics"
+                  ].map((feature, i) => (
+                    <div key={i} className="flex items-center gap-3 text-sm">
+                      <div className="w-1.5 h-1.5 bg-[#0066FF] rounded-full flex-shrink-0"></div>
+                      <span className="text-[#71717A]">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Terms */}
+                <p className="text-xs text-[#71717A] leading-relaxed">
+                  By continuing, you agree to our{' '}
+                  <Link to="/term-of-service" className="text-[#09090B] hover:underline">Terms</Link>
+                  {' '}and{' '}
+                  <Link to="/privacy-policy" className="text-[#09090B] hover:underline">Privacy Policy</Link>.
+                </p>
+              </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </div>
   )
