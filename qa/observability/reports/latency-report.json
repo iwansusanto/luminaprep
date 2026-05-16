@@ -1,0 +1,463 @@
+{
+  "generated_at": "2026-05-16T09:11:44.432703+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "samples_per_endpoint": 10,
+  "timeout_seconds": 5.0,
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/",
+      "expected_statuses": [
+        200
+      ],
+      "summary": {
+        "samples": 10,
+        "ok_count": 10,
+        "error_count": 0,
+        "error_rate": 0.0,
+        "min_ms": 0.28,
+        "max_ms": 6.79,
+        "avg_ms": 1.06,
+        "p50_ms": 0.43,
+        "p95_ms": 6.79,
+        "p99_ms": 6.79
+      },
+      "samples": [
+        {
+          "status": 200,
+          "duration_ms": 6.79,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"message\":\"Welcome to LuminaPrep Backend\",\"version\":\"0.1.0\",\"status\":\"running\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 0.64,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"message\":\"Welcome to LuminaPrep Backend\",\"version\":\"0.1.0\",\"status\":\"running\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 0.49,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"message\":\"Welcome to LuminaPrep Backend\",\"version\":\"0.1.0\",\"status\":\"running\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 0.64,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"message\":\"Welcome to LuminaPrep Backend\",\"version\":\"0.1.0\",\"status\":\"running\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 0.44,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"message\":\"Welcome to LuminaPrep Backend\",\"version\":\"0.1.0\",\"status\":\"running\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 0.36,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"message\":\"Welcome to LuminaPrep Backend\",\"version\":\"0.1.0\",\"status\":\"running\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 0.29,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"message\":\"Welcome to LuminaPrep Backend\",\"version\":\"0.1.0\",\"status\":\"running\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 0.28,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"message\":\"Welcome to LuminaPrep Backend\",\"version\":\"0.1.0\",\"status\":\"running\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 0.29,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"message\":\"Welcome to LuminaPrep Backend\",\"version\":\"0.1.0\",\"status\":\"running\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 0.43,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"message\":\"Welcome to LuminaPrep Backend\",\"version\":\"0.1.0\",\"status\":\"running\"}"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "expected_statuses": [
+        200
+      ],
+      "summary": {
+        "samples": 10,
+        "ok_count": 10,
+        "error_count": 0,
+        "error_rate": 0.0,
+        "min_ms": 150.2,
+        "max_ms": 372.7,
+        "avg_ms": 227.53,
+        "p50_ms": 202.86,
+        "p95_ms": 372.7,
+        "p99_ms": 372.7
+      },
+      "samples": [
+        {
+          "status": 200,
+          "duration_ms": 285.37,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"status\":\"healthy\",\"database\":\"connected\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 156.71,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"status\":\"healthy\",\"database\":\"connected\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 194.42,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"status\":\"healthy\",\"database\":\"connected\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 268.88,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"status\":\"healthy\",\"database\":\"connected\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 202.86,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"status\":\"healthy\",\"database\":\"connected\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 244.44,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"status\":\"healthy\",\"database\":\"connected\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 238.08,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"status\":\"healthy\",\"database\":\"connected\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 372.7,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"status\":\"healthy\",\"database\":\"connected\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 161.6,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"status\":\"healthy\",\"database\":\"connected\"}"
+        },
+        {
+          "status": 200,
+          "duration_ms": 150.2,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"status\":\"healthy\",\"database\":\"connected\"}"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "expected_statuses": [
+        401
+      ],
+      "summary": {
+        "samples": 10,
+        "ok_count": 10,
+        "error_count": 0,
+        "error_rate": 0.0,
+        "min_ms": 1.66,
+        "max_ms": 2.93,
+        "avg_ms": 2.15,
+        "p50_ms": 2.06,
+        "p95_ms": 2.93,
+        "p99_ms": 2.93
+      },
+      "samples": [
+        {
+          "status": 401,
+          "duration_ms": 2.54,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 2.93,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 2.12,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 2.34,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 1.66,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 1.92,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 2.06,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 2.15,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 2.01,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 1.74,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/projects/",
+      "expected_statuses": [
+        401
+      ],
+      "summary": {
+        "samples": 10,
+        "ok_count": 10,
+        "error_count": 0,
+        "error_rate": 0.0,
+        "min_ms": 0.57,
+        "max_ms": 2.31,
+        "avg_ms": 1.18,
+        "p50_ms": 0.79,
+        "p95_ms": 2.31,
+        "p99_ms": 2.31
+      },
+      "samples": [
+        {
+          "status": 401,
+          "duration_ms": 2.31,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 1.87,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 1.64,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 1.66,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 0.89,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 0.71,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 0.79,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 0.63,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 0.71,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 0.57,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/materials/project/test-project",
+      "expected_statuses": [
+        401
+      ],
+      "summary": {
+        "samples": 10,
+        "ok_count": 10,
+        "error_count": 0,
+        "error_rate": 0.0,
+        "min_ms": 0.45,
+        "max_ms": 0.67,
+        "avg_ms": 0.53,
+        "p50_ms": 0.5,
+        "p95_ms": 0.67,
+        "p99_ms": 0.67
+      },
+      "samples": [
+        {
+          "status": 401,
+          "duration_ms": 0.67,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 0.55,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 0.5,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 0.45,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 0.45,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 0.45,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 0.58,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 0.51,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 0.49,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        },
+        {
+          "status": 401,
+          "duration_ms": 0.64,
+          "ok": true,
+          "error": null,
+          "body_preview": "{\"detail\":\"Not authenticated\"}"
+        }
+      ]
+    }
+  ]
+}

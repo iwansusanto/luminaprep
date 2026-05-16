@@ -25,8 +25,8 @@ class FakeEmbeddingPipelineAgent:
 
 
 class FakeSummarizationAgent:
-    async def generate(self, text):
-        return f"Ringkasan: {text[:20]}"
+    async def generate_from_pages(self, pages):
+        return f"Ringkasan: {pages[0][:20]}"
 
 
 @pytest.mark.asyncio
@@ -69,10 +69,9 @@ async def test_ingestion_pipeline_updates_material_status_and_summary(
     )
 
     db.refresh(material)
-    assert result == {
-        "status": "success",
-        "material_id": material.id,
-        "num_chunks": 2,
-    }
+    assert result["status"] == "success"
+    assert result["material_id"] == material.id
+    assert result["num_chunks"] == 2
+    assert result["summary_length"] > 0
     assert material.status == "completed"
     assert material.summary.startswith("Ringkasan:")

@@ -5,11 +5,14 @@ def test_health_check(client):
     assert response.json()["status"] == "healthy"
 
 
-def test_google_auth_url(client):
-    response = client.get("/api/v1/auth/google/auth")
+def test_signin_endpoint_available(client):
+    response = client.post(
+        "/api/v1/auth/signin",
+        json={"email": "smoke@example.com", "name": "Smoke User"},
+    )
 
     assert response.status_code == 200
-    assert "authorization_url" in response.json()
+    assert "access_token" in response.json()
 
 
 def test_auth_me_requires_bearer_token(client):

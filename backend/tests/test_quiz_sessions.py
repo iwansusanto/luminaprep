@@ -4,7 +4,7 @@ from tests.conftest import _get_user_id
 
 def _start_session(client, auth_headers, quiz):
     resp = client.post(
-        f"/api/v1/quiz_sessions/{quiz['id']}/sessions", headers=auth_headers
+        f"/api/v1/quizzes/{quiz['id']}/sessions", headers=auth_headers
     )
     assert resp.status_code == 200, resp.text
     return resp.json()
