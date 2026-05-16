@@ -118,6 +118,34 @@ File output:
 qa/observability/reports/latency-report.json
 ```
 
+### 5. Backend Automated Tests
+
+Dari folder `backend`:
+
+```bash
+uv run --extra dev --extra celery pytest
+```
+
+Expected:
+
+- seluruh test backend pass;
+- termasuk `tests/test_mvp_happy_path.py`;
+- command memakai extra `celery` karena test background task mengimpor modul Celery.
+
+### 6. Frontend Smoke E2E
+
+Dari folder `fe`:
+
+```bash
+npm run test:e2e
+```
+
+Expected:
+
+- unauthenticated `/dashboard` redirect ke `/login`;
+- authenticated dashboard shell render dengan mocked BFF session;
+- material list dan navigasi dashboard terlihat.
+
 ## Mode B - Full Docker QA
 
 Gunakan mode ini jika ingin sama dengan tim yang menjalankan semua service lewat Docker.
@@ -233,6 +261,8 @@ Jangan lanjut ke E2E material/quiz sebelum semua gate ini hijau:
 | --- | --- | --- |
 | Backend alive | `curl -i http://localhost:8000/health` | `200` |
 | Backend auth contract | `curl -i http://localhost:8000/api/v1/auth/me` | `401` tanpa token |
+| Backend automated tests | `cd backend && uv run --extra dev --extra celery pytest` | semua test pass |
+| Frontend smoke E2E | `cd fe && npm run test:e2e` | semua Playwright smoke pass |
 | FE alive | `curl -i http://localhost:3000/` | `200` |
 | FE proxy to BE | `curl -i http://localhost:3000/api/v1/auth/me` | `401`, bukan `504` |
 | Latency probe | `python3 qa/observability/templates/latency_probe.py --base-url http://localhost:8000 --samples 3` | backend endpoint expected status terpenuhi |
@@ -257,4 +287,3 @@ Jika `/auth/session` mengembalikan `401` atau `200 {"authenticated":false}`:
 - catat sebagai contract decision.
 - Yang penting untuk smoke awal: endpoint tidak crash dan tidak `500`.
 - Untuk frontend UX, tim perlu memilih apakah unauthenticated session response harus `200` atau `401`.
-
