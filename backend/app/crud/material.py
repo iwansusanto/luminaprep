@@ -111,7 +111,7 @@ def update_material(
 
 
 def delete_material(db: Session, material_id: str, user_id: str) -> Optional[Material]:
-    """Delete a material (soft delete)."""
+    """Delete a material (soft delete). Also soft-deletes all quizzes linked to this material."""
     material = get_material_by_id(db, material_id, user_id)
     if not material:
         return None
@@ -123,8 +123,22 @@ def delete_material(db: Session, material_id: str, user_id: str) -> Optional[Mat
         except Exception:
             pass  # Ignore file deletion errors
 
-    # Soft delete
-    material.deleted_at = _now()
+    # Cascade soft-delete all quizzes linked to this material
+    from app.models.quiz import Quiz
+    now = _now()
+    linked_quizzes = (
+        db.query(Quiz)
+        .filter(
+            Quiz.material_id == material_id,
+            Quiz.deleted_at.is_(None),
+        )
+        .all()
+    )
+    for quiz in linked_quizzes:
+        quiz.deleted_at = now
+
+    # Soft delete material
+    material.deleted_at = now
 
     db.commit()
     db.refresh(material)

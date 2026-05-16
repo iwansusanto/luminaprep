@@ -1,6 +1,6 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session
+from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.crud.public_quiz import (
@@ -72,10 +72,24 @@ def list_public_quizzes(
         results = get_public_quizzes(db)
         quizzes = []
         for public_quiz, quiz in results:
+            # Get material file name for display if topic is null
+            material_file_name = None
+            if quiz.material_id:
+                from app.models.material import Material
+                material = db.query(Material).filter(
+                    Material.id == quiz.material_id,
+                    Material.deleted_at.is_(None),
+                ).first()
+                if material:
+                    # Strip extension for cleaner display
+                    import os
+                    material_file_name = os.path.splitext(material.file_name)[0]
+
             quizzes.append(
                 PublicQuizListItem(
                     quiz_id=quiz.id,
                     topic=quiz.topic,
+                    material_file_name=material_file_name,
                     difficulty_level=quiz.difficulty_level,
                     question_count=quiz.question_count,
                     created_at=public_quiz.created_at,

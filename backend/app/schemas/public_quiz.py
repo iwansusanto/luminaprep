@@ -19,6 +19,7 @@ class PublicQuizListItem(SQLModel):
 
     quiz_id: str
     topic: Optional[str] = None
+    material_file_name: Optional[str] = None
     difficulty_level: str
     question_count: int
     created_at: datetime

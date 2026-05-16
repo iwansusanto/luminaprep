@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
-from sqlmodel import Session, select
+from sqlalchemy.orm import Session
+from sqlalchemy import select
 from app.models.public_quiz import PublicQuiz
 from app.models.quiz import Quiz
 from app.models.project import Project
@@ -16,25 +17,27 @@ def create_public_quiz(
     user_id: str,
 ) -> Optional[PublicQuiz]:
     """Make a quiz public. Verify user owns the quiz."""
-    statement = (
-        select(Quiz)
+    quiz = (
+        db.query(Quiz)
         .join(Project)
-        .where(Quiz.id == quiz_id)
-        .where(Project.user_id == user_id)
-        .where(Quiz.deleted_at == None)
-        .where(Project.deleted_at == None)
+        .filter(
+            Quiz.id == quiz_id,
+            Project.user_id == user_id,
+            Quiz.deleted_at.is_(None),
+            Project.deleted_at.is_(None),
+        )
+        .first()
     )
-    quiz = db.execute(statement).scalar_one_or_none()
     if not quiz:
         return None
 
-    existing_statement = select(PublicQuiz).where(PublicQuiz.quiz_id == quiz_id)
-    existing = db.execute(existing_statement).scalar_one_or_none()
+    # Already public?
+    existing = db.query(PublicQuiz).filter(PublicQuiz.quiz_id == quiz_id).first()
     if existing:
         return None
 
     # Get material_id from the quiz's direct relation
-    material_id = quiz.material_id
+    material_id = quiz.material_id or ""
 
     public_quiz = PublicQuiz(
         material_id=material_id,
@@ -48,20 +51,21 @@ def create_public_quiz(
 
 def delete_public_quiz(db: Session, quiz_id: str, user_id: str) -> bool:
     """Make a quiz private. Verify user owns the quiz."""
-    statement = (
-        select(Quiz)
+    quiz = (
+        db.query(Quiz)
         .join(Project)
-        .where(Quiz.id == quiz_id)
-        .where(Project.user_id == user_id)
-        .where(Quiz.deleted_at == None)
-        .where(Project.deleted_at == None)
+        .filter(
+            Quiz.id == quiz_id,
+            Project.user_id == user_id,
+            Quiz.deleted_at.is_(None),
+            Project.deleted_at.is_(None),
+        )
+        .first()
     )
-    quiz = db.execute(statement).scalar_one_or_none()
     if not quiz:
         return False
 
-    public_quiz_statement = select(PublicQuiz).where(PublicQuiz.quiz_id == quiz_id)
-    public_quiz = db.execute(public_quiz_statement).scalar_one_or_none()
+    public_quiz = db.query(PublicQuiz).filter(PublicQuiz.quiz_id == quiz_id).first()
     if not public_quiz:
         return False
 
@@ -72,23 +76,25 @@ def delete_public_quiz(db: Session, quiz_id: str, user_id: str) -> bool:
 
 def get_public_quizzes(db: Session) -> List[tuple]:
     """Get all public quizzes with quiz metadata."""
-    statement = (
-        select(PublicQuiz, Quiz)
+    results = (
+        db.query(PublicQuiz, Quiz)
         .join(Quiz, PublicQuiz.quiz_id == Quiz.id)
-        .where(Quiz.deleted_at == None)
+        .filter(Quiz.deleted_at.is_(None))
         .order_by(PublicQuiz.created_at.desc())
+        .all()
     )
-    results = db.execute(statement).all()
     return results
 
 
 def get_public_quiz(db: Session, quiz_id: str) -> Optional[tuple]:
     """Get a single public quiz with quiz metadata. Verify it's published."""
-    statement = (
-        select(PublicQuiz, Quiz)
+    result = (
+        db.query(PublicQuiz, Quiz)
         .join(Quiz, PublicQuiz.quiz_id == Quiz.id)
-        .where(PublicQuiz.quiz_id == quiz_id)
-        .where(Quiz.deleted_at == None)
+        .filter(
+            PublicQuiz.quiz_id == quiz_id,
+            Quiz.deleted_at.is_(None),
+        )
+        .first()
     )
-    result = db.execute(statement).first()
     return result
