@@ -1,7 +1,31 @@
 from app.utils.oa_client import oa_client
+from app.utils import langfuse_client as observability
 from app.vector_db.collections import chromadb_collections
 from app.models.question import Question
 from app.agents.exceptions import FeedbackGenerationError, VectorDBError
+
+
+MODEL_NAME = "gpt-4o-mini"
+PROMPT_VERSION = "v1"
+
+
+def _usage_to_dict(response) -> dict | None:
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return None
+    if hasattr(usage, "model_dump"):
+        return usage.model_dump()
+    if isinstance(usage, dict):
+        return usage
+    return {
+        key: getattr(usage, key)
+        for key in ("prompt_tokens", "completion_tokens", "total_tokens")
+        if hasattr(usage, key)
+    }
+
+
+def _preview(text: str, limit: int = 500) -> str:
+    return " ".join(text.split())[:limit]
 
 
 class FeedbackAgent:
@@ -72,18 +96,62 @@ Format respons dalam paragraf yang terstruktur dan mudah dipahami.
         quiz_id: str,
         selected_answer: str,
         is_correct: bool,
+        user_id: str | None = None,
+        session_id: str | None = None,
     ) -> str:
+        trace = observability.safe_trace(
+            "feedback-generation",
+            metadata=observability.standard_metadata(
+                "feedback-generation",
+                user_id=user_id,
+                quiz_id=quiz_id,
+                session_id=session_id,
+                question_id=question.id,
+                is_correct=is_correct,
+            ),
+            input={
+                "quiz_id": quiz_id,
+                "session_id": session_id,
+                "question_id": question.id,
+                "is_correct": is_correct,
+            },
+        )
         try:
+            retrieval_span = observability.span(
+                trace,
+                "retrieve-feedback-context",
+                metadata={"question_id": question.id, "quiz_id": quiz_id},
+            )
             material_context = self._get_material_context(
                 quiz_id, question.question_text
+            )
+            observability.end_observation(
+                retrieval_span,
+                output={
+                    "context_length": len(material_context),
+                    "has_context": bool(material_context),
+                },
             )
 
             system_prompt, user_prompt = self._build_feedback_prompt(
                 question, selected_answer, is_correct, material_context
             )
 
+            generation = observability.generation(
+                trace,
+                name="feedback-generation",
+                model=MODEL_NAME,
+                input_data={
+                    "operation": "feedback-generation",
+                    "prompt_version": PROMPT_VERSION,
+                    "question_id": question.id,
+                    "quiz_id": quiz_id,
+                    "is_correct": is_correct,
+                    "prompt_preview": _preview(user_prompt),
+                },
+            )
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=MODEL_NAME,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
@@ -93,13 +161,41 @@ Format respons dalam paragraf yang terstruktur dan mudah dipahami.
 
             feedback = response.choices[0].message.content
             if feedback is None:
+                observability.end_observation(
+                    generation,
+                    output={"status": "failed", "reason": "empty response"},
+                )
                 raise FeedbackGenerationError("Empty response from LLM")
 
+            observability.end_observation(
+                generation,
+                output={
+                    "status": "success",
+                    "feedback_length": len(feedback),
+                    "usage": _usage_to_dict(response),
+                },
+            )
+            observability.update_observation(
+                trace,
+                output={"status": "success", "feedback_length": len(feedback)},
+            )
             return feedback
 
-        except FeedbackGenerationError:
+        except FeedbackGenerationError as exc:
+            observability.update_observation(
+                trace,
+                output={"status": "failed", "error": str(exc)},
+            )
             raise
-        except VectorDBError:
+        except VectorDBError as exc:
+            observability.update_observation(
+                trace,
+                output={"status": "failed", "error": str(exc)},
+            )
             raise
         except Exception as e:
+            observability.update_observation(
+                trace,
+                output={"status": "failed", "error": str(e)},
+            )
             raise FeedbackGenerationError(f"Failed to generate feedback: {str(e)}")
