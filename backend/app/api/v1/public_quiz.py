@@ -19,9 +19,30 @@ from app.schemas.public_quiz import (
 from app.api.deps import get_current_active_user
 from app.models.user import User
 from app.models.quiz_session import QuizSessionRead
+from app.models.user_quiz import UserQuiz
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose import jwt
+from app.core.config import settings
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+security_optional = HTTPBearer(auto_error=False)
+
+def get_optional_user(db: Session = Depends(get_db), bearer: Optional[HTTPAuthorizationCredentials] = Depends(security_optional)) -> Optional[User]:
+    if not bearer:
+        return None
+    try:
+        payload = jwt.decode(bearer.credentials, settings.secret_key, algorithms=[settings.algorithm])
+        user_id = payload.get("user_id")
+        email = payload.get("sub")
+        if user_id:
+            return db.query(User).filter(User.id == user_id, User.deleted_at.is_(None)).first()
+        elif email:
+            return db.query(User).filter(User.email == email, User.deleted_at.is_(None)).first()
+    except Exception:
+        pass
+    return None
 
 
 @router.post("", response_model=PublicQuizRead, status_code=status.HTTP_201_CREATED)
@@ -67,10 +88,24 @@ def make_quiz_private(
 @router.get("", response_model=list[PublicQuizListItem])
 def list_public_quizzes(
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """List all public quizzes."""
     try:
         results = get_public_quizzes(db)
+        
+        attempted_quiz_ids = set()
+        if current_user:
+            attempted_quizzes = (
+                db.query(UserQuiz.quiz_id)
+                .filter(
+                    UserQuiz.user_id == current_user.id,
+                    UserQuiz.is_owner == False
+                )
+                .all()
+            )
+            attempted_quiz_ids = {q[0] for q in attempted_quizzes}
+
         quizzes = []
         for public_quiz, quiz, user in results:
             # Get material file name for display if topic is null
@@ -95,6 +130,7 @@ def list_public_quizzes(
                     question_count=quiz.question_count,
                     created_at=public_quiz.created_at,
                     user_owner=user,
+                    is_attempt=quiz.id in attempted_quiz_ids,
                 )
             )
         return quizzes

@@ -25,6 +25,7 @@ class PublicQuizListItem(SQLModel):
     question_count: int
     created_at: datetime
     user_owner: Optional[UserRead] = None
+    is_attempt: bool = False
 
 
 class PublicQuizDetail(SQLModel):
