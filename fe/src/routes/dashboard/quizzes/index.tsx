@@ -104,7 +104,7 @@ function QuizzesPage() {
   const [loading, setLoading] = useState(true)
   const [quizDrawerVisible, setQuizDrawerVisible] = useState(false)
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery] = useState('')
   const [publishedQuizIds, setPublishedQuizIds] = useState<Set<string>>(new Set())
   const prevQuizzesRef = useRef<Quiz[]>([])
 

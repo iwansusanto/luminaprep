@@ -81,7 +81,7 @@ function PublicQuizzesPage() {
   }, [fetchPublicQuizzes])
 
   // Search filter
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery] = useState('')
   const filteredQuizzes = useMemo(() => {
     return quizzes.filter(q => {
       const title = (q.topic || q.material_file_name || '').toLowerCase()
