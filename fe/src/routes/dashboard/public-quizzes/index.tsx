@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { api } from '../../../lib/api'
-import { Skeleton, message } from 'antd'
+import { Skeleton, message, Modal } from 'antd'
 import {
   Search,
   Filter,
@@ -61,6 +61,7 @@ const complexityMap: Record<string, { label: string; color: string }> = {
 
 function PublicQuizzesPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [quizzes, setQuizzes] = useState<PublicQuiz[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -90,6 +91,26 @@ function PublicQuizzesPage() {
       return title.includes(searchQuery.toLowerCase()) || owner.includes(searchQuery.toLowerCase())
     })
   }, [quizzes, searchQuery])
+
+  const handleAttempt = useCallback((quizId: string) => {
+    Modal.confirm({
+      title: 'Attempt Community Quiz',
+      content: 'This will add the quiz to your personal library and start a new session. Do you want to proceed?',
+      okText: 'Yes, Attempt',
+      cancelText: 'Cancel',
+      okButtonProps: { className: 'bg-indigo-600 hover:bg-indigo-700 border-none' },
+      onOk: async () => {
+        try {
+          await api.post(`/public_quizzes/${quizId}/sessions`)
+          message.success('Quiz added to your library!')
+          navigate({ to: '/dashboard/quizzes/start/$uuid', params: { uuid: quizId } })
+        } catch (error) {
+          console.error(error)
+          message.error('Failed to start quiz session')
+        }
+      }
+    })
+  }, [navigate])
 
   return (
     <motion.div
@@ -248,14 +269,13 @@ function PublicQuizzesPage() {
               }
 
               return (
-                <Link
+                <div
                   key={quiz.quiz_id}
-                  to="/dashboard/public-quizzes/attempt/$uuid"
-                  params={{ uuid: quiz.quiz_id }}
-                  className="group relative flex flex-col justify-between bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-xl hover:border-indigo-500/20 hover:-translate-y-1 transition-all duration-300"
+                  onClick={() => handleAttempt(quiz.quiz_id)}
+                  className="group relative flex flex-col justify-between bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-xl hover:border-indigo-500/20 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
                 >
                   {content}
-                </Link>
+                </div>
               )
             })}
           </div>
