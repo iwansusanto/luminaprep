@@ -33,14 +33,17 @@ declare module 'lucide-react' {
   export const Edit: LucideIcon
   export const ExternalLink: LucideIcon
   export const Eye: LucideIcon
+  export const FileQuestion: LucideIcon
   export const FileText: LucideIcon
   export const Filter: LucideIcon
   export const Globe: LucideIcon
   export const History: LucideIcon
   export const Home: LucideIcon
   export const Info: LucideIcon
+  export const Layers: LucideIcon
   export const Layout: LucideIcon
   export const LayoutDashboard: LucideIcon
+  export const List: LucideIcon
   export const Loader2: LucideIcon
   export const Lock: LucideIcon
   export const LogOut: LucideIcon

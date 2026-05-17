@@ -141,7 +141,7 @@ function PublicQuizzesPage() {
             {filteredQuizzes.map(quiz => {
               const diffConfig = complexityMap[quiz.difficulty_level] || { label: quiz.difficulty_level, color: 'bg-slate-100 text-slate-700 border-slate-200' }
               const title = quiz.topic || quiz.material_file_name || 'Untitled Quiz'
-              
+
               return (
                 <Link
                   key={quiz.quiz_id}
@@ -159,7 +159,7 @@ function PublicQuizzesPage() {
                         <span className="text-xs font-bold">{quiz.question_count}</span>
                       </div>
                     </div>
-                    
+
                     <div>
                       <h3 className="text-lg font-bold text-slate-800 leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors">
                         {title}
@@ -174,9 +174,9 @@ function PublicQuizzesPage() {
                   <div className="mt-8 pt-5 border-t border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {quiz.user_owner?.avatar_url ? (
-                        <img 
-                          src={quiz.user_owner.avatar_url} 
-                          alt={quiz.user_owner.full_name || 'Creator'} 
+                        <img
+                          src={quiz.user_owner.avatar_url}
+                          alt={quiz.user_owner.full_name || 'Creator'}
                           className="w-8 h-8 rounded-full border border-slate-200 shadow-sm object-cover"
                         />
                       ) : (
@@ -191,7 +191,7 @@ function PublicQuizzesPage() {
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                       <ArrowRight className="w-4 h-4" />
                     </div>
