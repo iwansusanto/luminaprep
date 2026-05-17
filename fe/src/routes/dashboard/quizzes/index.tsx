@@ -4,8 +4,6 @@ import { useAuth } from '../../../context/AuthContext'
 import { api } from '../../../lib/api'
 import { Skeleton, message, Modal, Dropdown } from 'antd'
 import {
-  Search,
-  Filter,
   Plus,
   BrainCircuit,
   MoreVertical,
@@ -534,7 +532,7 @@ function QuizzesPage() {
       {/* Table */}
       <motion.div variants={item} className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden">
         <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
-          <div className="relative group flex-1 max-w-md">
+          {/* <div className="relative group flex-1 max-w-md">
             <Search
               strokeWidth={1.5}
               className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors"
@@ -546,8 +544,8 @@ function QuizzesPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-11 pr-6 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all text-sm font-medium"
             />
-          </div>
-          <div className="flex items-center gap-2">
+          </div> */}
+          <div className="flex items-center gap-2 ml-auto">
             <button
               onClick={() => fetchData(true)}
               className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 transition-all shadow-sm"
@@ -555,9 +553,9 @@ function QuizzesPage() {
             >
               <RefreshCw className="w-4 h-4" />
             </button>
-            <button className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 transition-all shadow-sm">
+            {/* <button className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 transition-all shadow-sm">
               <Filter className="w-4 h-4" />
-            </button>
+            </button> */}
           </div>
         </div>
 

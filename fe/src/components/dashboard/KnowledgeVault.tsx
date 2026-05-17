@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { setting_material } from '../../lib/utils'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { motion, type Variants } from 'framer-motion'
 import {
   FileText,
@@ -50,6 +50,7 @@ export const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({
   onAddQuiz,
   variants
 }) => {
+  const navigate = useNavigate()
   const [quizDrawerVisible, setQuizDrawerVisible] = useState(false)
   const [selectedMaterialForQuiz, setSelectedMaterialForQuiz] = useState<Material | null>(null)
 
@@ -138,11 +139,10 @@ export const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({
                         <span className="w-0.5 h-0.5 bg-slate-300 rounded-full" />
                         <span className="truncate">{material.file_type.toUpperCase()}</span>
                         <span className="w-0.5 h-0.5 bg-slate-300 rounded-full" />
-                        <span className={`flex items-center gap-1 ${
-                          material.status === 'completed' ? 'text-emerald-500' : 
-                          material.status === 'failed' ? 'text-rose-500' : 
-                          'text-amber-500'
-                        }`}>
+                        <span className={`flex items-center gap-1 ${material.status === 'completed' ? 'text-emerald-500' :
+                            material.status === 'failed' ? 'text-rose-500' :
+                              'text-amber-500'
+                          }`}>
                           {material.status === 'processing' && <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}><Clock className="w-2.5 h-2.5" /></motion.div>}
                           {material.status === 'completed' && <Sparkles className="w-2.5 h-2.5" />}
                           {material.status === 'failed' && <AlertCircle className="w-2.5 h-2.5" />}
@@ -190,8 +190,8 @@ export const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className={`mt-6 sm:mt-8 p-6 sm:p-8 border border-dashed rounded-[1.5rem] sm:rounded-[2rem] flex items-center justify-between group transition-all ${materials.length >= setting_material.maximal
-                  ? 'bg-rose-50/30 border-rose-200 cursor-not-allowed opacity-80'
-                  : 'bg-slate-50/50 border-slate-200 cursor-pointer hover:bg-indigo-50/30 hover:border-indigo-200'
+                ? 'bg-rose-50/30 border-rose-200 cursor-not-allowed opacity-80'
+                : 'bg-slate-50/50 border-slate-200 cursor-pointer hover:bg-indigo-50/30 hover:border-indigo-200'
                 }`}
               onClick={() => materials.length < setting_material.maximal && onAddMaterial()}
             >
@@ -212,8 +212,8 @@ export const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({
                 </div>
               </div>
               <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl shadow-sm border flex items-center justify-center transition-transform shrink-0 ${materials.length >= setting_material.maximal
-                  ? 'bg-rose-50 text-rose-300 border-rose-100'
-                  : 'bg-white text-indigo-600 border-slate-100 group-hover:translate-x-1'
+                ? 'bg-rose-50 text-rose-300 border-rose-100'
+                : 'bg-white text-indigo-600 border-slate-100 group-hover:translate-x-1'
                 }`}>
                 <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
@@ -241,7 +241,10 @@ export const KnowledgeVault: React.FC<KnowledgeVaultProps> = ({
                 <p className="text-indigo-200/60 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider sm:tracking-[0.2em] mb-6 sm:mb-8 leading-relaxed">
                   Synthesize knowledge from your <br className="hidden sm:block" /> entire vault into a final assessment.
                 </p>
-                <button className="px-5 py-2.5 sm:px-6 sm:py-3 bg-white text-indigo-600 rounded-lg sm:rounded-xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] flex items-center gap-2 hover:bg-indigo-50 transition-all active:scale-95">
+                <button
+                  onClick={() => navigate({ to: '/dashboard/quizzes' })}
+                  className="px-5 py-2.5 sm:px-6 sm:py-3 bg-white text-indigo-600 rounded-lg sm:rounded-xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] flex items-center gap-2 hover:bg-indigo-50 transition-all active:scale-95"
+                >
                   Start Mastery <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               </div>

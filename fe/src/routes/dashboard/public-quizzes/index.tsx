@@ -3,8 +3,6 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { api } from '../../../lib/api'
 import { Skeleton, message, Modal } from 'antd'
 import {
-  Search,
-  Filter,
   Sparkles,
   Globe,
   ArrowRight,
@@ -135,7 +133,7 @@ function PublicQuizzesPage() {
 
       {/* Quizzes List (Grid) */}
       <motion.div variants={item} className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
+        {/* <div className="flex items-center justify-between">
           <div className="relative group w-full max-w-sm">
             <Search strokeWidth={1.5} className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
             <input
@@ -152,7 +150,7 @@ function PublicQuizzesPage() {
               Filter
             </button>
           </div>
-        </div>
+        </div> */}
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
