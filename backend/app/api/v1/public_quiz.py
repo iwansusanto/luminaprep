@@ -72,7 +72,7 @@ def list_public_quizzes(
     try:
         results = get_public_quizzes(db)
         quizzes = []
-        for public_quiz, quiz in results:
+        for public_quiz, quiz, user in results:
             # Get material file name for display if topic is null
             material_file_name = None
             if quiz.material_id:
@@ -94,6 +94,7 @@ def list_public_quizzes(
                     difficulty_level=quiz.difficulty_level,
                     question_count=quiz.question_count,
                     created_at=public_quiz.created_at,
+                    user_owner=user,
                 )
             )
         return quizzes

@@ -7,15 +7,12 @@ import {
   Filter,
   Sparkles,
   Globe,
+  ArrowRight,
+  BookOpen,
+  User as UserIcon,
+  Layers
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
-import {
-  createColumnHelper,
-  getCoreRowModel,
-  useReactTable,
-  getPaginationRowModel,
-} from '@tanstack/react-table'
-import { DataTable } from '../../../components/dashboard/DataTable'
 
 export const Route = createFileRoute('/dashboard/public-quizzes/')({
   component: PublicQuizzesPage,
@@ -43,15 +40,19 @@ type PublicQuiz = {
   difficulty_level: string
   question_count: number
   created_at: string
+  user_owner: {
+    id: string
+    email: string
+    full_name: string | null
+    avatar_url: string | null
+  } | null
 }
 
-const complexityMap: Record<string, 'Beginner' | 'Intermediate' | 'Mastery'> = {
-  'beginner': 'Beginner',
-  'intermediate': 'Intermediate',
-  'expert': 'Mastery'
+const complexityMap: Record<string, { label: string; color: string }> = {
+  'beginner': { label: 'Beginner', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-200' },
+  'intermediate': { label: 'Intermediate', color: 'bg-amber-500/10 text-amber-600 border-amber-200' },
+  'expert': { label: 'Mastery', color: 'bg-rose-500/10 text-rose-600 border-rose-200' }
 }
-
-const columnHelper = createColumnHelper<PublicQuiz>()
 
 function PublicQuizzesPage() {
   const [quizzes, setQuizzes] = useState<PublicQuiz[]>([])
@@ -74,77 +75,15 @@ function PublicQuizzesPage() {
     fetchPublicQuizzes()
   }, [fetchPublicQuizzes])
 
-  const columns = useMemo(() => [
-    columnHelper.accessor('topic', {
-      header: 'Topic',
-      cell: info => (
-        <span className="font-semibold text-slate-700">
-          {info.getValue() || info.row.original.material_file_name || `Quiz · ${info.row.original.difficulty_level}`}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('difficulty_level', {
-      header: 'Difficulty',
-      cell: info => {
-        const level = info.getValue()
-        const mapped = complexityMap[level] || level
-        const colors: Record<string, string> = {
-          'Beginner': 'bg-emerald-100 text-emerald-700',
-          'Intermediate': 'bg-amber-100 text-amber-700',
-          'Mastery': 'bg-rose-100 text-rose-700',
-        }
-        return (
-          <span className={`px-3 py-1 rounded-full text-xs font-bold ${colors[mapped] || 'bg-slate-100 text-slate-700'}`}>
-            {mapped}
-          </span>
-        )
-      },
-    }),
-    columnHelper.accessor('question_count', {
-      header: 'Questions',
-      cell: info => (
-        <span className="text-slate-600 font-medium">{info.getValue()}</span>
-      ),
-    }),
-    columnHelper.accessor('created_at', {
-      header: 'Published',
-      cell: info => {
-        const date = new Date(info.getValue())
-        return (
-          <span className="text-slate-500 text-sm">
-            {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
-        )
-      },
-    }),
-    columnHelper.display({
-      id: 'actions',
-      header: () => <span className="text-right block">Actions</span>,
-      cell: info => (
-        <div className="flex items-center justify-end gap-3 pr-4">
-          <Link
-            to="/dashboard/public-quizzes/attempt/$uuid"
-            params={{ uuid: info.row.original.quiz_id }}
-            className="px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 bg-slate-900 text-white hover:bg-violet-600 shadow-slate-900/10"
-          >
-            Attempt
-          </Link>
-        </div>
-      ),
-    }),
-  ], [])
-
-  const table = useReactTable({
-    data: quizzes,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 50,
-      },
-    },
-  })
+  // Search filter
+  const [searchQuery, setSearchQuery] = useState('')
+  const filteredQuizzes = useMemo(() => {
+    return quizzes.filter(q => {
+      const title = (q.topic || q.material_file_name || '').toLowerCase()
+      const owner = (q.user_owner?.full_name || q.user_owner?.email || '').toLowerCase()
+      return title.includes(searchQuery.toLowerCase()) || owner.includes(searchQuery.toLowerCase())
+    })
+  }, [quizzes, searchQuery])
 
   return (
     <motion.div
@@ -167,40 +106,108 @@ function PublicQuizzesPage() {
         </div>
       </motion.div>
 
-      {/* Quizzes Table */}
-      <motion.div variants={item} className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
-          <div className="relative group flex-1 max-w-md">
+      {/* Quizzes List (Grid) */}
+      <motion.div variants={item} className="flex flex-col gap-6">
+        <div className="flex items-center justify-between">
+          <div className="relative group w-full max-w-sm">
             <Search strokeWidth={1.5} className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
             <input
               type="text"
-              placeholder="Filter quizzes..."
-              className="w-full pl-11 pr-6 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all text-sm font-medium"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by topic or creator..."
+              className="w-full pl-11 pr-6 py-3 bg-white border border-slate-200 rounded-[1.25rem] outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all text-sm font-medium shadow-sm"
             />
           </div>
           <div className="flex items-center gap-2">
-            <button className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 transition-all shadow-sm">
+            <button className="px-4 py-3 bg-white border border-slate-200 rounded-[1.25rem] text-slate-500 hover:text-indigo-600 transition-all shadow-sm flex items-center gap-2 text-sm font-semibold">
               <Filter className="w-4 h-4" />
+              Filter
             </button>
           </div>
         </div>
 
         {loading ? (
-          <div className="p-8 space-y-4">
-            <Skeleton active />
-            <Skeleton active />
-            <Skeleton active />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-200 h-64 shadow-sm flex flex-col justify-between">
+                <Skeleton active title={false} paragraph={{ rows: 3 }} />
+                <Skeleton.Avatar active shape="circle" size="default" />
+              </div>
+            ))}
           </div>
-        ) : quizzes.length > 0 ? (
-          <DataTable table={table} totalItems={quizzes.length} />
+        ) : filteredQuizzes.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredQuizzes.map(quiz => {
+              const diffConfig = complexityMap[quiz.difficulty_level] || { label: quiz.difficulty_level, color: 'bg-slate-100 text-slate-700 border-slate-200' }
+              const title = quiz.topic || quiz.material_file_name || 'Untitled Quiz'
+              
+              return (
+                <Link
+                  key={quiz.quiz_id}
+                  to="/dashboard/public-quizzes/attempt/$uuid"
+                  params={{ uuid: quiz.quiz_id }}
+                  className="group relative flex flex-col justify-between bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-xl hover:border-indigo-500/20 hover:-translate-y-1 transition-all duration-300"
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <span className={`inline-flex px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${diffConfig.color}`}>
+                        {diffConfig.label}
+                      </span>
+                      <div className="flex items-center gap-1 text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
+                        <Layers className="w-3.5 h-3.5" />
+                        <span className="text-xs font-bold">{quiz.question_count}</span>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-800 leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                        {title}
+                      </h3>
+                      <p className="text-slate-500 text-xs font-medium mt-2 flex items-center gap-1.5">
+                        <BookOpen className="w-3.5 h-3.5" />
+                        Community Quiz
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 pt-5 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {quiz.user_owner?.avatar_url ? (
+                        <img 
+                          src={quiz.user_owner.avatar_url} 
+                          alt={quiz.user_owner.full_name || 'Creator'} 
+                          className="w-8 h-8 rounded-full border border-slate-200 shadow-sm object-cover"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center">
+                          <UserIcon className="w-4 h-4 text-slate-400" />
+                        </div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Creator</span>
+                        <span className="text-sm font-semibold text-slate-700 truncate max-w-[120px]">
+                          {quiz.user_owner?.full_name || quiz.user_owner?.email?.split('@')[0] || 'Anonymous'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
         ) : (
-          <div className="py-24 px-8 flex flex-col items-center justify-center text-center">
+          <div className="py-24 px-8 bg-white border border-slate-200/60 rounded-[2.5rem] flex flex-col items-center justify-center text-center shadow-sm">
             <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6 border border-slate-100">
               <Sparkles className="w-10 h-10 text-slate-300" />
             </div>
-            <h3 className="text-2xl font-black text-slate-800 mb-2">No public quizzes yet</h3>
+            <h3 className="text-2xl font-black text-slate-800 mb-2">No public quizzes found</h3>
             <p className="text-slate-500 font-medium max-w-xs mx-auto">
-              Check back soon! Community members will be sharing their quizzes here.
+              {searchQuery ? "Try adjusting your search criteria." : "Check back soon! Community members will be sharing their quizzes here."}
             </p>
           </div>
         )}

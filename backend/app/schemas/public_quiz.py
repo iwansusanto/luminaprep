@@ -1,6 +1,7 @@
 from sqlmodel import SQLModel, Field
 from datetime import datetime
 from typing import Optional
+from app.models.user import UserRead
 
 
 class PublicQuizCreate(SQLModel):
@@ -23,6 +24,7 @@ class PublicQuizListItem(SQLModel):
     difficulty_level: str
     question_count: int
     created_at: datetime
+    user_owner: Optional[UserRead] = None
 
 
 class PublicQuizDetail(SQLModel):

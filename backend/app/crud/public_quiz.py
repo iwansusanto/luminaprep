@@ -75,10 +75,15 @@ def delete_public_quiz(db: Session, quiz_id: str, user_id: str) -> bool:
 
 
 def get_public_quizzes(db: Session) -> List[tuple]:
-    """Get all public quizzes with quiz metadata."""
+    """Get all public quizzes with quiz metadata and user owner."""
+    from app.models.user_quiz import UserQuiz
+    from app.models.user import User
+
     results = (
-        db.query(PublicQuiz, Quiz)
+        db.query(PublicQuiz, Quiz, User)
         .join(Quiz, PublicQuiz.quiz_id == Quiz.id)
+        .outerjoin(UserQuiz, (UserQuiz.quiz_id == Quiz.id) & (UserQuiz.is_owner == True))
+        .outerjoin(User, User.id == UserQuiz.user_id)
         .filter(Quiz.deleted_at.is_(None))
         .order_by(PublicQuiz.created_at.desc())
         .all()
