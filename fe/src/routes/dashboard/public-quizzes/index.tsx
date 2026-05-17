@@ -12,11 +12,11 @@ import {
   User as UserIcon,
   Layers,
   CheckCircle2,
-  Check
+  Check,
+  BadgeCheck,
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
-import { Badge } from 'lucide-react'
-import { BadgeAlert } from 'lucide-react'
+import { useAuth } from '../../../context/AuthContext'
 
 export const Route = createFileRoute('/dashboard/public-quizzes/')({
   component: PublicQuizzesPage,
@@ -60,6 +60,7 @@ const complexityMap: Record<string, { label: string; color: string }> = {
 }
 
 function PublicQuizzesPage() {
+  const { user } = useAuth()
   const [quizzes, setQuizzes] = useState<PublicQuiz[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -179,6 +180,16 @@ function PublicQuizzesPage() {
                             </span>
                           </>
                         )}
+
+                        {quiz.user_owner && quiz.user_owner.email === user?.email && (
+                          <>
+                            <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                            <span className="flex items-center gap-1.5 text-slate-500 font-medium">
+                              <BadgeCheck className="w-3.5 h-3.5 text-emerald-500" />
+                              You are the owner
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -208,7 +219,7 @@ function PublicQuizzesPage() {
                       ? 'bg-emerald-50 text-emerald-500 border border-emerald-100'
                       : 'bg-slate-50 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white'
                       }`}>
-                      {quiz.is_attempt ? <Check className="w-4 h-4" /> : quiz.user_owner ? <BadgeAlert className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+                      {quiz.is_attempt ? <Check className="w-4 h-4" /> : ((quiz.user_owner && quiz.user_owner.email === user?.email) ? <BadgeCheck className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />)}
                     </div>
                   </div>
                 </>
@@ -225,7 +236,7 @@ function PublicQuizzesPage() {
                 )
               }
 
-              if (quiz.user_owner) {
+              if (quiz.user_owner && quiz.user_owner.email === user?.email) {
                 return (
                   <div
                     key={quiz.quiz_id}

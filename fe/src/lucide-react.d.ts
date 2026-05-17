@@ -32,6 +32,7 @@ declare module 'lucide-react' {
   export const Download: LucideIcon
   export const Edit: LucideIcon
   export const ExternalLink: LucideIcon
+  export const BadgeCheck: LucideIcon
   export const Eye: LucideIcon
   export const FileQuestion: LucideIcon
   export const FileText: LucideIcon
