@@ -10,9 +10,13 @@ import {
   ArrowRight,
   BookOpen,
   User as UserIcon,
-  Layers
+  Layers,
+  CheckCircle2,
+  Check
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
+import { Badge } from 'lucide-react'
+import { BadgeAlert } from 'lucide-react'
 
 export const Route = createFileRoute('/dashboard/public-quizzes/')({
   component: PublicQuizzesPage,
@@ -46,6 +50,7 @@ type PublicQuiz = {
     full_name: string | null
     avatar_url: string | null
   } | null
+  is_attempt?: boolean
 }
 
 const complexityMap: Record<string, { label: string; color: string }> = {
@@ -142,16 +147,11 @@ function PublicQuizzesPage() {
               const diffConfig = complexityMap[quiz.difficulty_level] || { label: quiz.difficulty_level, color: 'bg-slate-100 text-slate-700 border-slate-200' }
               const title = quiz.topic || quiz.material_file_name || 'Untitled Quiz'
 
-              return (
-                <Link
-                  key={quiz.quiz_id}
-                  to="/dashboard/public-quizzes/attempt/$uuid"
-                  params={{ uuid: quiz.quiz_id }}
-                  className="group relative flex flex-col justify-between bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-xl hover:border-indigo-500/20 hover:-translate-y-1 transition-all duration-300"
-                >
+              const content = (
+                <>
                   <div className="space-y-4">
                     <div className="flex items-start justify-between gap-4">
-                      <span className={`inline-flex px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${diffConfig.color}`}>
+                      <span className={`inline-flex px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${diffConfig.color} ${quiz.is_attempt ? 'opacity-60' : ''}`}>
                         {diffConfig.label}
                       </span>
                       <div className="flex items-center gap-1 text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
@@ -161,13 +161,25 @@ function PublicQuizzesPage() {
                     </div>
 
                     <div>
-                      <h3 className="text-lg font-bold text-slate-800 leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                      <h3 className={`text-lg font-bold leading-snug line-clamp-2 transition-colors ${quiz.is_attempt ? 'text-slate-500' : 'text-slate-800 group-hover:text-indigo-600'}`}>
                         {title}
                       </h3>
-                      <p className="text-slate-500 text-xs font-medium mt-2 flex items-center gap-1.5">
-                        <BookOpen className="w-3.5 h-3.5" />
-                        Community Quiz
-                      </p>
+                      <div className="text-slate-500 text-xs font-medium mt-2 flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5" />
+                          <span>Community Quiz</span>
+                        </div>
+
+                        {quiz.is_attempt && (
+                          <>
+                            <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                            <span className="flex items-center gap-1.5 text-slate-500 font-medium">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                              Already in your quizzes
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -177,7 +189,7 @@ function PublicQuizzesPage() {
                         <img
                           src={quiz.user_owner.avatar_url}
                           alt={quiz.user_owner.full_name || 'Creator'}
-                          className="w-8 h-8 rounded-full border border-slate-200 shadow-sm object-cover"
+                          className={`w-8 h-8 rounded-full border border-slate-200 shadow-sm object-cover ${quiz.is_attempt ? 'grayscale opacity-60' : ''}`}
                         />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center">
@@ -186,16 +198,52 @@ function PublicQuizzesPage() {
                       )}
                       <div className="flex flex-col">
                         <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Creator</span>
-                        <span className="text-sm font-semibold text-slate-700 truncate max-w-[120px]">
+                        <span className={`text-sm font-semibold truncate max-w-[120px] ${quiz.is_attempt ? 'text-slate-500' : 'text-slate-700'}`}>
                           {quiz.user_owner?.full_name || quiz.user_owner?.email?.split('@')[0] || 'Anonymous'}
                         </span>
                       </div>
                     </div>
 
-                    <div className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                      <ArrowRight className="w-4 h-4" />
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${quiz.is_attempt
+                      ? 'bg-emerald-50 text-emerald-500 border border-emerald-100'
+                      : 'bg-slate-50 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white'
+                      }`}>
+                      {quiz.is_attempt ? <Check className="w-4 h-4" /> : quiz.user_owner ? <BadgeAlert className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
                     </div>
                   </div>
+                </>
+              )
+
+              if (quiz.is_attempt) {
+                return (
+                  <div
+                    key={quiz.quiz_id}
+                    className="relative flex flex-col justify-between bg-slate-50/50 p-6 rounded-[2rem] border border-slate-200/40 shadow-sm cursor-not-allowed"
+                  >
+                    {content}
+                  </div>
+                )
+              }
+
+              if (quiz.user_owner) {
+                return (
+                  <div
+                    key={quiz.quiz_id}
+                    className="group relative flex flex-col justify-between bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-xl hover:border-indigo-500/20 hover:-translate-y-1 transition-all duration-300"
+                  >
+                    {content}
+                  </div>
+                )
+              }
+
+              return (
+                <Link
+                  key={quiz.quiz_id}
+                  to="/dashboard/public-quizzes/attempt/$uuid"
+                  params={{ uuid: quiz.quiz_id }}
+                  className="group relative flex flex-col justify-between bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-xl hover:border-indigo-500/20 hover:-translate-y-1 transition-all duration-300"
+                >
+                  {content}
                 </Link>
               )
             })}
