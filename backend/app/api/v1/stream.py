@@ -26,6 +26,7 @@ from app.models.user import User
 from app.crud.quiz_session import get_quiz_session_by_id
 from app.crud.material import get_material_by_id
 from app.crud.question import get_question_by_id
+from app.models.question import Question
 from app.utils.oa_client import oa_client
 from app.utils import langfuse_client as observability
 from app.core.config import settings
@@ -217,8 +218,16 @@ async def stream_feedback(
     if not quiz_session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quiz session not found")
 
-    question = get_question_by_id(db, question_id, user.id)
-    if not question or question.quiz_id != quiz_session.quiz_id:
+    question = (
+        db.query(Question)
+        .filter(
+            Question.id == question_id,
+            Question.quiz_id == quiz_session.quiz_id,
+            Question.deleted_at.is_(None)
+        )
+        .first()
+    )
+    if not question:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Question not found")
 
     # Find the user's submitted answer for this question
