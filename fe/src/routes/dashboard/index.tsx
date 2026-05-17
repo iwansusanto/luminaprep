@@ -74,6 +74,7 @@ function DashboardIndexPage() {
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false)
   const [generating, setGenerating] = useState(false)
   const prevMaterialsRef = useRef<Material[]>([])
+  const [quizStats, setQuizStats] = useState({ completed: 0, avgScore: 0, loading: true })
 
   const projectId = auth?.user?.projects?.[0]?.id
 
@@ -125,9 +126,39 @@ function DashboardIndexPage() {
     }
   }, [projectId])
 
+  const fetchQuizStats = useCallback(async () => {
+    try {
+      const response = await authFetch('/api/v1/quizzes/my')
+      if (response.ok) {
+        const data = await response.json()
+        const completed = data.filter((q: any) => q.user_attempts?.status_session === 'completed')
+        
+        let totalScore = 0
+        let countForAvg = 0
+        completed.forEach((q: any) => {
+          if (q.user_attempts && q.user_attempts.total_questions > 0) {
+            totalScore += (q.user_attempts.score_correct / q.user_attempts.total_questions) * 100
+            countForAvg++
+          }
+        })
+        
+        const avgScore = countForAvg > 0 ? Math.round(totalScore / countForAvg) : 0
+        setQuizStats({ completed: completed.length, avgScore, loading: false })
+      } else {
+        setQuizStats({ completed: 0, avgScore: 0, loading: false })
+      }
+    } catch (error) {
+      console.error('Failed to fetch quizzes:', error)
+      setQuizStats({ completed: 0, avgScore: 0, loading: false })
+    }
+  }, [])
+
   useEffect(() => {
     fetchMaterials()
-  }, [fetchMaterials])
+    if (auth?.isAuthenticated) {
+      fetchQuizStats()
+    }
+  }, [fetchMaterials, fetchQuizStats, auth?.isAuthenticated])
 
   useEffect(() => {
     const hasProcessing = materials.some(m => m.status === 'processing');
@@ -204,7 +235,14 @@ function DashboardIndexPage() {
   const stats = [
     { label: 'Materials', value: (materials?.length || 0).toString(), sub: 'Total items', icon: FileText, color: 'bg-indigo-50 text-indigo-600', trend: `+${materialsThisWeek} this week` },
     { label: 'Slots Left', value: Math.max(0, setting_material.maximal - (materials?.length || 0)).toString(), sub: 'Remaining quota', icon: Sparkles, color: 'bg-amber-50 text-amber-600', trend: `${setting_material.maximal} limit` },
-    { label: 'Quizzes', value: '24', sub: 'Completed', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600', trend: '92% avg score' },
+    { 
+      label: 'Quizzes', 
+      value: quizStats.loading ? <Loader2 className="w-5 h-5 animate-spin" /> : quizStats.completed.toString(), 
+      sub: 'Completed', 
+      icon: CheckCircle2, 
+      color: 'bg-emerald-50 text-emerald-600', 
+      trend: quizStats.loading ? 'loading...' : `${quizStats.avgScore}% avg score` 
+    },
   ]
 
   return (
